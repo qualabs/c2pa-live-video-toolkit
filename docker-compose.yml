@@ -1,12 +1,14 @@
 services:
   signer:
     build:
-      context: ./packages/signer
+      context: .
+      dockerfile: packages/signer/Dockerfile
     platform: linux/amd64
     ports:
       - '8080:8080'
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - STORAGE_PROVIDER=LOCAL
       - INPUT_BUCKET=/host_stream
