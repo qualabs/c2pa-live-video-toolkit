@@ -29,6 +29,37 @@ services:
     depends_on:
       - streamer
 
+  origin-server:
+    build:
+      context: .
+      dockerfile: packages/origin-server/Dockerfile
+    ports:
+      - '8082:8081'
+    environment:
+      - STATIC_FILES_PATH=/usr/src/app/live-streaming
+    volumes:
+      - stream-data:/usr/src/app/live-streaming
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8081/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  manifest-server:
+    build:
+      context: .
+      dockerfile: packages/stream-source/Dockerfile.manifest-server
+    ports:
+      - '3000:3000'
+    environment:
+      - STREAM_ROOT=/app/live-streaming
+    volumes:
+      - stream-data:/app/live-streaming
+    depends_on:
+      - origin-server
+    restart: unless-stopped
+
   streamer:
     image: jrottenberg/ffmpeg:6.0-ubuntu
     platform: linux/amd64
@@ -36,6 +67,8 @@ services:
     working_dir: /host_stream
     volumes:
       - stream-data:/host_stream
+      - ./packages/stream-source/scripts:/host_stream/scripts:ro
+      - ./packages/stream-source/input:/host_stream/input:ro
     command: ["sh", "./scripts/start-all.sh"]
     restart: unless-stopped
 
