@@ -28,6 +28,7 @@ services:
       - ./packages/signer/segment_manifest_vsi.json:/app/segment_manifest_vsi.json:ro
     depends_on:
       - streamer
+    restart: unless-stopped
 
   origin-server:
     build:
@@ -45,6 +46,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
 
   manifest-server:
     build:
@@ -86,10 +88,7 @@ services:
     depends_on:
       origin-server:
         condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   stream-data:
-
-networks:
-  default:
-    driver: bridge
