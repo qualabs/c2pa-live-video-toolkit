@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" availabilityStartTime="{availabilityStartTime}" maxSegmentDuration="PT4.0S" minBufferTime="PT8.0S" minimumUpdatePeriod="PT4S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="{publishTime}" suggestedPresentationDelay="PT4S" type="dynamic">
+<ProgramInformation>
+    <Title>Big Buck Bunny</Title>
+</ProgramInformation>
+<ServiceDescription id="0">
+    </ServiceDescription>
+    <Period id="0" start="PT0.0S" duration="PT8S">
+    <BaseURL>https://c2pa-player.qualabs.dev/</BaseURL>
+    <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
+    <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
+    <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="1" duration="49152">
+    </SegmentTemplate>
+    </Representation>
+    </AdaptationSet>
+</Period>
+    <Period id="1" start="PT8S" duration="PT12S">
+    <BaseURL>https://c2pa-player.qualabs.dev/ads/</BaseURL>
+    <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
+    <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
+    <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="101" duration="49152">
+    </SegmentTemplate>
+    </Representation>
+    </AdaptationSet>
+</Period>
+    <Period id="2" start="PT20S">
+    <BaseURL>https://c2pa-player.qualabs.dev/</BaseURL>
+    <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
+    <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
+    <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="6" duration="49152" presentationTimeOffset="245760">
+    </SegmentTemplate>
+    </Representation>
+    </AdaptationSet>
+</Period>
+</MPD>
+
