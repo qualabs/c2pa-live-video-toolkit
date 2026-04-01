@@ -9,6 +9,7 @@ import type {
   MediaType,
   SegmentStatus,
   SequenceAnomalyReason,
+  ValidationErrorCode,
   Logger,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
@@ -211,7 +212,8 @@ export class SegmentRouter {
         timestamp: Date.now(),
         validationResults: {
           overall: vsiResult.overall,
-          errorCodes: vsiResult.errorCodes,
+          // CML returns string[] — cast to the known union of valid codes
+          errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
         },
         manifest: this.deps.activeManifest.value,
       },
@@ -238,7 +240,7 @@ export class SegmentRouter {
       hash,
       keyId,
       mediaType,
-      errorCodes: vsiResult.errorCodes,
+      errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
     });
 
   }
@@ -275,7 +277,8 @@ export class SegmentRouter {
       timestamp: Date.now(),
       validationResults: {
         overall: result.isValid,
-        errorCodes: result.errorCodes,
+        // CML returns string[] — cast to the known union of valid codes
+        errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
       },
       manifest: result.manifest,
     });
@@ -295,7 +298,7 @@ export class SegmentRouter {
       hash,
       keyId: UNAVAILABLE_HASH,
       mediaType,
-      errorCodes: result.errorCodes,
+      errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
     });
   }
 

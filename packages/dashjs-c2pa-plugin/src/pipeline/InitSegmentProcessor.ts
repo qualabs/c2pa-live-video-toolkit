@@ -1,6 +1,6 @@
 import { validateC2paInitSegment } from '@svta/cml-c2pa';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
-import type { InitProcessedEvent, Logger } from '../types.js';
+import type { InitProcessedEvent, ValidationErrorCode, Logger } from '../types.js';
 
 type InitSegmentProcessorDeps = {
   sessionKeyStore: SessionKeyStore;
@@ -36,7 +36,8 @@ export class InitSegmentProcessor {
         success: true,
         sessionKeysCount: result.sessionKeys.length,
         manifestId: result.manifestId ?? undefined,
-        errorCodes: result.errorCodes,
+        // CML returns string[] — cast to the known union of valid codes
+        errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
       };
     } catch (error) {
       this.logger.error('[InitSegmentProcessor] Failed to process init segment:', error);
