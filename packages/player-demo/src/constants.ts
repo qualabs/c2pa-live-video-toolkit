@@ -1,0 +1,1 @@
+export const DEFAULT_STREAM_URL = '/stream.mpd';

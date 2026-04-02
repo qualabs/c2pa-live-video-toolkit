@@ -36,6 +36,7 @@ export class InitSegmentProcessor {
         success: true,
         sessionKeysCount: result.sessionKeys.length,
         manifestId: result.manifestId ?? undefined,
+        manifest: result.activeManifest ?? null,
         // CML returns string[] — cast to the known union of valid codes
         errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
       };
@@ -45,6 +46,7 @@ export class InitSegmentProcessor {
         success: false,
         sessionKeysCount: 0,
         manifestId: undefined,
+        manifest: null,
         error: error instanceof Error ? error.message : String(error),
       };
     }
