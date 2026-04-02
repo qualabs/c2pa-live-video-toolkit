@@ -85,7 +85,7 @@ All Dockerfiles use **monorepo root as build context**. Five services share a `s
 
 ## Environment
 
-All variables optional — stack runs with defaults. See `.env.example` for the full list. Key ones:
+Copy `.env.example` to `.env` before running. See `.env.example` for the full list. Key ones:
 
 - `STORAGE_PROVIDER`: `LOCAL` (default) or `GCS`
 - `USE_VSI_METHOD`: `false` (ManifestBox) or `true` (VSI)
