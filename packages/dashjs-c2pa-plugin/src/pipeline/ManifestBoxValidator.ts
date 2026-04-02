@@ -18,7 +18,7 @@ export class ManifestBoxValidator {
   async validate(bytes: Uint8Array, fallbackIndex: number): Promise<ManifestBoxValidationResult> {
     const { result, nextManifestId, nextState } = await validateC2paManifestBoxSegment(
       bytes,
-      this.lastManifestId ?? null,
+      this.lastManifestId,
       this.lastState,
     );
 

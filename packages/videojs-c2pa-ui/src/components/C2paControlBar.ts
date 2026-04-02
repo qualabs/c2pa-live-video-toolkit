@@ -22,7 +22,8 @@ export function registerControlBar(videoPlayer: VideoJsPlayer): VjsComponent {
   videojs.registerComponent(COMPONENT_NAME, C2PALoadProgressBar as any);
   videoPlayer.controlBar.progressControl.seekBar.addChild(COMPONENT_NAME);
 
-  const controlBar = videoPlayer.controlBar.progressControl.seekBar.getChild(COMPONENT_NAME)!;
+  const controlBar = videoPlayer.controlBar.progressControl.seekBar.getChild(COMPONENT_NAME);
+  if (!controlBar) throw new Error(`C2PA progress bar component not found: ${COMPONENT_NAME}`);
   const el = controlBar.el() as HTMLElement;
   el.style.width = '100%';
   el.style.backgroundColor = 'transparent';

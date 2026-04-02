@@ -5,6 +5,7 @@ import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 const MENU_BUTTON_COMPONENT_NAME = 'C2PAMenuButton';
 const CONTROL_TEXT = 'Content Credentials';
 const TWENTY_MINUTES_IN_SECONDS = 20 * 60;
+// Values longer than this are truncated in the menu to prevent layout overflow
 const LONG_VALUE_CHARACTER_THRESHOLD = 23;
 
 type MenuItemKey =
@@ -237,7 +238,8 @@ function extractManifest(status: PlaybackStatus): Record<string, unknown> | null
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (status.details.video?.manifest as any)?.manifestStore ?? null;
-  } catch {
+  } catch (error) {
+    console.warn('[C2paMenu] Failed to extract manifest from playback status:', error);
     return null;
   }
 }

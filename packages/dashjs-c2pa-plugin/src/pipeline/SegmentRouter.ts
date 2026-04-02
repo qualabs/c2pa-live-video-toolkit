@@ -1,18 +1,21 @@
 import type { EventBus } from '../events/EventBus.js';
 import type { InitSegmentProcessor } from './InitSegmentProcessor.js';
-import type { VsiValidator } from './VsiValidator.js';
+import type { VsiValidator, VsiValidationResult } from './VsiValidator.js';
 import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import type {
   MediaType,
+  SegmentRecord,
   SegmentStatus,
   SequenceAnomalyReason,
   ValidationErrorCode,
   Logger,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
+
+type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
 
 type DashjsChunk = {
   segmentType: 'InitializationSegment' | 'MediaSegment';
@@ -170,11 +173,12 @@ export class SegmentRouter {
       segmentType,
     } = params;
 
-    let vsiResult = null;
+    let vsiResult: VsiValidationResult | null = null;
     try {
       vsiResult = await this.deps.vsiValidator.validate(segmentBytes, streamKey);
     } catch (error) {
       this.deps.eventBus.emit('error', { source: 'VsiValidator', error });
+      return;
     }
 
     if (!vsiResult) {
@@ -195,54 +199,30 @@ export class SegmentRouter {
       this.recordMissingSegments(mediaType, vsiResult.sequenceMissingFrom, vsiResult.sequenceMissingTo);
     }
 
-    const segmentNumber = vsiResult.sequenceNumber;
+    const record = this.buildVsiSegmentRecord(vsiResult, mediaType, status);
+    const interval: [number, number] = [chunkStart, chunkEnd];
 
-    const hash = vsiResult.bmffHashHex ?? UNAVAILABLE_HASH;
-    const keyId = vsiResult.kidHex ?? UNKNOWN_KEY_ID;
-
-    this.deps.segmentStore.add(
-      {
-        segmentNumber,
-        mediaType,
-        sequenceNumber: segmentNumber,
-        keyId,
-        hash,
-        status,
-        sequenceReason: vsiResult.sequenceReason ?? undefined,
-        timestamp: Date.now(),
-        validationResults: {
-          overall: vsiResult.overall,
-          // CML returns string[] — cast to the known union of valid codes
-          errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
-        },
-        manifest: this.deps.activeManifest.value,
-      },
+    this.storeAndIndexSegment(
+      record,
+      streamKey,
+      interval,
+      { type: segmentType, manifest: null, interval, valid: vsiResult.overall, computedHash: vsiResult.bmffHashHex, manifestHash: vsiResult.bmffHashHex },
       forceNewArrival,
     );
-
-    this.deps.timeIndex.insert(streamKey, [chunkStart, chunkEnd], {
-      type: segmentType,
-      manifest: null,
-      interval: [chunkStart, chunkEnd],
-      valid: vsiResult.overall,
-      computedHash: vsiResult.bmffHashHex,
-      manifestHash: vsiResult.bmffHashHex,
-    });
 
     if (this.deps.currentQuality[mediaType] === null) {
       this.deps.currentQuality[mediaType] = representationId ?? null;
     }
 
     this.deps.eventBus.emit('segmentValidated', {
-      segmentNumber,
+      segmentNumber: vsiResult.sequenceNumber,
       status,
       sequenceReason: vsiResult.sequenceReason ?? undefined,
-      hash,
-      keyId,
+      hash: record.hash,
+      keyId: record.keyId,
       mediaType,
       errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
     });
-
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
@@ -266,31 +246,28 @@ export class SegmentRouter {
 
     const status: SegmentStatus = result.isValid ? 'valid' : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
+    const interval: [number, number] = [chunkStart, chunkEnd];
 
-    this.deps.segmentStore.add({
-      segmentNumber: result.sequenceNumber,
-      mediaType,
-      sequenceNumber: result.sequenceNumber,
-      keyId: UNAVAILABLE_HASH,
-      hash,
-      status,
-      timestamp: Date.now(),
-      validationResults: {
-        overall: result.isValid,
-        // CML returns string[] — cast to the known union of valid codes
-        errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
+    this.storeAndIndexSegment(
+      {
+        segmentNumber: result.sequenceNumber,
+        mediaType,
+        sequenceNumber: result.sequenceNumber,
+        keyId: UNAVAILABLE_HASH,
+        hash,
+        status,
+        timestamp: Date.now(),
+        validationResults: {
+          overall: result.isValid,
+          // CML returns string[] — cast to the known union of valid codes
+          errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
+        },
+        manifest: result.manifest,
       },
-      manifest: result.manifest,
-    });
-
-    this.deps.timeIndex.insert(streamKey, [chunkStart, chunkEnd], {
-      type: segmentType,
-      manifest: result.manifest,
-      interval: [chunkStart, chunkEnd],
-      valid: result.isValid,
-      computedHash: result.bmffHashHex,
-      manifestHash: result.bmffHashHex,
-    });
+      streamKey,
+      interval,
+      { type: segmentType, manifest: result.manifest, interval, valid: result.isValid, computedHash: result.bmffHashHex, manifestHash: result.bmffHashHex },
+    );
 
     this.deps.eventBus.emit('segmentValidated', {
       segmentNumber: result.sequenceNumber,
@@ -300,6 +277,40 @@ export class SegmentRouter {
       mediaType,
       errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
     });
+  }
+
+  private buildVsiSegmentRecord(
+    vsiResult: VsiValidationResult,
+    mediaType: MediaType,
+    status: SegmentStatus,
+  ): Omit<SegmentRecord, 'arrivalIndex'> {
+    return {
+      segmentNumber: vsiResult.sequenceNumber,
+      mediaType,
+      sequenceNumber: vsiResult.sequenceNumber,
+      keyId: vsiResult.kidHex ?? UNKNOWN_KEY_ID,
+      hash: vsiResult.bmffHashHex ?? UNAVAILABLE_HASH,
+      status,
+      sequenceReason: vsiResult.sequenceReason ?? undefined,
+      timestamp: Date.now(),
+      validationResults: {
+        overall: vsiResult.overall,
+        // CML returns string[] — cast to the known union of valid codes
+        errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
+      },
+      manifest: this.deps.activeManifest.value,
+    };
+  }
+
+  private storeAndIndexSegment(
+    record: Omit<SegmentRecord, 'arrivalIndex'>,
+    streamKey: string,
+    interval: [number, number],
+    indexEntry: TimeIndexEntry,
+    forceNewArrival = false,
+  ): void {
+    this.deps.segmentStore.add(record, forceNewArrival);
+    this.deps.timeIndex.insert(streamKey, interval, indexEntry);
   }
 
   private recordMissingSegments(

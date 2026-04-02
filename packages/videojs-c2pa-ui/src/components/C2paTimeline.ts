@@ -79,8 +79,9 @@ export class C2paTimeline {
     let zIndex = this.segments.length;
 
     for (const segment of this.segments) {
-      const startTime = parseFloat(segment.dataset.startTime!);
-      const endTime = parseFloat(segment.dataset.endTime!);
+      const startTime = parseFloat(segment.dataset.startTime ?? '');
+      const endTime = parseFloat(segment.dataset.endTime ?? '');
+      if (isNaN(startTime) || isNaN(endTime)) continue;
       segment.style.width = `${computeSegmentProgress(currentTime, startTime, endTime, videoPlayer.duration())}%`;
       segment.style.zIndex = String(zIndex--);
 
@@ -125,8 +126,9 @@ export class C2paTimeline {
 
   private removeSegmentsBeyondSeekTime(seekTime: number): void {
     const active = this.segments.filter((segment) => {
-      const start = parseFloat(segment.dataset.startTime!);
-      const end = parseFloat(segment.dataset.endTime!);
+      const start = parseFloat(segment.dataset.startTime ?? '');
+      const end = parseFloat(segment.dataset.endTime ?? '');
+      if (isNaN(start) || isNaN(end)) return true;
       const isActive = seekTime >= end || (seekTime >= start && seekTime < end);
       if (!isActive) segment.remove();
       return isActive;
@@ -144,7 +146,8 @@ export class C2paTimeline {
     const lastSegment = this.segments[this.segments.length - 1];
     if (!lastSegment) return;
 
-    const lastEndTime = parseFloat(lastSegment.dataset.endTime!);
+    const lastEndTime = parseFloat(lastSegment.dataset.endTime ?? '');
+    if (isNaN(lastEndTime)) return;
 
     if (lastEndTime > seekTime) {
       lastSegment.dataset.endTime = String(seekTime);
@@ -208,10 +211,12 @@ export class C2paTimeline {
     return this.segments
       .filter((s) => s.dataset.verificationStatus === 'false')
       .map((s) => {
-        const start = parseFloat(s.dataset.startTime!);
-        const end = parseFloat(s.dataset.endTime!);
+        const start = parseFloat(s.dataset.startTime ?? '');
+        const end = parseFloat(s.dataset.endTime ?? '');
+        if (isNaN(start) || isNaN(end)) return null;
         return `${formatTime(start)}-${formatTime(end)}`;
-      });
+      })
+      .filter((r): r is string => r !== null);
   }
 }
 

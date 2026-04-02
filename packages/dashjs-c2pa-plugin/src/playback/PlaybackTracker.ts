@@ -24,6 +24,8 @@ type SegmentSearchResult = {
   vsi?: unknown;
 };
 
+type StoredSegment = { interval: [number, number] };
+
 function resolveDetailFromSegment(
   segment: SegmentSearchResult,
   activeManifest: unknown,
@@ -53,6 +55,12 @@ function resolveDetailFromSegment(
   };
 }
 
+/**
+ * Merges two nullable verification results using a pessimistic strategy:
+ * - false (invalid) always wins over any other value
+ * - true (valid) wins over undefined (unknown), unless current is already false
+ * - undefined propagates only when nothing definitive is known yet
+ */
 function combineVerificationResults(
   current: boolean | undefined,
   incoming: boolean | undefined,
@@ -140,10 +148,10 @@ export class PlaybackTracker {
     };
   }
 
-  private hasOverlappingIntervals(segments: unknown[]): boolean {
+  private hasOverlappingIntervals(segments: StoredSegment[]): boolean {
     if (segments.length <= 1) return false;
-    const first = (segments[0] as { interval: [number, number] }).interval;
-    return (segments as { interval: [number, number] }[]).some(
+    const first = segments[0].interval;
+    return segments.some(
       (s, i) => i > 0 && s.interval[0] === first[0] && s.interval[1] === first[1],
     );
   }

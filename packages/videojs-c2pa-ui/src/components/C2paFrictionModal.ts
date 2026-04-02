@@ -30,6 +30,7 @@ export function createFrictionModal(
   button.addEventListener('click', () => {
     overlay.style.display = 'none';
     onWatchAnyway();
+    // Intentional floating promise — play() rejection is handled by video.js error events
     void videoPlayer.play();
   });
 
