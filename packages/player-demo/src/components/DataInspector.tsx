@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 

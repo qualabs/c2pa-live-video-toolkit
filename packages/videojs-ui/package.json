@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live-toolkit/videojs-c2pa-ui",
+  "name": "@c2pa-live-toolkit/videojs-ui",
   "version": "1.0.0",
   "type": "module",
   "description": "Video.js UI components for C2PA validation: colored progress bar, content credentials menu, friction modal",

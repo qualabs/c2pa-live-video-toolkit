@@ -38,7 +38,7 @@ services:
   manifest-server:
     build:
       context: .
-      dockerfile: packages/stream-source/Dockerfile.manifest-server
+      dockerfile: packages/streamer/Dockerfile.manifest-server
     ports:
       - '3000:3000'
     environment:
@@ -56,8 +56,8 @@ services:
     working_dir: /host_stream
     volumes:
       - stream-data:/host_stream
-      - ./packages/stream-source/scripts:/host_stream/scripts:ro
-      - ./packages/stream-source/input:/host_stream/input:ro
+      - ./packages/streamer/scripts:/host_stream/scripts:ro
+      - ./packages/streamer/input:/host_stream/input:ro
     command: ["sh", "./scripts/start-all.sh"]
     restart: unless-stopped
 

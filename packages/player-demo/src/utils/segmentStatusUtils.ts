@@ -1,4 +1,4 @@
-import type { SegmentStatus } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import type { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
 
 export function statusIcon(status: SegmentStatus): string {
   switch (status) {

@@ -20,8 +20,8 @@ const INITIAL_MENU_ADJUST_DELAY_MS = 100;
  *
  * @example
  * ```ts
- * import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-c2pa-ui';
- * import '@c2pa-live-toolkit/videojs-c2pa-ui/styles';
+ * import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
+ * import '@c2pa-live-toolkit/videojs-ui/styles';
  *
  * const ui = C2paPlayerUI(videoJsPlayer, c2paController);
  *

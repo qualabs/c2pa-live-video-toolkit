@@ -18,10 +18,10 @@ A collection of open-source tools for embedding and verifying [C2PA](https://c2p
 
 | Service | Package | Port | Description |
 |---|---|---|---|
-| `streamer` | `stream-source` | — | FFmpeg generates live DASH segments |
+| `streamer` | `streamer` | — | FFmpeg generates live DASH segments |
 | `signer` | `signer` | 8080 | Signs each segment with C2PA provenance |
 | `origin-server` | `origin-server` | 8081 (→8082) | Serves signed segments as static files |
-| `manifest-server` | `stream-source` | 3000 | Serves dynamic DASH manifests with ad insertion |
+| `manifest-server` | `streamer` | 3000 | Serves dynamic DASH manifests with ad insertion |
 | `attack-proxy` | `attack-proxy` | 8083 | Proxies segments, optionally applying C2PA attacks |
 
 DASH players point to `http://localhost:8083/stream_with_ad.mpd`.
@@ -68,7 +68,7 @@ Supports two signing strategies via `USE_VSI_METHOD`:
 
 Minimal Express static file server. Serves signed segments from the shared volume. In production this role would be fulfilled by a CDN.
 
-### [`@c2pa-live/stream-source`](packages/stream-source)
+### [`@c2pa-live/streamer`](packages/streamer)
 
 FFmpeg streaming scripts and Python ad-insertion manifest server. Generates the raw DASH stream that the signer consumes.
 
@@ -85,11 +85,11 @@ DASH proxy that can simulate C2PA validation failures for testing and demonstrat
 
 See [packages/attack-proxy/README.md](packages/attack-proxy/README.md) for the full API.
 
-### [`@c2pa-live-toolkit/dashjs-c2pa-plugin`](packages/dashjs-c2pa-plugin)
+### [`@c2pa-live-toolkit/dashjs-plugin`](packages/dashjs-plugin)
 
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded, supporting both ManifestBox (§19.3) and VSI (§19.4) methods.
 
-### [`@c2pa-live-toolkit/videojs-c2pa-ui`](packages/videojs-c2pa-ui)
+### [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui)
 
 Video.js UI components for C2PA validation: colored progress bar showing segment status, content credentials menu, and friction modal for invalid streams.
 

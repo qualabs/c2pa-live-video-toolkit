@@ -1,11 +1,11 @@
-# @c2pa-live-toolkit/dashjs-c2pa-plugin
+# @c2pa-live-toolkit/dashjs-plugin
 
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded using the [Common Media Library](https://github.com/streaming-video-technology-alliance/common-media-library) C2PA validator.
 
 ## Installation
 
 ```bash
-npm install @c2pa-live-toolkit/dashjs-c2pa-plugin
+npm install @c2pa-live-toolkit/dashjs-plugin
 ```
 
 dash.js must be installed separately as a peer dependency:
@@ -20,7 +20,7 @@ npm install dashjs
 
 ```ts
 import dashjs from 'dashjs';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
 
 const player = dashjs.MediaPlayer().create();
 const c2pa = attachC2pa(player);
@@ -166,7 +166,7 @@ const c2paPlayer2 = attachC2pa(player2);
 ## Error Codes
 
 ```ts
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
 
 c2pa.on('segmentValidated', (e) => {
   for (const code of e.errorCodes ?? []) {

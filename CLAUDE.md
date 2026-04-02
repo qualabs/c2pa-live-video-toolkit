@@ -18,12 +18,12 @@ npm run format               # Format all packages
 
 # Single package
 npx turbo build --filter=@c2pa-live/signer
-npx turbo build --filter=@c2pa-live-toolkit/dashjs-c2pa-plugin
+npx turbo build --filter=@c2pa-live-toolkit/dashjs-plugin
 
-# Tests (only dashjs-c2pa-plugin and videojs-c2pa-ui have tests)
-cd packages/dashjs-c2pa-plugin && npm run test       # Vitest, run once
-cd packages/dashjs-c2pa-plugin && npm run test:watch  # Vitest, watch mode
-cd packages/videojs-c2pa-ui && npm run test
+# Tests (only dashjs-plugin and videojs-ui have tests)
+cd packages/dashjs-plugin && npm run test       # Vitest, run once
+cd packages/dashjs-plugin && npm run test:watch  # Vitest, watch mode
+cd packages/videojs-ui && npm run test
 
 # Docker — full pipeline
 docker compose up --build
@@ -49,15 +49,15 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 |---|---|---|
 | `signer` | `@c2pa-live/signer` | Polls MPD, signs segments with c2patool, writes output |
 | `origin-server` | `@c2pa-live/origin-server` | Express static file server for signed segments |
-| `stream-source` | `@c2pa-live/stream-source` | FFmpeg scripts + Python manifest server (no build step) |
+| `streamer` | `@c2pa-live/streamer` | FFmpeg scripts + Python manifest server (no build step) |
 | `attack-proxy` | `@c2pa-live/attack-proxy` | DASH proxy with 4 attack types: gap, out-of-order, replay, mdat-swap |
-| `dashjs-c2pa-plugin` | `@c2pa-live-toolkit/dashjs-c2pa-plugin` | Framework-agnostic dash.js plugin for real-time C2PA validation |
-| `videojs-c2pa-ui` | `@c2pa-live-toolkit/videojs-c2pa-ui` | Video.js UI components (progress bar, credentials menu, friction modal) |
+| `dashjs-plugin` | `@c2pa-live-toolkit/dashjs-plugin` | Framework-agnostic dash.js plugin for real-time C2PA validation |
+| `videojs-ui` | `@c2pa-live-toolkit/videojs-ui` | Video.js UI components (progress bar, credentials menu, friction modal) |
 | `player-demo` | `@c2pa-live-toolkit/player-demo` | React/Vite demo app (private), two modes: dashjs-native and videojs-enhanced |
 
 ### Key dependency
 
-`dashjs-c2pa-plugin` depends on `@svta/cml-c2pa` via a **local file reference** to `../../../common-media-library/libs/c2pa` (outside this repo). This is the SVTA Common Media Library C2PA validator.
+`dashjs-plugin` depends on `@svta/cml-c2pa` via a **local file reference** to `../../../common-media-library/libs/c2pa` (outside this repo). This is the SVTA Common Media Library C2PA validator.
 
 ### Signing methods
 

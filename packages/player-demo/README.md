@@ -2,8 +2,8 @@
 
 Reference React/Vite demo app showcasing real-time C2PA validation in two modes:
 
-- **video.js enhanced** — Full UI with colored progress bar, content credentials menu, and friction modal (`videojs-c2pa-ui` + `dashjs-c2pa-plugin`)
-- **dash.js native** — Validation-only mode using `dashjs-c2pa-plugin` with a custom data inspector
+- **video.js enhanced** — Full UI with colored progress bar, content credentials menu, and friction modal (`videojs-ui` + `dashjs-plugin`)
+- **dash.js native** — Validation-only mode using `dashjs-plugin` with a custom data inspector
 
 ## Prerequisites
 

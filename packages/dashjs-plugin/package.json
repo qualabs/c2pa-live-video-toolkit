@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live-toolkit/dashjs-c2pa-plugin",
+  "name": "@c2pa-live-toolkit/dashjs-plugin",
   "version": "1.0.0",
   "type": "module",
   "description": "Framework-agnostic dash.js plugin for real-time C2PA segment validation",

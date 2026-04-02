@@ -12,7 +12,7 @@ export const DemoModeSwitcher: React.FC = () => (
       <ModeIcon>🎬</ModeIcon>
       <ModeInfo>
         <ModeName>video.js Enhanced</ModeName>
-        <ModeDesc>Full C2PA UI overlays via videojs-c2pa-ui</ModeDesc>
+        <ModeDesc>Full C2PA UI overlays via videojs-ui</ModeDesc>
       </ModeInfo>
     </ModeLink>
     <Divider />

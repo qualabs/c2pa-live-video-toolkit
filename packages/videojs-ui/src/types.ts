@@ -43,7 +43,7 @@ export interface VideoJsPlayer {
 
 /**
  * Minimal PlaybackStatus shape consumed from C2paController events.
- * Defined locally to avoid a hard dependency on dashjs-c2pa-plugin.
+ * Defined locally to avoid a hard dependency on dashjs-plugin.
  */
 export type MediaType = 'video' | 'audio';
 

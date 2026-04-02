@@ -1,11 +1,11 @@
-# @c2pa-live-toolkit/videojs-c2pa-ui
+# @c2pa-live-toolkit/videojs-ui
 
 Video.js UI components for real-time C2PA validation: colored progress bar showing per-segment status, content credentials menu, and friction modal for invalid streams.
 
 ## Installation
 
 ```bash
-npm install @c2pa-live-toolkit/videojs-c2pa-ui
+npm install @c2pa-live-toolkit/videojs-ui
 ```
 
 video.js must be installed separately as a peer dependency:
@@ -17,8 +17,8 @@ npm install video.js
 ## Quick Start
 
 ```ts
-import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-c2pa-ui';
-import '@c2pa-live-toolkit/videojs-c2pa-ui/styles';
+import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
+import '@c2pa-live-toolkit/videojs-ui/styles';
 
 // Assumes `videoPlayer` is a video.js Player and `c2paController` comes from dashjs-c2pa-plugin
 const ui = C2paPlayerUI(videoPlayer, c2paController);
@@ -67,8 +67,8 @@ type C2paPlayerInstance = {
 ## Additional Exports
 
 ```ts
-import { providerInfoFromSocialUrl } from '@c2pa-live-toolkit/videojs-c2pa-ui';
-import { formatTime } from '@c2pa-live-toolkit/videojs-c2pa-ui';
+import { providerInfoFromSocialUrl } from '@c2pa-live-toolkit/videojs-ui';
+import { formatTime } from '@c2pa-live-toolkit/videojs-ui';
 ```
 
 | Export | Description |
@@ -81,5 +81,5 @@ import { formatTime } from '@c2pa-live-toolkit/videojs-c2pa-ui';
 Import the CSS file to apply the default component styles:
 
 ```ts
-import '@c2pa-live-toolkit/videojs-c2pa-ui/styles';
+import '@c2pa-live-toolkit/videojs-ui/styles';
 ```

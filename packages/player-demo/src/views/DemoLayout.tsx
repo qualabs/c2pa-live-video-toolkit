@@ -5,7 +5,7 @@ import { DataInspector } from '../components/DataInspector.js';
 import { StreamControls } from '../components/StreamControls.js';
 import { ManifestModal } from '../components/ManifestModal.js';
 import type { C2paPlayerState } from '../hooks/useC2paPlayer.js';
-import type { SegmentRecord } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import type { SegmentRecord } from '@c2pa-live-toolkit/dashjs-plugin';
 import { DEFAULT_STREAM_URL } from '../constants.js';
 
 interface DemoLayoutProps {

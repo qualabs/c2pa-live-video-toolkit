@@ -1,0 +1,7 @@
+{
+  "name": "@c2pa-live/streamer",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'No build step for streamer'"
+  }
+}

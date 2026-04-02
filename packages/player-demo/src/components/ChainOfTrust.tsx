@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import type {
   SegmentRecord,
   InitProcessedEvent,
-} from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+} from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {

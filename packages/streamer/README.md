@@ -1,4 +1,4 @@
-# @c2pa-live/stream-source
+# @c2pa-live/streamer
 
 FFmpeg-based live DASH stream generator with ad insertion support. Produces the input stream that the signer consumes.
 
