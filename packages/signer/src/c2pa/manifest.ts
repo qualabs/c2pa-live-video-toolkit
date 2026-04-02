@@ -81,7 +81,7 @@ async function loadManifestContent(ref?: string, useVsiMethod = false): Promise<
 }
 
 export async function loadC2paManifest(targetPath: string): Promise<void> {
-  const customUrl = config.customC2paManifest;
+  const customUrl = config.remoteC2paManifest;
   const useVsiMethod = config.useVsiMethod;
 
   let manifestJson: C2paManifest;

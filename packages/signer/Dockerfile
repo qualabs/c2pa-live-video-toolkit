@@ -33,9 +33,6 @@ COPY --from=build /app/packages/signer/package*.json /app/
 RUN npm install --omit=dev
 
 COPY packages/signer/bin/c2patool /usr/local/bin/c2patool
-COPY packages/signer/certs /app/certs
-COPY packages/signer/segment_manifest.json /app/segment_manifest.json
-COPY packages/signer/segment_manifest_vsi.json /app/segment_manifest_vsi.json
 RUN chmod +x /usr/local/bin/c2patool
 
 EXPOSE 8080
