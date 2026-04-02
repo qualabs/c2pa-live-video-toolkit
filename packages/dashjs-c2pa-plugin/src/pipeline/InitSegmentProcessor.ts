@@ -20,10 +20,6 @@ export class InitSegmentProcessor {
     try {
       const result = await validateC2paInitSegment(bytes);
 
-      if (result.manifestId) {
-        this.sessionKeyStore.setManifestId(new TextEncoder().encode(result.manifestId));
-      }
-
       for (const key of result.sessionKeys) {
         this.sessionKeyStore.add(key);
       }

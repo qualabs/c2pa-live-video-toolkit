@@ -18,15 +18,6 @@ describe('SequenceTracker', () => {
     expect(tracker.getState('video-default')).toBe(state);
   });
 
-  it('clearStream removes only the specified stream', () => {
-    const tracker = new SequenceTracker();
-    tracker.setState('video-default', makeState(1));
-    tracker.setState('audio-default', makeState(2));
-    tracker.clearStream('video-default');
-    expect(tracker.getState('video-default')).toBeUndefined();
-    expect(tracker.getState('audio-default')).toBeDefined();
-  });
-
   it('clearAll removes all streams', () => {
     const tracker = new SequenceTracker();
     tracker.setState('video-default', makeState(1));

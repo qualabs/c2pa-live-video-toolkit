@@ -9,10 +9,6 @@ interface DataInspectorProps {
   segment: SegmentRecord | null;
 }
 
-export const ALG_NAMES: Record<number, string> = {
-  [-7]: 'ES256', [-35]: 'ES384', [-36]: 'ES512', [-8]: 'EdDSA',
-};
-
 type StatusInfo = {
   title: string;
   description: string;

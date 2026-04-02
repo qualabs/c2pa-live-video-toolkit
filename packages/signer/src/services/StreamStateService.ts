@@ -67,14 +67,6 @@ export class StreamStateService {
     this.repository.setMpdPollingInterval(interval);
   }
 
-  getPreviousManifestId(repId: string): string | undefined {
-    return this.repository.getPreviousManifestId(repId);
-  }
-
-  storePreviousManifestId(repId: string, manifestId: string): void {
-    this.repository.setPreviousManifestId(repId, manifestId);
-  }
-
   getPreviousSignedSegmentPath(repId: string): string | undefined {
     return this.repository.getPreviousSignedSegmentPath(repId);
   }

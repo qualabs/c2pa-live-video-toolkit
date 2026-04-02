@@ -206,7 +206,7 @@ export class SegmentRouter {
       record,
       streamKey,
       interval,
-      { type: segmentType, manifest: null, interval, valid: vsiResult.overall, computedHash: vsiResult.bmffHashHex, manifestHash: vsiResult.bmffHashHex },
+      { type: segmentType, manifest: null, interval, valid: vsiResult.overall },
       forceNewArrival,
     );
 
@@ -266,7 +266,7 @@ export class SegmentRouter {
       },
       streamKey,
       interval,
-      { type: segmentType, manifest: result.manifest, interval, valid: result.isValid, computedHash: result.bmffHashHex, manifestHash: result.bmffHashHex },
+      { type: segmentType, manifest: result.manifest, interval, valid: result.isValid },
     );
 
     this.deps.eventBus.emit('segmentValidated', {

@@ -1,5 +1,5 @@
 import type { SegmentRepository } from '../data/repository.js';
-import { Job, SegmentData } from '../data/store.js';
+import { Job } from '../data/store.js';
 import { REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
 
 export class SegmentService {
@@ -107,18 +107,6 @@ export class SegmentService {
 
   markSegmentAsProcessed(repId: string, fileKey: string): void {
     this.repository.addToProcessedList(repId, fileKey);
-  }
-
-  storeSegmentData(repId: string, segmentId: string, data: SegmentData): void {
-    this.repository.setSegmentData(repId, segmentId, data);
-  }
-
-  getPreviousSegmentHashes(repId: string, segmentId: string): Partial<SegmentData> {
-    const segmentNumber = parseInt(segmentId.slice(-1), 10);
-    if (segmentNumber === 0) return {};
-
-    const previousSegmentId = segmentId.replace(/.$/, (segmentNumber - 1).toString());
-    return this.repository.getSegmentData(repId, previousSegmentId) || {};
   }
 
   addToGlobalWaitingList(fileKey: string): void {

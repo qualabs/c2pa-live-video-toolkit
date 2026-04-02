@@ -11,10 +11,6 @@ export class SequenceTracker {
     this.streamStates.set(streamKey, state);
   }
 
-  clearStream(streamKey: string): void {
-    this.streamStates.delete(streamKey);
-  }
-
   clearAll(): void {
     this.streamStates.clear();
   }

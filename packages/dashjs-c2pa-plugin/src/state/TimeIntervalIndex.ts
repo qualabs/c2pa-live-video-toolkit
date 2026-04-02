@@ -11,8 +11,6 @@ type SegmentTimeEntry = {
   manifest: unknown;
   interval: TimeInterval;
   valid: boolean;
-  computedHash: string | null;
-  manifestHash: string | null;
 };
 
 type IntervalTreeApi = {

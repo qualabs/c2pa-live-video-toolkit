@@ -32,12 +32,3 @@ export function extractSegmentInfo(
   return null;
 }
 
-export function isInitSegment(fileKey: string, initPattern: string): boolean {
-  const regexPattern = escapePatternSpecialChars(initPattern).replace(
-    /\$RepresentationID\$/g,
-    '[^\\/\\.]+',
-  );
-
-  const regex = new RegExp(`^${regexPattern}$`);
-  return regex.test(fileKey);
-}

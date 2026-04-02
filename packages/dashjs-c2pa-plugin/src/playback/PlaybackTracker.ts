@@ -72,7 +72,6 @@ function combineVerificationResults(
 
 export class PlaybackTracker {
   private readonly deps: PlaybackTrackerDeps;
-  private lastPlaybackTime = 0;
 
   constructor(deps: PlaybackTrackerDeps) {
     this.deps = deps;
@@ -81,15 +80,10 @@ export class PlaybackTracker {
   handleTimeUpdate(currentTime: number): void {
     const status = this.buildPlaybackStatus(currentTime);
     this.deps.eventBus.emit('playbackStatus', status);
-    this.lastPlaybackTime = currentTime;
   }
 
   queryStatusAtTime(time: number): PlaybackStatus {
     return this.buildPlaybackStatus(time);
-  }
-
-  getLastPlaybackTime(): number {
-    return this.lastPlaybackTime;
   }
 
   private buildPlaybackStatus(currentTime: number): PlaybackStatus {

@@ -2,7 +2,6 @@ import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 
 export class SessionKeyStore {
   private readonly keys = new Map<string, ValidatedSessionKey>();
-  private manifestId: Uint8Array | null = null;
 
   add(key: ValidatedSessionKey): void {
     this.keys.set(key.kid, key);
@@ -20,16 +19,7 @@ export class SessionKeyStore {
     return this.keys.size > 0;
   }
 
-  setManifestId(id: Uint8Array): void {
-    this.manifestId = id;
-  }
-
-  getManifestId(): Uint8Array | null {
-    return this.manifestId;
-  }
-
   clear(): void {
     this.keys.clear();
-    this.manifestId = null;
   }
 }

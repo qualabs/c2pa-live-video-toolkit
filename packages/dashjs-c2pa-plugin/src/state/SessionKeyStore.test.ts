@@ -37,23 +37,10 @@ describe('SessionKeyStore', () => {
     expect(store.getAll()).toEqual([k1, k2]);
   });
 
-  it('getManifestId returns null before any assignment', () => {
-    expect(new SessionKeyStore().getManifestId()).toBeNull();
-  });
-
-  it('stores and retrieves the manifest id', () => {
-    const store = new SessionKeyStore();
-    const id = new Uint8Array([1, 2, 3]);
-    store.setManifestId(id);
-    expect(store.getManifestId()).toBe(id);
-  });
-
-  it('clear removes all keys and the manifest id', () => {
+  it('clear removes all keys', () => {
     const store = new SessionKeyStore();
     store.add(makeKey('kid-1'));
-    store.setManifestId(new Uint8Array([1]));
     store.clear();
     expect(store.hasKeys()).toBe(false);
-    expect(store.getManifestId()).toBeNull();
   });
 });
