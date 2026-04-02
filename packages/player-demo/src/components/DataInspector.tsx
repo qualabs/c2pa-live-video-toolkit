@@ -2,48 +2,16 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
 import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import { convertBuffersToHex } from '../utils/bufferUtils.js';
+import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface DataInspectorProps {
   segment: SegmentRecord | null;
 }
 
-const ALG_NAMES: Record<number, string> = {
+export const ALG_NAMES: Record<number, string> = {
   [-7]: 'ES256', [-35]: 'ES384', [-36]: 'ES512', [-8]: 'EdDSA',
 };
-
-function isBufferLike(obj: unknown): boolean {
-  if (!obj || typeof obj !== 'object') return false;
-  if (obj instanceof Uint8Array) return true;
-  const keys = Object.keys(obj as object);
-  if (keys.length === 0) return false;
-  return (
-    keys.every((k) => /^\d+$/.test(k)) &&
-    keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'number')
-  );
-}
-
-function bytesToHex(bytes: unknown): string {
-  if (!bytes) return '';
-  const arr =
-    bytes instanceof Uint8Array
-      ? bytes
-      : new Uint8Array(Object.values(bytes as Record<string, number>));
-  return '0x' + Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function convertBuffersToHex(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return obj;
-  if (isBufferLike(obj)) return bytesToHex(obj);
-  if (Array.isArray(obj)) return obj.map(convertBuffersToHex);
-  if (typeof obj === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(obj as object)) {
-      result[key] = convertBuffersToHex((obj as Record<string, unknown>)[key]);
-    }
-    return result;
-  }
-  return obj;
-}
 
 type StatusInfo = {
   title: string;
@@ -53,80 +21,67 @@ type StatusInfo = {
   meaning: string;
 };
 
-function buildStatusInfo(status: SegmentStatus, errorCodes: string[]): StatusInfo {
-  switch (status) {
-    case 'valid':
-      return {
-        title: 'Valid Segment',
-        description: 'This segment passed all C2PA validation checks.',
-        details: [
-          '✓ Cryptographic signature is valid',
-          '✓ Content hash matches the signed hash',
-          '✓ Sequence number is correct',
-          '✓ Segment has not been tampered with',
-        ],
-        color: '#4ade80',
-        meaning: 'The video segment is authentic and has not been modified since it was signed.',
-      };
-    case 'invalid': {
-      const reasons = errorCodes.map((code) => `✗ ${ERROR_CODE_MESSAGES[code] ?? code}`);
-      return {
-        title: 'Invalid Segment',
-        description: 'This segment failed one or more C2PA validation checks.',
-        details: reasons.length > 0 ? reasons : ['✗ One or more validation checks failed'],
-        color: '#ef4444',
-        meaning: 'The segment failed cryptographic validation. The content may have been tampered with.',
-      };
-    }
-    case 'replayed':
-      return {
-        title: 'Replayed Segment',
-        description:
-          'A complete, valid segment was re-injected verbatim. Its sequenceNumber is outside the acceptable live window.',
-        details: [
-          'Signature and hash succeed — failure occurs via temporal monotonicity',
-          'sequenceNumber < minSequenceNumber → livevideo.segment.invalid',
-          'Not a gap attack: no stall, seamless playback',
-        ],
-        color: '#f97316',
-        meaning: 'Authenticity does not imply freshness. Replay is detected via sequence number monotonicity.',
-      };
-    case 'reordered':
-      return {
-        title: 'Reordered Segment',
-        description: 'This segment was delivered out of sequence.',
-        details: ['↩ Segment content swapped with a neighboring segment', '✗ BMFF hash mismatch detected'],
-        color: '#f59e0b',
-        meaning: 'Could be a network condition or an intentional reordering attack.',
-      };
-    case 'missing':
-      return {
-        title: 'Missing Segment Detected',
-        description: 'This segment was dropped from the live stream.',
-        details: ['⊘ Segment not delivered (gap attack or network loss)', '⚠ Gap in sequence detected'],
-        color: '#eab308',
-        meaning: 'One or more segments were dropped. Could indicate a gap attack or network failure.',
-      };
-    case 'warning':
-      return {
-        title: 'Warning',
-        description: 'Segment has potential issues but may still be playable.',
-        details: ['⚠ Some validation checks could not be completed'],
-        color: '#fbbf24',
-        meaning: 'Segment could not be fully verified. May be normal for certain content types.',
-      };
-  }
-}
+const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, 'invalid'>, StatusInfo> = {
+  valid: {
+    title: 'Valid Segment',
+    description: 'This segment passed all C2PA validation checks.',
+    details: [
+      '✓ Cryptographic signature is valid',
+      '✓ Content hash matches the signed hash',
+      '✓ Sequence number is correct',
+      '✓ Segment has not been tampered with',
+    ],
+    color: '#4ade80',
+    meaning: 'The video segment is authentic and has not been modified since it was signed.',
+  },
+  replayed: {
+    title: 'Replayed Segment',
+    description:
+      'A complete, valid segment was re-injected verbatim. Its sequenceNumber is outside the acceptable live window.',
+    details: [
+      'Signature and hash succeed — failure occurs via temporal monotonicity',
+      'sequenceNumber < minSequenceNumber → livevideo.segment.invalid',
+      'Not a gap attack: no stall, seamless playback',
+    ],
+    color: '#f97316',
+    meaning: 'Authenticity does not imply freshness. Replay is detected via sequence number monotonicity.',
+  },
+  reordered: {
+    title: 'Reordered Segment',
+    description: 'This segment was delivered out of sequence.',
+    details: ['↕ Segment content swapped with a neighboring segment', '✗ BMFF hash mismatch detected'],
+    color: '#f59e0b',
+    meaning: 'Could be a network condition or an intentional reordering attack.',
+  },
+  missing: {
+    title: 'Missing Segment Detected',
+    description: 'This segment was dropped from the live stream.',
+    details: ['⊘ Segment not delivered (gap attack or network loss)', '⚠ Gap in sequence detected'],
+    color: '#eab308',
+    meaning: 'One or more segments were dropped. Could indicate a gap attack or network failure.',
+  },
+  warning: {
+    title: 'Warning',
+    description: 'Segment has potential issues but may still be playable.',
+    details: ['⚠ Some validation checks could not be completed'],
+    color: '#fbbf24',
+    meaning: 'Segment could not be fully verified. May be normal for certain content types.',
+  },
+};
 
-function statusIcon(status: SegmentStatus): string {
-  switch (status) {
-    case 'valid':     return '✓';
-    case 'replayed':  return '♻';
-    case 'reordered': return '↩';
-    case 'missing':   return '⊘';
-    case 'invalid':   return '✗';
-    case 'warning':   return '⚠';
+function buildStatusInfo(status: SegmentStatus, errorCodes: string[]): StatusInfo {
+  if (status === 'invalid') {
+    const errorMessages = ERROR_CODE_MESSAGES as Record<string, string | undefined>;
+    const reasons = errorCodes.map((code) => `✗ ${errorMessages[code] ?? code}`);
+    return {
+      title: 'Invalid Segment',
+      description: 'This segment failed one or more C2PA validation checks.',
+      details: reasons.length > 0 ? reasons : ['✗ One or more validation checks failed'],
+      color: '#ef4444',
+      meaning: 'The segment failed cryptographic validation. The content may have been tampered with.',
+    };
   }
+  return STATUS_INFO_MAP[status];
 }
 
 export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
@@ -162,7 +117,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
         <PreviewCard onClick={() => setShowModal(true)}>
           <PreviewHeader>
             <PreviewTitle>Segment #{segment.segmentNumber}</PreviewTitle>
-            <StatusBadge $status={segment.status}>
+            <StatusBadge $category={statusCategory(segment.status)}>
               {statusIcon(segment.status)} {segment.status.toUpperCase()}
             </StatusBadge>
           </PreviewHeader>
@@ -214,9 +169,6 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
   );
 };
 
-// Algmap export for potential reuse
-export { ALG_NAMES };
-
 const Container = styled.div`display: flex; flex-direction: column; gap: 1rem; width: 100%;`;
 const Title = styled.h2`font-size: 1.25rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
 const EmptyState = styled.div`
@@ -230,9 +182,9 @@ const PreviewCard = styled.div`
 `;
 const PreviewHeader = styled.div`display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;`;
 const PreviewTitle = styled.h3`font-size: 1rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
-const StatusBadge = styled.span<{ $status: SegmentStatus }>`
+const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' }>`
   font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px;
-  color: ${(p) => p.$status === 'valid' ? '#4ade80' : p.$status === 'invalid' || p.$status === 'replayed' || p.$status === 'reordered' ? '#ef4444' : '#fbbf24'};
+  color: ${(p) => p.$category === 'valid' ? '#4ade80' : p.$category === 'failed' ? '#ef4444' : '#fbbf24'};
 `;
 const PreviewInfo = styled.div`display: flex; flex-direction: column; gap: 0.5rem;`;
 const InfoRow = styled.div`display: flex; justify-content: space-between; align-items: center;`;

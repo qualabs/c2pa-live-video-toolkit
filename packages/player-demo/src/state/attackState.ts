@@ -11,21 +11,22 @@ const DEFAULT_SESSION_ID = 'default';
 /** Per-tab session ID sent via X-Session-Id header. Returns 'default' when reset. */
 export function getProxySessionId(): string {
   let id: string | null = null;
-  try { id = sessionStorage.getItem(SESSION_STORAGE_KEY); } catch { /* ignore */ }
+  // sessionStorage can throw in private browsing mode — safe to ignore
+  try { id = sessionStorage.getItem(SESSION_STORAGE_KEY); } catch { /* unavailable in private mode */ }
   if (id) return id;
   const newId = crypto.randomUUID();
-  try { sessionStorage.setItem(SESSION_STORAGE_KEY, newId); } catch { /* ignore */ }
+  try { sessionStorage.setItem(SESSION_STORAGE_KEY, newId); } catch { /* unavailable in private mode */ }
   return newId;
 }
 
 /** Reset session to default (e.g. after Simulate Ad Break). */
 export function resetProxySession(): void {
-  try { sessionStorage.setItem(SESSION_STORAGE_KEY, DEFAULT_SESSION_ID); } catch { /* ignore */ }
+  try { sessionStorage.setItem(SESSION_STORAGE_KEY, DEFAULT_SESSION_ID); } catch { /* unavailable in private mode */ }
 }
 
 function ensureUniqueSession(): void {
   if (getProxySessionId() === DEFAULT_SESSION_ID) {
-    try { sessionStorage.setItem(SESSION_STORAGE_KEY, crypto.randomUUID()); } catch { /* ignore */ }
+    try { sessionStorage.setItem(SESSION_STORAGE_KEY, crypto.randomUUID()); } catch { /* unavailable in private mode */ }
   }
 }
 
@@ -42,7 +43,8 @@ async function post(path: string, body?: unknown): Promise<boolean> {
       body: body ? JSON.stringify(body) : undefined,
     });
     return res.ok;
-  } catch {
+  } catch (error) {
+    console.warn('[attackState] POST request failed:', error);
     return false;
   }
 }
@@ -52,7 +54,8 @@ async function get<T>(path: string): Promise<T | null> {
     const res = await fetch(`${PROXY_BASE}${path}`, { headers: sessionHeaders() });
     if (!res.ok) return null;
     return (await res.json()) as T;
-  } catch {
+  } catch (error) {
+    console.warn('[attackState] GET request failed:', error);
     return null;
   }
 }

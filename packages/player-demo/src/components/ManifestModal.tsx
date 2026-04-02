@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
 import type { InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import { convertBuffersToHex } from '../utils/bufferUtils.js';
 
 interface ManifestModalProps {
   isOpen: boolean;
@@ -10,42 +11,11 @@ interface ManifestModalProps {
   onClose: () => void;
 }
 
-function isBufferLike(obj: unknown): boolean {
-  if (!obj || typeof obj !== 'object') return false;
-  if (obj instanceof Uint8Array) return true;
-  const keys = Object.keys(obj as object);
-  if (keys.length === 0) return false;
-  return (
-    keys.every((k) => /^\d+$/.test(k)) &&
-    keys.every((k) => typeof (obj as Record<string, unknown>)[k] === 'number')
-  );
-}
-
-function bytesToHex(bytes: unknown): string {
-  if (!bytes) return '';
-  const arr =
-    bytes instanceof Uint8Array
-      ? bytes
-      : new Uint8Array(Object.values(bytes as Record<string, number>));
-  return '0x' + Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function convertBuffersToHex(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return obj;
-  if (isBufferLike(obj)) return bytesToHex(obj);
-  if (Array.isArray(obj)) return obj.map(convertBuffersToHex);
-  if (typeof obj === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(obj as object)) {
-      result[key] = convertBuffersToHex((obj as Record<string, unknown>)[key]);
-    }
-    return result;
-  }
-  return obj;
-}
+const SESSION_KEYS_LABEL = '"label": "c2pa.session-keys"';
 
 /**
  * Renders the manifest JSON with the c2pa.session-keys assertion highlighted in green.
+ * Uses a stateful line scan to track when we enter and exit the assertion block.
  */
 function renderManifestWithHighlight(manifest: unknown): React.ReactNode[] {
   const withHex = convertBuffersToHex(manifest) as Record<string, unknown>;
@@ -61,7 +31,7 @@ function renderManifestWithHighlight(manifest: unknown): React.ReactNode[] {
   let startLine = -1;
 
   return lines.map((line, index) => {
-    if (line.includes('"label": "c2pa.session-keys"')) {
+    if (line.includes(SESSION_KEYS_LABEL)) {
       inSessionKeys = true;
       startLine = index;
       braceCount = 0;
@@ -124,7 +94,7 @@ export const ManifestModal: React.FC<ManifestModalProps> = ({
                 {errorCodes.map((code, i) => (
                   <ErrorItem key={i}>
                     <ErrorCode>{code}</ErrorCode>
-                    <span> — {ERROR_CODE_MESSAGES[code] ?? code}</span>
+                    <span> — {(ERROR_CODE_MESSAGES as Record<string, string | undefined>)[code] ?? code}</span>
                   </ErrorItem>
                 ))}
               </ErrorsBar>

@@ -2,9 +2,9 @@ import React from 'react';
 import styled from 'styled-components';
 import type {
   SegmentRecord,
-  SegmentStatus,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
   segments: SegmentRecord[];
@@ -13,40 +13,12 @@ interface ChainOfTrustProps {
   onSegmentSelect: (segment: SegmentRecord) => void;
 }
 
-function statusIcon(status: SegmentStatus): string {
-  switch (status) {
-    case 'valid':     return '✓';
-    case 'replayed':  return '♻';
-    case 'reordered': return '↕';
-    case 'missing':   return '⊘';
-    case 'invalid':   return '✗';
-    case 'warning':   return '⚠';
-  }
-}
+// Height of the sticky <thead> row — InitRow sticks just below it
+const HEADER_ROW_HEIGHT = '37px';
+const TABLE_MAX_HEIGHT = '340px';
+const KEY_ID_TRUNCATE_LENGTH = 8;
 
-function statusText(status: SegmentStatus): string {
-  switch (status) {
-    case 'valid':     return 'OK';
-    case 'replayed':  return 'Replayed';
-    case 'reordered': return 'Reordered';
-    case 'missing':   return 'Missing Segment Detected';
-    case 'invalid':   return 'NOK';
-    case 'warning':   return 'Warning';
-  }
-}
-
-function statusCategory(status: SegmentStatus): 'valid' | 'failed' | 'warning' {
-  switch (status) {
-    case 'valid':     return 'valid';
-    case 'replayed':
-    case 'reordered':
-    case 'invalid':   return 'failed';
-    case 'missing':
-    case 'warning':   return 'warning';
-  }
-}
-
-function truncate(value: string | undefined | null, length = 8): string {
+function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LENGTH): string {
   if (!value) return '—';
   return value.substring(0, length) + '...';
 }
@@ -99,7 +71,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             </tr>
           </thead>
           <tbody>
-            {/* Init segment — sticky at top */}
+            {/* Init segment — sticky just below the header row */}
             <InitRow>
               <Td>INIT</Td>
               <Td>init</Td>
@@ -202,7 +174,7 @@ const TableWrapper = styled.div`
   border: 1px solid #4a4a4a;
   border-radius: 8px;
   overflow: hidden;
-  max-height: 340px;
+  max-height: ${TABLE_MAX_HEIGHT};
   overflow-y: auto;
 
   &::-webkit-scrollbar { width: 8px; }
@@ -244,7 +216,7 @@ const InitRow = styled.tr`
   background: #2d2d2d;
   box-shadow: inset 3px 0 0 #4ade80;
   position: sticky;
-  top: 37px;
+  top: ${HEADER_ROW_HEIGHT};
   z-index: 5;
   border-bottom: 2px solid #4ade80;
 

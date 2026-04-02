@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import dashjs from 'dashjs';
 import { attachC2pa } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
 import type { C2paController, SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
-import { getProxySessionId, PROXY_BASE } from '../state/attackState.js';
-import { DEFAULT_STREAM_URL } from '../constants.js';
-
-function resolveStreamUrl(videoSrc?: string): string {
-  if (videoSrc) return videoSrc;
-  const urlParam = new URLSearchParams(window.location.search).get('url');
-  return urlParam ?? DEFAULT_STREAM_URL;
-}
+import { resolveStreamUrl, buildRequestModifier, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
 export type C2paPlayerState = {
   segments: SegmentRecord[];
@@ -50,33 +43,15 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     const dashPlayer = dashjs.MediaPlayer().create();
     dashPlayerRef.current = dashPlayer;
 
-    // Attach X-Session-Id header to proxy requests so attacks only affect this tab
-    dashPlayer.extend('RequestModifier', function () {
-      return {
-        modifyRequestURL: (url: string) => url,
-        modifyRequestHeader: (
-          request: { setRequestHeader?: (h: string, v: string) => void },
-          urlInfo?: { url?: string },
-        ) => {
-          if (
-            request.setRequestHeader &&
-            (urlInfo?.url?.startsWith(PROXY_BASE) ||
-              urlInfo?.url?.startsWith(window.location.origin))
-          ) {
-            request.setRequestHeader('X-Session-Id', getProxySessionId());
-          }
-          return request;
-        },
-      };
-    }, true);
+    dashPlayer.extend('RequestModifier', buildRequestModifier(), true);
 
-    // attachC2pa must be called before player.initialize()
+    // DashjsPlayer (local interface in attachC2pa.ts) is structurally compatible
+    // with dashjs.MediaPlayerClass but not assignable due to narrow extend() signature
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const controller = attachC2pa(dashPlayer as any);
     c2paControllerRef.current = controller;
     setC2paController(controller);
 
-    // Reactively sync segment list to React state
     const unsubscribeSegments = controller.subscribeToSegments((segments) => {
       setState((prev) => ({ ...prev, segments }));
     });
@@ -93,7 +68,7 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
       if (videoEl) {
         const ranges = videoEl.buffered;
         if (ranges.length) {
-          videoEl.currentTime = ranges.end(ranges.length - 1) - 0.05;
+          videoEl.currentTime = ranges.end(ranges.length - 1) - SEEK_BACK_OFFSET_SECONDS;
         }
       }
     });
@@ -111,7 +86,6 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle stream URL changes without recreating the player
   useEffect(() => {
     if (!dashPlayerRef.current || !isInitializedRef.current) return;
     if (!videoSrc || videoSrc === currentStreamUrl) return;

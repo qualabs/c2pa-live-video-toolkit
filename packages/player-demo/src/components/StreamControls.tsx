@@ -15,6 +15,12 @@ const AD_MANIFEST_ENDPOINT = '/manifest';
 const AD_STREAM_URL = '/stream_with_ad.mpd';
 const STREAMER_RESTART_ENDPOINT = '/streamer/restart';
 
+// Delays for the SSAI ad break sequence:
+// - Wait for the streamer to restart and produce new init segment
+// - Wait for the new manifest to be available before switching the player source
+const STREAMER_RESTART_WAIT_MS = 5000;
+const MANIFEST_FETCH_WAIT_MS = 2000;
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 interface StreamControlsProps {
@@ -104,10 +110,10 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
     try {
       const restartResp = await fetch(STREAMER_RESTART_ENDPOINT, { method: 'POST' });
       if (!restartResp.ok) throw new Error(`Restart endpoint returned ${restartResp.status}`);
-      await wait(5000);
+      await wait(STREAMER_RESTART_WAIT_MS);
       const manifestResp = await fetch(AD_MANIFEST_ENDPOINT);
       if (!manifestResp.ok) throw new Error(`Manifest endpoint returned ${manifestResp.status}`);
-      await wait(2000);
+      await wait(MANIFEST_FETCH_WAIT_MS);
       onStreamChange(AD_STREAM_URL);
     } catch (error) {
       console.error('[StreamControls] Ad break failed:', error);
