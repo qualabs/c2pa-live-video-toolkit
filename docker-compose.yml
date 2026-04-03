@@ -1,0 +1,8 @@
+services: {}
+
+volumes:
+  stream-data:
+
+networks:
+  default:
+    driver: bridge

@@ -1,0 +1,17 @@
+{
+  "name": "c2pa-live-video-toolkit",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "turbo format"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3"
+  }
+}
