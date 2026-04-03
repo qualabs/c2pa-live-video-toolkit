@@ -35,6 +35,7 @@ export const config = {
     10,
   ),
   useVsiMethod: process.env.USE_VSI_METHOD === 'true',
+  vsiSessionKeyPath: process.env.SESSION_KEY_PATH || '/tmp/session_key.pem',
   streamId: process.env.STREAM_ID || 'live',
   c2patoolPath: process.env.C2PATOOL_PATH || DEFAULT_C2PATOOL_PATH,
 };
