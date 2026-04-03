@@ -1,0 +1,33 @@
+{
+  "name": "@c2pa-live-toolkit/player-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reference React/Vite demo app showcasing dashjs-c2pa-plugin and videojs-c2pa-ui in two modes: dashjs-native and videojs-enhanced",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@c2pa-live-toolkit/dashjs-c2pa-plugin": "*",
+    "@c2pa-live-toolkit/videojs-c2pa-ui": "*",
+    "dashjs": "^4.7.4",
+    "framer-motion": "^11.2.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.25.1",
+    "styled-components": "^6.1.11",
+    "video.js": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/styled-components": "^5.1.34",
+    "@types/video.js": "^7.3.58",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.1"
+  }
+}

@@ -72,6 +72,7 @@ export type InitProcessedEvent = {
   success: boolean;
   sessionKeysCount: number;
   manifestId: string | undefined;
+  manifest: unknown;
   errorCodes?: readonly ValidationErrorCode[];
   error?: string;
 };
