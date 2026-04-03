@@ -72,6 +72,21 @@ services:
     command: ["sh", "./scripts/start-all.sh"]
     restart: unless-stopped
 
+  attack-proxy:
+    build:
+      context: .
+      dockerfile: packages/attack-proxy/Dockerfile
+    ports:
+      - '8083:8083'
+    environment:
+      - PORT=8083
+      - STATIC_SERVER_URL=http://origin-server:8081
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      origin-server:
+        condition: service_healthy
+
 volumes:
   stream-data:
 
