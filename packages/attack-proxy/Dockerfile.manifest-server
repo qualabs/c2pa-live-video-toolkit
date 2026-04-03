@@ -2,8 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY packages/streamer/ad-insertion/insert_ads_to_mpd.py ./
-COPY packages/streamer/manifest-templates ./manifest-templates
+COPY packages/attack-proxy/ad-insertion/insert_ads_to_mpd.py ./
+COPY packages/attack-proxy/manifest-templates ./manifest-templates
 
 ENV TEMPLATES_DIR=/app/manifest-templates
 

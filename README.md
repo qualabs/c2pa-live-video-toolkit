@@ -21,7 +21,7 @@ A collection of open-source tools for embedding and verifying [C2PA](https://c2p
 | `streamer` | `streamer` | — | FFmpeg generates live DASH segments |
 | `signer` | `signer` | 8080 | Signs each segment with C2PA provenance |
 | `origin-server` | `origin-server` | 8081 (→8082) | Serves signed segments as static files |
-| `manifest-server` | `streamer` | 3000 | Serves dynamic DASH manifests with ad insertion |
+| `manifest-server` | `attack-proxy` | 3000 | Serves dynamic DASH manifests with ad insertion |
 | `attack-proxy` | `attack-proxy` | 8083 | Proxies segments, optionally applying C2PA attacks |
 
 DASH players point to `http://localhost:8083/stream_with_ad.mpd`.
@@ -70,7 +70,7 @@ Minimal Express static file server. Serves signed segments from the shared volum
 
 ### [`@c2pa-live/streamer`](packages/streamer)
 
-FFmpeg streaming scripts and Python ad-insertion manifest server. Generates the raw DASH stream that the signer consumes.
+FFmpeg streaming scripts. Generates the raw DASH stream that the signer consumes.
 
 ### [`@c2pa-live/attack-proxy`](packages/attack-proxy)
 

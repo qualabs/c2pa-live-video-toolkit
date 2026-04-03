@@ -38,7 +38,7 @@ services:
   manifest-server:
     build:
       context: .
-      dockerfile: packages/streamer/Dockerfile.manifest-server
+      dockerfile: packages/attack-proxy/Dockerfile.manifest-server
     ports:
       - '3000:3000'
     environment:
