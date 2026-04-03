@@ -1,4 +1,43 @@
-services: {}
+services:
+  signer:
+    build:
+      context: .
+      dockerfile: packages/signer/Dockerfile
+    platform: linux/amd64
+    ports:
+      - '8080:8080'
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - STORAGE_PROVIDER=LOCAL
+      - INPUT_BUCKET=/host_stream
+      - OUTPUT_BUCKET=/host_stream
+      - MPD_KEY=output/stream.mpd
+      - DEBUG=true
+      - PUB_CERT=/app/certs/ps256.pub
+      - PRIV_KEY=/app/certs/ps256.pem
+      - USE_VSI_METHOD=false
+      - SESSION_KEY_PATH=/app/certs/session.pem
+      - CLEANUP_MAX_AGE_MINUTES=35
+      - CLEANUP_INTERVAL_MS=60000
+    volumes:
+      - stream-data:/host_stream
+      - ./packages/signer/certs:/app/certs:ro
+      - ./packages/signer/segment_manifest.json:/app/segment_manifest.json:ro
+      - ./packages/signer/segment_manifest_vsi.json:/app/segment_manifest_vsi.json:ro
+    depends_on:
+      - streamer
+
+  streamer:
+    image: jrottenberg/ffmpeg:6.0-ubuntu
+    platform: linux/amd64
+    entrypoint: []
+    working_dir: /host_stream
+    volumes:
+      - stream-data:/host_stream
+    command: ["sh", "./scripts/start-all.sh"]
+    restart: unless-stopped
 
 volumes:
   stream-data:

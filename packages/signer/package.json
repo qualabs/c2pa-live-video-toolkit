@@ -1,0 +1,27 @@
+{
+  "name": "@c2pa-live/signer",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/c2pa-live-worker.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/c2pa-live-worker.js",
+    "dev": "ts-node src/c2pa-live-worker.ts",
+    "format": "prettier --write 'src/**/*.{ts,tsx}'",
+    "lint": "eslint 'src/**/*.{ts,tsx}' --fix"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "fast-xml-parser": "^4.3.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

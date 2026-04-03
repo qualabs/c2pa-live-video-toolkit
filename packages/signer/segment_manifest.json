@@ -1,0 +1,49 @@
+{
+  "claim_version": 2,
+  "private_key": "certs/ps256.pem",
+  "sign_cert": "certs/ps256.pub",
+  "alg": "ps256",
+  "ta_url": "http://timestamp.digicert.com",
+  "claim_generator_info": [
+    {
+      "name": "C2PA LIVE CBC Demo",
+      "version": "1.0.0"
+    }
+  ],
+  "title": "Segment Manifest",
+  "assertions": [
+    {
+      "label": "stds.schema-org.CreativeWork",
+      "data": {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Author of Segment"
+          }
+        ],
+        "dateCreated": "2025-02-28T12:00:00Z"
+      }
+    },
+    {
+      "label": "c2pa.actions",
+      "data": {
+        "all": {},
+        "actions": [
+          {
+            "action": "c2pa.created"
+          }
+        ]
+      }
+    },
+    {
+      "label": "c2pa.livevideo.segment",
+      "data": {
+        "sequenceNumber": 0,
+        "streamId": "STREAM_ID_PLACEHOLDER",
+        "continuityMethod": "c2pa.manifestId"
+      }
+    }
+  ]
+}
