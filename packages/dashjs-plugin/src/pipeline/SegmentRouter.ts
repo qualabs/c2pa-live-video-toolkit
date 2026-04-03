@@ -111,7 +111,7 @@ export class SegmentRouter {
   }
 
   private async handleInitSegment(chunk: DashjsChunk): Promise<void> {
-    if (chunk.mediaInfo?.type !== 'video') return;
+    if (!this.deps.supportedMediaTypes.includes(chunk.mediaInfo?.type as MediaType)) return;
 
     const bytes = toUint8Array(chunk.bytes);
     const result = await this.deps.initProcessor.process(bytes);

@@ -3,6 +3,7 @@ import { signVsiSegment } from '../../c2pa/cli.js';
 import { BaseSigningStrategy } from './BaseSigningStrategy.js';
 import type { SigningContext } from './ISigningStrategy.js';
 import { TEMP_DIR, CURRENT_MANIFEST_PATH, REPRESENTATION_ID_PLACEHOLDER } from '../../constants.js';
+import { config } from '../../config.js';
 
 export class VsiSigningStrategy extends BaseSigningStrategy {
   protected readonly methodName = 'VSI';
@@ -26,8 +27,8 @@ export class VsiSigningStrategy extends BaseSigningStrategy {
     segmentBasename: string,
     initPath: string | undefined,
   ): Promise<void> {
-    const { representationId, previousSegmentPath } = context;
-    const sessionKeyPath = `${TEMP_DIR}/session_key_init-stream${representationId}.pem`;
+    const { previousSegmentPath } = context;
+    const sessionKeyPath = config.vsiSessionKeyPath;
 
     await signVsiSegment({
       segmentsDir: TEMP_DIR,
