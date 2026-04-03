@@ -18,7 +18,11 @@ async function prefetchNext(key: string | null) {
   }
 }
 
-export function startProcessingLoop(segmentService: SegmentService, streamStateService: StreamStateService, repId: string) {
+export function startProcessingLoop(
+  segmentService: SegmentService,
+  streamStateService: StreamStateService,
+  repId: string,
+) {
   if (activeProcessors[repId]) return;
   activeProcessors[repId] = true;
 
@@ -43,7 +47,13 @@ export function startProcessingLoop(segmentService: SegmentService, streamStateS
 
     try {
       if (!wasPrefetched) await waitForSegmentInBucket(job.fileKey);
-      await processFile(segmentService, streamStateService, repId, job.fileKey, job.receivedTimestamp);
+      await processFile(
+        segmentService,
+        streamStateService,
+        repId,
+        job.fileKey,
+        job.receivedTimestamp,
+      );
     } catch (error) {
       logger.error(`Error processing file ${job.fileKey}:`, error);
       const currentList = segmentService.getReadyList(repId);

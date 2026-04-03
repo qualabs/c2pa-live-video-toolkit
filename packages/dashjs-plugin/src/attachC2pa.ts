@@ -23,10 +23,16 @@ function buildLogger(option: Logger | false | undefined): Logger {
   return option ?? console;
 }
 
-type DashjsPlayer = {
-  extend: (name: string, factory: () => { modifyResponseAsync: (chunk: unknown) => Promise<unknown> }) => void;
-  on: (event: string, handler: (e: unknown) => void) => void;
-};
+/**
+ * Minimal structural interface for the dash.js player methods this plugin uses.
+ *
+ * Uses `interface` + method syntax so TypeScript applies bivariant parameter
+ * checking, making dashjs.MediaPlayerClass directly assignable without casts.
+ */
+export interface DashjsPlayer {
+  extend(name: string, factoryOrChild: object, override?: boolean): void;
+  on(event: string, handler: (e: unknown) => void, scope?: object): void;
+}
 
 type DashjsPlaybackEvent = {
   time: number;
@@ -46,10 +52,7 @@ type DashjsPlaybackEvent = {
  * player.initialize(videoElement, streamUrl, true);
  * ```
  */
-export function attachC2pa(
-  player: DashjsPlayer,
-  options: C2paOptions = {},
-): C2paController {
+export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2paController {
   const supportedMediaTypes: MediaType[] = options.mediaTypes ?? DEFAULT_MEDIA_TYPES;
   const maxStoredSegments = options.maxStoredSegments ?? DEFAULT_MAX_STORED_SEGMENTS;
   const logger = buildLogger(options.logger);

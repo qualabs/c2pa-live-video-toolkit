@@ -3,12 +3,7 @@ import type { SegmentRecord, SegmentStatus } from '../types.js';
 type Unsubscribe = () => void;
 type StoreListener = (segments: SegmentRecord[]) => void;
 
-const SEQUENCE_ANOMALY_STATUSES: SegmentStatus[] = [
-  'replayed',
-  'reordered',
-  'missing',
-  'warning',
-];
+const SEQUENCE_ANOMALY_STATUSES: SegmentStatus[] = ['replayed', 'reordered', 'missing', 'warning'];
 
 function isSequenceAnomaly(status: SegmentStatus): boolean {
   return SEQUENCE_ANOMALY_STATUSES.includes(status);
@@ -34,10 +29,7 @@ export class SegmentStore {
     this.maxStoredSegments = maxStoredSegments;
   }
 
-  add(
-    segment: Omit<SegmentRecord, 'arrivalIndex'>,
-    forceNewArrival = false,
-  ): void {
+  add(segment: Omit<SegmentRecord, 'arrivalIndex'>, forceNewArrival = false): void {
     const existingIndex = this.segments.findIndex((s) =>
       isSameSegment(s, segment as SegmentRecord),
     );

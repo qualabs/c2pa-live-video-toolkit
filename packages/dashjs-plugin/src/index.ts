@@ -1,5 +1,7 @@
 export { attachC2pa } from './attachC2pa.js';
+export type { DashjsPlayer } from './attachC2pa.js';
 export { C2paController } from './C2paController.js';
+
 export { ERROR_CODE_MESSAGES } from './types.js';
 export type {
   C2paOptions,

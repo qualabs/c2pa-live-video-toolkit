@@ -26,13 +26,7 @@ export type ValidationErrorCode =
   | 'livevideo.sessionkey.invalid'
   | C2paStatusCode;
 
-export type SegmentStatus =
-  | 'valid'
-  | 'invalid'
-  | 'replayed'
-  | 'reordered'
-  | 'missing'
-  | 'warning';
+export type SegmentStatus = 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
 
 export type SequenceAnomalyReason =
   | 'duplicate'
@@ -127,8 +121,10 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
   'livevideo.init.invalid': 'Init segment is invalid (contains mdat box)',
   'livevideo.manifest.invalid': 'C2PA manifest failed validation',
   'livevideo.segment.invalid': 'Cryptographic verification failed (signature, hash, or key)',
-  'livevideo.assertion.invalid': 'Live video assertion invalid (sequenceNumber or streamId mismatch)',
-  'livevideo.continuityMethod.invalid': 'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
+  'livevideo.assertion.invalid':
+    'Live video assertion invalid (sequenceNumber or streamId mismatch)',
+  'livevideo.continuityMethod.invalid':
+    'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
   'livevideo.sessionkey.invalid': 'Session key is invalid or expired',
   // C2PA standard integrity codes (§15 / §18)
   'assertion.hashedURI.mismatch': 'Assertion hash does not match the signed claim',

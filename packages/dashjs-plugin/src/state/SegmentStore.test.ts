@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { SegmentStore } from './SegmentStore.js';
 import type { SegmentRecord } from '../types.js';
 
-function makeSegment(overrides: Partial<Omit<SegmentRecord, 'arrivalIndex'>> = {}): Omit<SegmentRecord, 'arrivalIndex'> {
+function makeSegment(
+  overrides: Partial<Omit<SegmentRecord, 'arrivalIndex'>> = {},
+): Omit<SegmentRecord, 'arrivalIndex'> {
   return {
     segmentNumber: 1,
     mediaType: 'video',

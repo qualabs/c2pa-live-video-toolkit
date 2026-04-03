@@ -8,10 +8,7 @@ type ListenerEntry<T extends C2paEventType> = {
 };
 
 export class EventBus {
-  private readonly listeners = new Map<
-    C2paEventType,
-    ListenerEntry<C2paEventType>[]
-  >();
+  private readonly listeners = new Map<C2paEventType, ListenerEntry<C2paEventType>[]>();
 
   on<T extends C2paEventType>(event: T, listener: EventListener<T>): void {
     this.addListener(event, listener, false);

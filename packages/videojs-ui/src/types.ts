@@ -47,9 +47,30 @@ export interface VideoJsPlayer {
  */
 export type MediaType = 'video' | 'audio';
 
+export type SignatureInfo = {
+  issuer?: string;
+  time?: string;
+};
+
+export type ActiveManifest = {
+  signatureInfo?: SignatureInfo;
+  claimGenerator?: string;
+  claim_generator?: string;
+};
+
+export type ManifestStore = {
+  activeManifest?: ActiveManifest;
+  active_manifest?: string;
+  manifests?: Record<string, ActiveManifest>;
+};
+
+export type ManifestEnvelope = {
+  manifestStore?: ManifestStore;
+};
+
 export type PlaybackStatusDetail = {
   verified: boolean | undefined;
-  manifest: unknown;
+  manifest: ManifestEnvelope | unknown;
   error: string | null;
 };
 

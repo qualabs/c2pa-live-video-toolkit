@@ -57,7 +57,11 @@ export interface VsiSignOptions {
   previousSegmentPath?: string;
 }
 
-async function executeC2paToolCommand(command: string, label: string, startTime: number): Promise<void> {
+async function executeC2paToolCommand(
+  command: string,
+  label: string,
+  startTime: number,
+): Promise<void> {
   const { stdout, stderr } = await execAsync(command);
 
   logger.debug(`[${label}] stdout: ${stdout.trim()}`);

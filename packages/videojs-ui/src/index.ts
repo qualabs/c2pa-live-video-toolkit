@@ -3,6 +3,7 @@ export type {
   C2paControllerEvents,
   C2paPlayerOptions,
   C2paPlayerInstance,
+  VideoJsPlayer,
   PlaybackStatus,
   PlaybackStatusDetail,
   MediaType,

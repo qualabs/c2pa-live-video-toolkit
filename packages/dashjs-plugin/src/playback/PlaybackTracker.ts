@@ -1,11 +1,6 @@
 import type { EventBus } from '../events/EventBus.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import type {
-  MediaType,
-  PlaybackStatus,
-  PlaybackStatusDetail,
-  Logger,
-} from '../types.js';
+import type { MediaType, PlaybackStatus, PlaybackStatusDetail, Logger } from '../types.js';
 import { PLAYBACK_SEARCH_WINDOW_SECONDS } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 

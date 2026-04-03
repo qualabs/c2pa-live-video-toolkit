@@ -1,14 +1,9 @@
 function escapePatternSpecialChars(pattern: string): string {
-  return pattern
-    .replace(/\./g, '\\.')
-    .replace(/-/g, '\\-')
-    .replace(/\//g, '\\/');
+  return pattern.replace(/\./g, '\\.').replace(/-/g, '\\-').replace(/\//g, '\\/');
 }
 
 function buildSegmentNumberCapture(_fullMatch: string, paddingWidth: string): string {
-  return paddingWidth
-    ? `(?<segmentId>\\d{${paddingWidth}})`
-    : `(?<segmentId>\\d+)`;
+  return paddingWidth ? `(?<segmentId>\\d{${paddingWidth}})` : `(?<segmentId>\\d+)`;
 }
 
 export function extractSegmentInfo(
@@ -31,4 +26,3 @@ export function extractSegmentInfo(
 
   return null;
 }
-

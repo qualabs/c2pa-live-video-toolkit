@@ -30,18 +30,11 @@ export class VsiValidator {
     this.sequenceTracker = sequenceTracker;
   }
 
-  async validate(
-    segmentBytes: Uint8Array,
-    streamKey: string,
-  ): Promise<VsiValidationResult | null> {
+  async validate(segmentBytes: Uint8Array, streamKey: string): Promise<VsiValidationResult | null> {
     const sessionKeys = this.sessionKeyStore.getAll();
     const sequenceState = this.sequenceTracker.getState(streamKey);
 
-    const validated = await validateC2paSegment(
-      segmentBytes,
-      sessionKeys,
-      sequenceState,
-    );
+    const validated = await validateC2paSegment(segmentBytes, sessionKeys, sequenceState);
 
     if (!validated) return null;
 
@@ -52,10 +45,8 @@ export class VsiValidator {
     return {
       ...result,
       sequenceReason: (sequenceResult.reason as SequenceAnomalyReason) ?? null,
-      sequenceMissingFrom:
-        'missingFrom' in sequenceResult ? sequenceResult.missingFrom : undefined,
-      sequenceMissingTo:
-        'missingTo' in sequenceResult ? sequenceResult.missingTo : undefined,
+      sequenceMissingFrom: 'missingFrom' in sequenceResult ? sequenceResult.missingFrom : undefined,
+      sequenceMissingTo: 'missingTo' in sequenceResult ? sequenceResult.missingTo : undefined,
       overall: result.isValid && sequenceResult.isValid,
     };
   }

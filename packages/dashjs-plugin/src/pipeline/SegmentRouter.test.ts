@@ -110,20 +110,32 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     logger: SILENT_LOGGER,
   });
 
-  return { router, eventBus, segmentStore, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
+  return {
+    router,
+    eventBus,
+    segmentStore,
+    sessionKeyStore,
+    initProcessor,
+    vsiValidator,
+    manifestBoxValidator,
+  };
 }
 
 describe('SegmentRouter', () => {
   describe('InitializationSegment routing', () => {
     it('calls initProcessor for a video InitializationSegment', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'video' } }));
+      await router.route(
+        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'video' } }),
+      );
       expect(initProcessor.process).toHaveBeenCalledOnce();
     });
 
     it('ignores InitializationSegment for non-video media types', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'audio' } }));
+      await router.route(
+        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'audio' } }),
+      );
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
   });
@@ -164,7 +176,10 @@ describe('SegmentRouter', () => {
 
     it('emits segmentValidated with status "invalid" when validation fails', async () => {
       const { router, eventBus, manifestBoxValidator } = buildDeps();
-      manifestBoxValidator.validate.mockResolvedValue({ ...makeValidManifestBoxResult(), isValid: false });
+      manifestBoxValidator.validate.mockResolvedValue({
+        ...makeValidManifestBoxResult(),
+        isValid: false,
+      });
       const listener = vi.fn();
       eventBus.on('segmentValidated', listener);
       await router.route(makeChunk());
@@ -220,7 +235,10 @@ describe('SegmentRouter', () => {
         eventBus,
         initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
         vsiValidator: vsiValidator as unknown as VsiValidator,
-        manifestBoxValidator: { validate: vi.fn(), reset: vi.fn() } as unknown as ManifestBoxValidator,
+        manifestBoxValidator: {
+          validate: vi.fn(),
+          reset: vi.fn(),
+        } as unknown as ManifestBoxValidator,
         sessionKeyStore,
         segmentStore,
         timeIndex: new TimeIntervalIndex(),

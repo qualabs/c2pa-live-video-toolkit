@@ -182,9 +182,7 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      this.deps.logger.warn(
-        `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
-      );
+      this.deps.logger.warn(`[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`);
       return;
     }
 
@@ -196,7 +194,11 @@ export class SegmentRouter {
       vsiResult.sequenceMissingFrom != null &&
       vsiResult.sequenceMissingTo != null
     ) {
-      this.recordMissingSegments(mediaType, vsiResult.sequenceMissingFrom, vsiResult.sequenceMissingTo);
+      this.recordMissingSegments(
+        mediaType,
+        vsiResult.sequenceMissingFrom,
+        vsiResult.sequenceMissingTo,
+      );
     }
 
     const record = this.buildVsiSegmentRecord(vsiResult, mediaType, status);
@@ -226,15 +228,8 @@ export class SegmentRouter {
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
-    const {
-      segmentBytes,
-      streamKey,
-      mediaType,
-      chunkStart,
-      chunkEnd,
-      segmentIndex,
-      segmentType,
-    } = params;
+    const { segmentBytes, streamKey, mediaType, chunkStart, chunkEnd, segmentIndex, segmentType } =
+      params;
 
     let result;
     try {
@@ -313,11 +308,7 @@ export class SegmentRouter {
     this.deps.timeIndex.insert(streamKey, interval, indexEntry);
   }
 
-  private recordMissingSegments(
-    mediaType: MediaType,
-    from: number,
-    to: number,
-  ): void {
+  private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
     const count = to - from + 1;
     for (let n = from; n <= to; n++) {
       this.deps.segmentStore.add({

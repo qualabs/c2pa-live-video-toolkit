@@ -5,12 +5,7 @@ import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
 import type { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
 import type { PlaybackTracker } from './playback/PlaybackTracker.js';
-import type {
-  C2paEventMap,
-  C2paEventType,
-  SegmentRecord,
-  PlaybackStatus,
-} from './types.js';
+import type { C2paEventMap, C2paEventType, SegmentRecord, PlaybackStatus } from './types.js';
 
 type C2paControllerDeps = {
   eventBus: EventBus;
@@ -32,26 +27,17 @@ export class C2paController {
     this.deps = deps;
   }
 
-  on<T extends C2paEventType>(
-    event: T,
-    listener: (payload: C2paEventMap[T]) => void,
-  ): this {
+  on<T extends C2paEventType>(event: T, listener: (payload: C2paEventMap[T]) => void): this {
     this.deps.eventBus.on(event, listener);
     return this;
   }
 
-  once<T extends C2paEventType>(
-    event: T,
-    listener: (payload: C2paEventMap[T]) => void,
-  ): this {
+  once<T extends C2paEventType>(event: T, listener: (payload: C2paEventMap[T]) => void): this {
     this.deps.eventBus.once(event, listener);
     return this;
   }
 
-  off<T extends C2paEventType>(
-    event: T,
-    listener: (payload: C2paEventMap[T]) => void,
-  ): this {
+  off<T extends C2paEventType>(event: T, listener: (payload: C2paEventMap[T]) => void): this {
     this.deps.eventBus.off(event, listener);
     return this;
   }
@@ -60,9 +46,7 @@ export class C2paController {
     return this.deps.segmentStore.getAll();
   }
 
-  subscribeToSegments(
-    listener: (segments: SegmentRecord[]) => void,
-  ): () => void {
+  subscribeToSegments(listener: (segments: SegmentRecord[]) => void): () => void {
     return this.deps.segmentStore.subscribe(listener);
   }
 

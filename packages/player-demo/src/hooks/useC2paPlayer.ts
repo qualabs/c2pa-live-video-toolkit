@@ -45,10 +45,7 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
 
     dashPlayer.extend('RequestModifier', buildRequestModifier(), true);
 
-    // DashjsPlayer (local interface in attachC2pa.ts) is structurally compatible
-    // with dashjs.MediaPlayerClass but not assignable due to narrow extend() signature
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const controller = attachC2pa(dashPlayer as any);
+    const controller = attachC2pa(dashPlayer);
     c2paControllerRef.current = controller;
     setC2paController(controller);
 

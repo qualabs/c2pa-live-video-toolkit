@@ -1,6 +1,34 @@
 import videojs from 'video.js';
-import type { VideoJsPlayer, VjsComponent, PlaybackStatus } from '../types.js';
+import type {
+  VideoJsPlayer,
+  VjsComponent,
+  PlaybackStatus,
+  ManifestStore,
+  ActiveManifest,
+  ManifestEnvelope,
+} from '../types.js';
 import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
+
+/**
+ * video.js MenuButton internals not exposed in public typings.
+ * Extends VjsComponent so TypeScript allows direct downcasts without `unknown`.
+ */
+interface MenuButtonInternals extends VjsComponent {
+  options_: { menuItems: Array<{ label: string; id: string }>; [key: string]: unknown };
+  player_: unknown;
+  buttonPressed_: boolean;
+  pressButton(): void;
+  unpressButton(): void;
+  items?: VjsComponent[];
+}
+
+/**
+ * video.js MenuItem internals not exposed in public typings.
+ */
+interface MenuItemInternals extends VjsComponent {
+  options_: { label: string; id: string; [key: string]: unknown };
+  handleClick: () => void;
+}
 
 const MENU_BUTTON_COMPONENT_NAME = 'C2PAMenuButton';
 const CONTROL_TEXT = 'Content Credentials';
@@ -42,39 +70,36 @@ function ensureMenuComponentRegistered(): void {
   const MenuItem = videojs.getComponent('MenuItem');
 
   class C2PAMenuButton extends MenuButton {
+    // video.js internal properties — exist at runtime but aren't in public typings
+    declare options_: MenuButtonInternals['options_'];
+    declare player_: MenuButtonInternals['player_'];
+    declare buttonPressed_: boolean;
+    declare pressButton: () => void;
+
     private closeOnNextClick = false;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createItems(): any[] {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const options = (this as any).options_;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return options.menuItems.map((item: { label: string; id: string }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const menuItem = new (MenuItem as any)((this as any).player_, { label: item.label, id: item.id });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (menuItem as any).handleClick = () => {};
-        return menuItem;
+    createItems(): VjsComponent[] {
+      return this.options_.menuItems.map((item) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MenuItem constructor types are incomplete
+        const menuItem = new (MenuItem as any)(this.player_, { label: item.label, id: item.id });
+        (menuItem as MenuItemInternals).handleClick = () => {};
+        return menuItem as VjsComponent;
       });
     }
 
     handleClick(): void {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((this as any).buttonPressed_) {
+      if (this.buttonPressed_) {
         this.closeOnNextClick = true;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any).unpressButton();
+        this.unpressButton();
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any).pressButton();
+        this.pressButton();
       }
     }
 
     unpressButton(): void {
       if (this.closeOnNextClick) {
         this.closeOnNextClick = false;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- unpressButton exists at runtime but not in MenuButton typings
         (MenuButton.prototype as any).unpressButton.call(this);
       }
     }
@@ -84,7 +109,7 @@ function ensureMenuComponentRegistered(): void {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registerComponent expects typeof Component; subclass is not directly assignable
   videojs.registerComponent(MENU_BUTTON_COMPONENT_NAME, C2PAMenuButton as any);
   menuComponentRegistered = true;
 }
@@ -147,8 +172,7 @@ export function updateMenuItems(
   videoPlayer: VideoJsPlayer,
   getCompromisedRegions: () => string[],
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items: VjsComponent[] = (c2paMenu as any).items ?? [];
+  const items: VjsComponent[] = (c2paMenu as MenuButtonInternals).items ?? [];
   const compromisedRegions = filterRecentCompromisedRegions(
     getCompromisedRegions(),
     isMonolithic,
@@ -156,8 +180,7 @@ export function updateMenuItems(
   );
 
   for (const item of items) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const options = (item as any).options_;
+    const options = (item as MenuItemInternals).options_;
     const key = options?.id as MenuItemKey;
     const label = options?.label as string;
 
@@ -200,28 +223,25 @@ function extractMenuValue(
   status: PlaybackStatus,
   compromisedRegions: string[],
 ): string | string[] | null {
-  const manifest = extractManifest(status);
-  const activeManifest = resolveActiveManifest(manifest);
+  const manifestStore = extractManifestStore(status);
+  const activeManifest = resolveActiveManifest(manifestStore);
 
   switch (key) {
     case 'SIG_ISSUER':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (activeManifest as any)?.signatureInfo?.issuer ?? null;
+      return activeManifest?.signatureInfo?.issuer ?? null;
 
     case 'DATE': {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const timeValue = (activeManifest as any)?.signatureInfo?.time;
+      const timeValue = activeManifest?.signatureInfo?.time;
       if (!timeValue) return null;
       return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
         day: '2-digit',
-      }).format(new Date(timeValue as string));
+      }).format(new Date(timeValue));
     }
 
     case 'CLAIM_GENERATOR':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (activeManifest as any)?.claimGenerator ?? (activeManifest as any)?.claim_generator ?? null;
+      return activeManifest?.claimGenerator ?? activeManifest?.claim_generator ?? null;
 
     case 'VALIDATION_STATUS':
       return resolveValidationStatusLabel(status.verified);
@@ -234,24 +254,20 @@ function extractMenuValue(
   }
 }
 
-function extractManifest(status: PlaybackStatus): Record<string, unknown> | null {
+function extractManifestStore(status: PlaybackStatus): ManifestStore | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (status.details.video?.manifest as any)?.manifestStore ?? null;
+    return (status.details.video?.manifest as ManifestEnvelope | undefined)?.manifestStore ?? null;
   } catch (error) {
     console.warn('[C2paMenu] Failed to extract manifest from playback status:', error);
     return null;
   }
 }
 
-function resolveActiveManifest(manifestStore: Record<string, unknown> | null): unknown {
+function resolveActiveManifest(manifestStore: ManifestStore | null): ActiveManifest | null {
   if (!manifestStore) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const camelCase = (manifestStore as any).activeManifest;
-  if (camelCase) return camelCase;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const snakeCaseKey = (manifestStore as any).active_manifest as string | undefined;
-  if (snakeCaseKey) return (manifestStore as any).manifests?.[snakeCaseKey] ?? null;
+  if (manifestStore.activeManifest) return manifestStore.activeManifest;
+  const snakeCaseKey = manifestStore.active_manifest;
+  if (snakeCaseKey) return manifestStore.manifests?.[snakeCaseKey] ?? null;
   return null;
 }
 
