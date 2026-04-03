@@ -1,14 +1,9 @@
 function escapePatternSpecialChars(pattern: string): string {
-  return pattern
-    .replace(/\./g, '\\.')
-    .replace(/-/g, '\\-')
-    .replace(/\//g, '\\/');
+  return pattern.replace(/\./g, '\\.').replace(/-/g, '\\-').replace(/\//g, '\\/');
 }
 
 function buildSegmentNumberCapture(_fullMatch: string, paddingWidth: string): string {
-  return paddingWidth
-    ? `(?<segmentId>\\d{${paddingWidth}})`
-    : `(?<segmentId>\\d+)`;
+  return paddingWidth ? `(?<segmentId>\\d{${paddingWidth}})` : `(?<segmentId>\\d+)`;
 }
 
 export function extractSegmentInfo(
@@ -30,14 +25,4 @@ export function extractSegmentInfo(
   }
 
   return null;
-}
-
-export function isInitSegment(fileKey: string, initPattern: string): boolean {
-  const regexPattern = escapePatternSpecialChars(initPattern).replace(
-    /\$RepresentationID\$/g,
-    '[^\\/\\.]+',
-  );
-
-  const regex = new RegExp(`^${regexPattern}$`);
-  return regex.test(fileKey);
 }

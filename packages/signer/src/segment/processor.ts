@@ -46,24 +46,43 @@ export async function processFile(
     const segmentNumber = parseSegmentNumber(representationId, fileKey, segmentPattern);
     if (segmentNumber === null) return;
 
-    const signingContext = buildSigningContext(representationId, filePath, initPattern, streamStateService);
+    const signingContext = buildSigningContext(
+      representationId,
+      filePath,
+      initPattern,
+      streamStateService,
+    );
     const { signedSegmentPath, signedInitPath } = await signingStrategy.sign(signingContext);
     const signedAt = Date.now();
-    logger.info(`[${representationId}] Signing completed (${signedAt - downloadTimings.downloadedAt}ms)`);
+    logger.info(
+      `[${representationId}] Signing completed (${signedAt - downloadTimings.downloadedAt}ms)`,
+    );
 
     await cleanupPreviousSignedSegment(signingContext.previousSegmentPath);
     streamStateService.storePreviousSignedSegmentPath(representationId, signedSegmentPath);
 
-    await uploadSignedFiles(representationId, outputKey, signedSegmentPath, signedInitPath, signingContext);
+    await uploadSignedFiles(
+      representationId,
+      outputKey,
+      signedSegmentPath,
+      signedInitPath,
+      signingContext,
+    );
     const uploadedAt = Date.now();
 
     segmentService.markSegmentAsProcessed(representationId, fileKey);
-    logPerformanceMetrics(representationId, segmentNumber, fileKey, {
-      startAt,
-      ...downloadTimings,
-      signedAt,
-      uploadedAt,
-    }, receivedTimestamp);
+    logPerformanceMetrics(
+      representationId,
+      segmentNumber,
+      fileKey,
+      {
+        startAt,
+        ...downloadTimings,
+        signedAt,
+        uploadedAt,
+      },
+      receivedTimestamp,
+    );
   } finally {
     await cleanupTempFile(filePath);
   }
@@ -129,7 +148,9 @@ function buildSigningContext(
   };
 }
 
-async function cleanupPreviousSignedSegment(previousSegmentPath: string | undefined): Promise<void> {
+async function cleanupPreviousSignedSegment(
+  previousSegmentPath: string | undefined,
+): Promise<void> {
   if (previousSegmentPath) {
     await fs.unlink(previousSegmentPath).catch(() => {});
   }
@@ -146,7 +167,10 @@ async function uploadSignedFiles(
   await storage.saveObject(config.outputBucket, outputKey, segmentBuffer);
 
   if (signedInitPath && context.initPattern) {
-    const initKey = context.initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, context.representationId);
+    const initKey = context.initPattern.replace(
+      REPRESENTATION_ID_PLACEHOLDER,
+      context.representationId,
+    );
     const initBuffer = await fs.readFile(signedInitPath);
     await storage.saveObject(config.outputBucket, `processed/${initKey}`, initBuffer);
     logger.info(`[${representationId}] Signed init uploaded: processed/${initKey}`);

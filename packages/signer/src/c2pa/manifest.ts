@@ -51,7 +51,10 @@ function injectStreamId(manifest: C2paManifest, streamId: string): void {
   }
 }
 
-async function loadManifestContent(ref?: string, useVsiMethod = false): Promise<{ text: string; source: string }> {
+async function loadManifestContent(
+  ref?: string,
+  useVsiMethod = false,
+): Promise<{ text: string; source: string }> {
   if (!ref) {
     const defaultFile = useVsiMethod ? './segment_manifest_vsi.json' : './segment_manifest.json';
     const text = await fs.readFile(defaultFile, 'utf-8');
@@ -81,7 +84,7 @@ async function loadManifestContent(ref?: string, useVsiMethod = false): Promise<
 }
 
 export async function loadC2paManifest(targetPath: string): Promise<void> {
-  const customUrl = config.customC2paManifest;
+  const customUrl = config.remoteC2paManifest;
   const useVsiMethod = config.useVsiMethod;
 
   let manifestJson: C2paManifest;

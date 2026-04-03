@@ -1,7 +1,0 @@
-{
-  "name": "@c2pa-live/stream-source",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "echo 'No build step for stream-source'"
-  }
-}

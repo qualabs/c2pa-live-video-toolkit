@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface DataInspectorProps {
   segment: SegmentRecord | null;
 }
-
-export const ALG_NAMES: Record<number, string> = {
-  [-7]: 'ES256', [-35]: 'ES384', [-36]: 'ES512', [-8]: 'EdDSA',
-};
 
 type StatusInfo = {
   title: string;

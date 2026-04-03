@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import dashjs from 'dashjs';
-import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-c2pa-ui';
+import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
 import 'video.js/dist/video-js.css';
-import '@c2pa-live-toolkit/videojs-c2pa-ui/styles';
-import type { C2paPlayerInstance } from '@c2pa-live-toolkit/videojs-c2pa-ui';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
-import type { C2paController } from '@c2pa-live-toolkit/dashjs-c2pa-plugin';
+import '@c2pa-live-toolkit/videojs-ui/styles';
+import type { C2paPlayerInstance } from '@c2pa-live-toolkit/videojs-ui';
+import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
 import { resolveStreamUrl, buildRequestModifier, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
@@ -76,10 +76,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
 
       dashPlayer.extend('RequestModifier', buildRequestModifier(), true);
 
-      // DashjsPlayer (local interface in attachC2pa.ts) is structurally compatible
-      // with dashjs.MediaPlayerClass but not assignable due to narrow extend() signature
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const controller = attachC2pa(dashPlayer as any);
+      const controller = attachC2pa(dashPlayer);
       c2paControllerRef.current = controller;
       setC2paController(controller);
 
@@ -125,8 +122,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
     if (!player || !c2paController || !videoJsReady) return;
 
     c2paUiRef.current?.destroy();
-    // video.js Player type is compatible but not directly assignable to the ui package's expected type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- video.js Player types don't expose controlBar
     c2paUiRef.current = C2paPlayerUI(player as any, c2paController);
 
     return () => {

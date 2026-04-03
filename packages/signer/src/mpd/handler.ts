@@ -32,7 +32,12 @@ function countSegmentsInTimeline(timeline: SegmentTimeline): number {
   return segments.reduce((count, segment) => count + 1 + parseInt(segment['@_r'] || '0', 10), 0);
 }
 
-function buildSegmentKey(baseDirPrefix: string, mediaTemplate: string, repId: string, index: number): string {
+function buildSegmentKey(
+  baseDirPrefix: string,
+  mediaTemplate: string,
+  repId: string,
+  index: number,
+): string {
   return path.posix.join(
     baseDirPrefix,
     mediaTemplate
@@ -116,7 +121,10 @@ async function enqueueNewSegmentsFromTimeline(
     const repeat = parseInt(segment['@_r'] || '0', 10);
 
     for (let i = 0; i <= repeat; i++) {
-      const lastProcessedIndex = streamStateService.getLastProcessedOrDefault(repId, startNumber - 1);
+      const lastProcessedIndex = streamStateService.getLastProcessedOrDefault(
+        repId,
+        startNumber - 1,
+      );
 
       if (currentIndex > lastProcessedIndex) {
         const segmentKey = buildSegmentKey(
@@ -188,7 +196,13 @@ async function processRepresentation(
     const segmentCountInWindow = countSegmentsInTimeline(timeline);
     requirements[repId] = segmentCountInWindow;
 
-    logRepresentationDebugInfo(segmentService, streamStateService, repId, segmentCountInWindow, startNumber);
+    logRepresentationDebugInfo(
+      segmentService,
+      streamStateService,
+      repId,
+      segmentCountInWindow,
+      startNumber,
+    );
   }
 
   streamStateService.setSegmentPatterns(repId, media, init);
@@ -225,7 +239,9 @@ async function processAdaptationSets(
   for (const adaptationSet of adaptationSets) {
     const segmentTemplate = extractSegmentTemplate(adaptationSet);
     const media = path.posix.join(baseDirPrefix, segmentTemplate['@_media']);
-    logger.debug(`[manifest] SegmentTemplate @_initialization: ${segmentTemplate['@_initialization']}`);
+    logger.debug(
+      `[manifest] SegmentTemplate @_initialization: ${segmentTemplate['@_initialization']}`,
+    );
     const init = path.posix.join(baseDirPrefix, segmentTemplate['@_initialization']);
     logger.debug(`[manifest] Extracted init pattern: ${init}`);
     const startNumber = parseInt(segmentTemplate['@_startNumber'], 10);
@@ -334,12 +350,22 @@ export async function pollMpdAndHandle(
       streamStateService.setMpdPollingInterval(nextInterval);
     }
 
-    await onManifestReceived(segmentService, manifestService, streamStateService, config.inputBucket, config.mpdKey, receivedTimestamp);
+    await onManifestReceived(
+      segmentService,
+      manifestService,
+      streamStateService,
+      config.inputBucket,
+      config.mpdKey,
+      receivedTimestamp,
+    );
   } catch (err) {
     logger.error('Error parsing MPD, will retry polling...', err);
   }
 
-  setTimeout(() => pollMpdAndHandle(segmentService, manifestService, streamStateService), nextInterval);
+  setTimeout(
+    () => pollMpdAndHandle(segmentService, manifestService, streamStateService),
+    nextInterval,
+  );
 }
 
 function logManifestRepReadiness(
@@ -387,7 +413,9 @@ async function publishReadyManifest(
       Buffer.from(mpdXml),
     );
   } else {
-    logger.debug(`[manifest] WARNING: ${publishTime} was ready, but content not found in memory. Cleaning up.`);
+    logger.debug(
+      `[manifest] WARNING: ${publishTime} was ready, but content not found in memory. Cleaning up.`,
+    );
     manifestService.removeManifest(publishTime);
   }
 }
@@ -409,7 +437,9 @@ async function publishManifestIfReady(
     const repIds = requirements ? Object.keys(requirements) : [];
 
     if (repIds.length === 0) {
-      logger.debug(`[manifest] No requirements found for ${publishTime}. Cleaning up orphan entry.`);
+      logger.debug(
+        `[manifest] No requirements found for ${publishTime}. Cleaning up orphan entry.`,
+      );
       manifestService.removeManifest(publishTime);
       continue;
     }

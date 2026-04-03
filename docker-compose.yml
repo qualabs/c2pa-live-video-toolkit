@@ -7,25 +7,12 @@ services:
     ports:
       - '8080:8080'
     env_file:
-      - path: .env
-        required: false
-    environment:
-      - STORAGE_PROVIDER=LOCAL
-      - INPUT_BUCKET=/host_stream
-      - OUTPUT_BUCKET=/host_stream
-      - MPD_KEY=output/stream.mpd
-      - DEBUG=true
-      - PUB_CERT=/app/certs/ps256.pub
-      - PRIV_KEY=/app/certs/ps256.pem
-      - USE_VSI_METHOD=false
-      - SESSION_KEY_PATH=/app/certs/session.pem
-      - CLEANUP_MAX_AGE_MINUTES=35
-      - CLEANUP_INTERVAL_MS=60000
+      - .env
     volumes:
       - stream-data:/host_stream
-      - ./packages/signer/certs:/app/certs:ro
-      - ./packages/signer/segment_manifest.json:/app/segment_manifest.json:ro
-      - ./packages/signer/segment_manifest_vsi.json:/app/segment_manifest_vsi.json:ro
+      - ./packages/signer/sample-certs:/app/certs:ro
+      - ./packages/signer/sample-manifests/segment_manifest.json:/app/segment_manifest.json:ro
+      - ./packages/signer/sample-manifests/segment_manifest_vsi.json:/app/segment_manifest_vsi.json:ro
     depends_on:
       - streamer
     restart: unless-stopped
@@ -51,7 +38,7 @@ services:
   manifest-server:
     build:
       context: .
-      dockerfile: packages/stream-source/Dockerfile.manifest-server
+      dockerfile: packages/attack-proxy/Dockerfile.manifest-server
     ports:
       - '3000:3000'
     environment:
@@ -69,8 +56,8 @@ services:
     working_dir: /host_stream
     volumes:
       - stream-data:/host_stream
-      - ./packages/stream-source/scripts:/host_stream/scripts:ro
-      - ./packages/stream-source/input:/host_stream/input:ro
+      - ./packages/streamer/scripts:/host_stream/scripts:ro
+      - ./packages/streamer/input:/host_stream/input:ro
     command: ["sh", "./scripts/start-all.sh"]
     restart: unless-stopped
 

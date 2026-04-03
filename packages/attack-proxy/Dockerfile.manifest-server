@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY packages/attack-proxy/ad-insertion/insert_ads_to_mpd.py ./
+COPY packages/attack-proxy/manifest-templates ./manifest-templates
+
+ENV TEMPLATES_DIR=/app/manifest-templates
+
+EXPOSE 3000
+
+CMD ["python3", "insert_ads_to_mpd.py"]

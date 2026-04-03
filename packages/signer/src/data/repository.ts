@@ -179,14 +179,6 @@ export class SegmentRepository {
     segmentStore.mpdPollingInterval = interval;
   }
 
-  getPreviousManifestId(repId: string): string | undefined {
-    return segmentStore.previousManifestIds.get(repId);
-  }
-
-  setPreviousManifestId(repId: string, manifestId: string): void {
-    segmentStore.previousManifestIds.set(repId, manifestId);
-  }
-
   clearPreviousManifestId(repId: string): void {
     segmentStore.previousManifestIds.delete(repId);
   }

@@ -3,7 +3,7 @@
  * objects) to a hex string representation suitable for display.
  */
 
-export function isBufferLike(obj: unknown): boolean {
+function isBufferLike(obj: unknown): boolean {
   if (!obj || typeof obj !== 'object') return false;
   if (obj instanceof Uint8Array) return true;
   const keys = Object.keys(obj as object);
