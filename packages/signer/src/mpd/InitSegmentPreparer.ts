@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { config } from '../config.js';
 import { streamToBuffer } from '../utils/stream.js';
-import { generateSessionKey } from '../c2pa/initSessionKeys.js';
 import type { IStorage } from '../services/storage/IStorage.js';
 import { TEMP_DIR, REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
 import { logger } from '../utils/logger.js';
@@ -47,16 +46,7 @@ export class InitSegmentPreparer {
     await fs.writeFile(tempPath, buffer);
 
     if (config.useVsiMethod) {
-      const keyExists = await fs
-        .access(config.vsiSessionKeyPath)
-        .then(() => true)
-        .catch(() => false);
-      if (!keyExists) {
-        await generateSessionKey(config.vsiSessionKeyPath);
-        logger.info(`Session key generated at: ${config.vsiSessionKeyPath}`);
-      } else {
-        logger.debug(`Reusing existing session key at: ${config.vsiSessionKeyPath}`);
-      }
+      logger.debug(`Using session key at: ${config.vsiSessionKeyPath}`);
     }
 
     logger.info(`Init segment cached at ${tempPath}. Will be signed with first media segment.`);
