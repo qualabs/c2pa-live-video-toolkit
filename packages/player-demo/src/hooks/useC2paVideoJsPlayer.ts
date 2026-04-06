@@ -8,7 +8,7 @@ import type { C2paPlayerInstance } from '@c2pa-live-toolkit/videojs-ui';
 import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
-import { resolveStreamUrl, buildRequestModifier, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
+import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
 const VIDEO_JS_OPTIONS = {
   autoplay: true,
@@ -73,8 +73,6 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
 
       const dashPlayer = dashjs.MediaPlayer().create();
       dashPlayerRef.current = dashPlayer;
-
-      dashPlayer.extend('RequestModifier', buildRequestModifier(), true);
 
       const controller = attachC2pa(dashPlayer);
       c2paControllerRef.current = controller;

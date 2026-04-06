@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import { PORT } from './config.js';
-import { sessionMiddleware } from './middleware/session.js';
 import attackRouter from './routes/attack.js';
 import segmentRouter from './routes/segment.js';
 import streamerRouter from './routes/streamer.js';
@@ -11,7 +10,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(sessionMiddleware);
 
 app.use('/attack', attackRouter);
 app.use('/streamer', streamerRouter);

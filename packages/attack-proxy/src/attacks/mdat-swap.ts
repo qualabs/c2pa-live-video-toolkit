@@ -37,7 +37,7 @@ export function applyMdatSwapAttack(session: SessionState, n: number): AttackRes
 }
 
 export async function proxyWithContentSwap(
-  req: IncomingMessage & { session: SessionState },
+  req: IncomingMessage,
   res: ServerResponse,
   targetPath: string,
   currentSegNum: number,
