@@ -72,6 +72,7 @@ services:
       - STATIC_SERVER_URL=http://origin-server:8081
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./packages/attack-proxy/sample-assets:/app/sample-assets:ro
     depends_on:
       origin-server:
         condition: service_healthy
