@@ -31,7 +31,7 @@ type SegmentRouterDeps = {
   eventBus: EventBus;
   initProcessor: InitSegmentProcessor;
   vsiValidator: VsiValidator;
-  manifestBoxValidator: ManifestBoxValidator;
+  manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   sessionKeyStore: SessionKeyStore;
   segmentStore: SegmentStore;
   timeIndex: TimeIntervalIndex;
@@ -233,7 +233,12 @@ export class SegmentRouter {
 
     let result;
     try {
-      result = await this.deps.manifestBoxValidator.validate(segmentBytes, segmentIndex);
+      const validator = this.deps.manifestBoxValidators[mediaType];
+      if (!validator) {
+        this.deps.eventBus.emit('error', { source: 'ManifestBoxValidator', error: `No validator for mediaType: ${mediaType}` });
+        return;
+      }
+      result = await validator.validate(segmentBytes, segmentIndex);
     } catch (error) {
       this.deps.eventBus.emit('error', { source: 'ManifestBoxValidator', error });
       return;

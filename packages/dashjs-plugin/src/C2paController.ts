@@ -13,7 +13,7 @@ type C2paControllerDeps = {
   sessionKeyStore: SessionKeyStore;
   sequenceTracker: SequenceTracker;
   timeIndex: TimeIntervalIndex;
-  manifestBoxValidator: ManifestBoxValidator;
+  manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   playbackTracker: PlaybackTracker;
   currentQuality: Record<string, string | number | null>;
   activeManifest: { value: unknown };
@@ -59,7 +59,9 @@ export class C2paController {
     this.deps.sessionKeyStore.clear();
     this.deps.sequenceTracker.clearAll();
     this.deps.timeIndex.clear();
-    this.deps.manifestBoxValidator.reset();
+    for (const validator of Object.values(this.deps.manifestBoxValidators)) {
+      validator?.reset();
+    }
     this.deps.activeManifest.value = null;
 
     for (const key of Object.keys(this.deps.currentQuality)) {
