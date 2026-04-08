@@ -77,7 +77,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Td>init</Td>
               <Td>—</Td>
               <Td title="Initialization Segment">Init Seg...</Td>
-              <Td title="Contains session keys">Session Keys</Td>
+              <Td title={initData?.sessionKeysCount ? 'Contains session keys' : 'Contains C2PA manifest'}>
+                {initData?.sessionKeysCount ? 'Session Keys' : 'Manifest'}
+              </Td>
               <Td>
                 <ValidBadge $status={initStatus}>
                   {initStatus === 'pending' ? 'PENDING' : initStatus === 'valid' ? 'VALID' : 'NOT VALID'}

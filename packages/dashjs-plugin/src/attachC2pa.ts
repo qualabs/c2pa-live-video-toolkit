@@ -74,13 +74,16 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
   // Pipeline
   const initProcessor = new InitSegmentProcessor({ sessionKeyStore, logger });
   const vsiValidator = new VsiValidator({ sessionKeyStore, sequenceTracker });
-  const manifestBoxValidator = new ManifestBoxValidator();
+  const manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>> = {};
+  for (const mediaType of supportedMediaTypes) {
+    manifestBoxValidators[mediaType] = new ManifestBoxValidator();
+  }
 
   const segmentRouter = new SegmentRouter({
     eventBus,
     initProcessor,
     vsiValidator,
-    manifestBoxValidator,
+    manifestBoxValidators,
     sessionKeyStore,
     segmentStore,
     timeIndex,
@@ -134,7 +137,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     sessionKeyStore,
     sequenceTracker,
     timeIndex,
-    manifestBoxValidator,
+    manifestBoxValidators,
     playbackTracker,
     currentQuality,
     activeManifest,
