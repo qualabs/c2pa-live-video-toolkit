@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { restartStreamerContainer } from '../docker/streamer-control.js';
-import { clearAllSessions } from '../middleware/session.js';
+import { resetState } from '../state.js';
 
 const router = Router();
 
 router.post('/restart', async (_req, res) => {
   try {
     await restartStreamerContainer();
-    clearAllSessions();
-    console.log('Streamer restarted, all session state cleared');
+    resetState();
+    console.log('Streamer restarted, attack state reset');
     res.json({ ok: true });
   } catch (error) {
     const errorMsg = (error as Error).message ?? 'Unknown error';

@@ -1,7 +1,8 @@
 import http from 'http';
 import { ORIGIN, CONTENT_CACHE_SIZE } from '../config.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
-import type { SessionState, SegmentInfo } from '../types.js';
+import { state } from '../state.js';
+import type { SegmentInfo } from '../types.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 export function buildSegmentPath(info: SegmentInfo, number: number): string {
@@ -33,18 +34,18 @@ export function parseSegmentFilename(filename: string): SegmentInfo | null {
   return null;
 }
 
-export function cacheContent(session: SessionState, segNum: number, segmentBytes: Buffer): void {
+export function cacheContent(segNum: number, segmentBytes: Buffer): void {
   const content = extractMoofMdat(segmentBytes);
   if (!content) return;
 
-  session.contentCache.set(segNum, {
+  state.contentCache.set(segNum, {
     moof: Buffer.from(content.moof),
     mdat: Buffer.from(content.mdat),
     full: Buffer.from(segmentBytes),
   });
 
-  if (session.contentCache.size > CONTENT_CACHE_SIZE) {
-    session.contentCache.delete(session.contentCache.keys().next().value as number);
+  if (state.contentCache.size > CONTENT_CACHE_SIZE) {
+    state.contentCache.delete(state.contentCache.keys().next().value as number);
   }
 }
 
@@ -66,7 +67,7 @@ export function fetchSegment(segNum: number, info: SegmentInfo): Promise<Buffer>
 }
 
 export function proxySegment(
-  req: IncomingMessage & { session?: SessionState },
+  req: IncomingMessage,
   res: ServerResponse,
   targetPath: string,
   segmentNumber: number | null,
@@ -84,8 +85,8 @@ export function proxySegment(
         originRes.on('end', () => {
           try {
             const segmentBytes = Buffer.concat(chunks);
-            if (segmentNumber !== null && req.session) {
-              cacheContent(req.session, segmentNumber, segmentBytes);
+            if (segmentNumber !== null) {
+              cacheContent(segmentNumber, segmentBytes);
             }
             res.writeHead(originRes.statusCode ?? 200, {
               ...originRes.headers,

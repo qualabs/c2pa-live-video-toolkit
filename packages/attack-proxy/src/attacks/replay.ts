@@ -1,4 +1,5 @@
 import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
+import { state } from '../state.js';
 import { fetchSegment, proxySegment, buildSegmentPath } from '../proxy/segment-proxy.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { replaceMoofMdat } from '../mp4/mdat-utils.js';
@@ -30,12 +31,12 @@ export function applyReplayAttack(session: SessionState, n: number, noAttack: At
 }
 
 export async function proxyReplayAttack(
-  req: IncomingMessage & { session: SessionState },
+  req: IncomingMessage,
   res: ServerResponse,
   info: SegmentInfo,
   attack: AttackResult,
 ): Promise<void> {
-  const cached = req.session.contentCache.get(attack.replayFrom as number);
+  const cached = state.contentCache.get(attack.replayFrom as number);
   if (!cached?.full) {
     console.error(`[REPLAY] No cached full segment for ${attack.replayFrom}`);
     return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);

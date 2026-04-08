@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import dashjs from 'dashjs';
 import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController, SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
-import { resolveStreamUrl, buildRequestModifier, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
+import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
 export type C2paPlayerState = {
   segments: SegmentRecord[];
@@ -42,8 +42,6 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
 
     const dashPlayer = dashjs.MediaPlayer().create();
     dashPlayerRef.current = dashPlayer;
-
-    dashPlayer.extend('RequestModifier', buildRequestModifier(), true);
 
     const controller = attachC2pa(dashPlayer);
     c2paControllerRef.current = controller;

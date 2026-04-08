@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
+import { state } from '../state.js';
 import { parseSegmentFilename, proxySegment, buildSegmentPath } from '../proxy/segment-proxy.js';
 import { applyAttack } from '../attacks/index.js';
 import { proxyGapEmptySegment } from '../attacks/gap.js';
@@ -9,11 +10,11 @@ import { proxyWithContentSwap } from '../attacks/mdat-swap.js';
 
 const router = Router();
 
-function observeSegment(session: Express.Request['session'], seg: number): void {
-  if (session.lastSeenSegment !== seg) {
-    session.observedSegments.push(seg);
-    session.lastSeenSegment = seg;
-    if (session.observedSegments.length > 20) session.observedSegments.shift();
+function observeSegment(seg: number): void {
+  if (state.lastSeenSegment !== seg) {
+    state.observedSegments.push(seg);
+    state.lastSeenSegment = seg;
+    if (state.observedSegments.length > 20) state.observedSegments.shift();
   }
 }
 
@@ -29,8 +30,8 @@ router.get('*.m4s', async (req, res) => {
     return proxySegment(req, res, req.path, null);
   }
 
-  observeSegment(req.session, info.number);
-  const attack = applyAttack(req.session, info);
+  observeSegment(info.number);
+  const attack = applyAttack(state, info);
   const targetPath = buildSegmentPath(info, attack.targetSegment);
 
   if (attack.gapEmptySegment) return proxyGapEmptySegment(res, info, attack);

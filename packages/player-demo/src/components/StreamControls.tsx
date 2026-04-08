@@ -8,7 +8,6 @@ import {
   injectMdatSwapAttack,
   disableAllAttacks,
   getCurrentSegmentNumber,
-  resetProxySession,
 } from '../state/attackState.js';
 
 const AD_MANIFEST_ENDPOINT = '/manifest';
@@ -106,7 +105,6 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
     setIsAdBreakActive(true);
     setIsAdBreakLoading(true);
     await disableAllAttacks();
-    resetProxySession();
     try {
       const restartResp = await fetch(STREAMER_RESTART_ENDPOINT, { method: 'POST' });
       if (!restartResp.ok) throw new Error(`Restart endpoint returned ${restartResp.status}`);

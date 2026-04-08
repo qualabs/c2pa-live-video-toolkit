@@ -1,61 +1,56 @@
 import { Router } from 'express';
+import { state } from '../state.js';
 
 const router = Router();
 
-function resetGuards(session: Express.Request['session']): void {
-  session.guards = { replay: false, gap: false, mdatSwap: false, reorder: false };
+function resetGuards(): void {
+  state.guards = { replay: false, gap: false, mdatSwap: false, reorder: false };
 }
 
-router.post('/gap', (req, res) => {
-  const { session, userId } = req;
-  session.attackConfig = { ...session.attackConfig, enabled: true, type: 'gap', gapAt: null };
-  session.pendingGap = true;
-  resetGuards(session);
-  console.log(`Gap attack armed [session ${userId}]`);
+router.post('/gap', (_req, res) => {
+  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'gap', gapAt: null };
+  state.pendingGap = true;
+  resetGuards();
+  console.log('Gap attack armed');
   res.json({ ok: true });
 });
 
-router.post('/out-of-order', (req, res) => {
-  const { session, userId } = req;
-  session.attackConfig = { ...session.attackConfig, enabled: true, type: 'out-of-order' };
-  resetGuards(session);
-  console.log(`Out-of-order attack armed [session ${userId}]`);
+router.post('/out-of-order', (_req, res) => {
+  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'out-of-order' };
+  resetGuards();
+  console.log('Out-of-order attack armed');
   res.json({ ok: true });
 });
 
-router.post('/replay', (req, res) => {
-  const { session, userId } = req;
-  session.attackConfig = { ...session.attackConfig, enabled: true, type: 'replay' };
-  resetGuards(session);
-  console.log(`Replay attack armed [session ${userId}]`);
+router.post('/replay', (_req, res) => {
+  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'replay' };
+  resetGuards();
+  console.log('Replay attack armed');
   res.json({ ok: true });
 });
 
-router.post('/mdat-swap', (req, res) => {
-  const { session, userId } = req;
-  session.pendingMoofTamper = true;
-  session.mdatAttackAt = null;
-  session.attackConfig = { ...session.attackConfig, enabled: true, type: 'mdat-swap' };
-  console.log(`Mdat-swap attack armed [session ${userId}]`);
+router.post('/mdat-swap', (_req, res) => {
+  state.pendingMoofTamper = true;
+  state.mdatAttackAt = null;
+  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'mdat-swap' };
+  console.log('Mdat-swap attack armed');
   res.json({ ok: true });
 });
 
-router.post('/disable', (req, res) => {
-  const { session } = req;
-  session.attackConfig.enabled = false;
-  session.attackConfig.type = 'none';
-  session.pendingGap = false;
-  resetGuards(session);
+router.post('/disable', (_req, res) => {
+  state.attackConfig.enabled = false;
+  state.attackConfig.type = 'none';
+  state.pendingGap = false;
+  resetGuards();
   res.json({ ok: true });
 });
 
-router.get('/status', (req, res) => {
-  const { session } = req;
+router.get('/status', (_req, res) => {
   res.json({
-    config: session.attackConfig,
-    guards: session.guards,
-    observed: { lastSeen: session.lastSeenSegment, history: session.observedSegments.slice(-5) },
-    contentCacheSize: session.contentCache.size,
+    config: state.attackConfig,
+    guards: state.guards,
+    observed: { lastSeen: state.lastSeenSegment, history: state.observedSegments.slice(-5) },
+    contentCacheSize: state.contentCache.size,
   });
 });
 
