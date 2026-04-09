@@ -100,7 +100,10 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     eventBus,
     initProcessor: initProcessor as unknown as InitSegmentProcessor,
     vsiValidator: vsiValidator as unknown as VsiValidator,
-    manifestBoxValidator: manifestBoxValidator as unknown as ManifestBoxValidator,
+    manifestBoxValidators: {
+      video: manifestBoxValidator as unknown as ManifestBoxValidator,
+      audio: manifestBoxValidator as unknown as ManifestBoxValidator,
+    },
     sessionKeyStore,
     segmentStore,
     timeIndex,
@@ -131,10 +134,10 @@ describe('SegmentRouter', () => {
       expect(initProcessor.process).toHaveBeenCalledOnce();
     });
 
-    it('ignores InitializationSegment for non-video media types', async () => {
+    it('ignores InitializationSegment for unsupported media types', async () => {
       const { router, initProcessor } = buildDeps();
       await router.route(
-        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'audio' } }),
+        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'text' } }),
       );
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
@@ -179,6 +182,7 @@ describe('SegmentRouter', () => {
       manifestBoxValidator.validate.mockResolvedValue({
         ...makeValidManifestBoxResult(),
         isValid: false,
+        errorCodes: ['livevideo.segment.invalid'],
       });
       const listener = vi.fn();
       eventBus.on('segmentValidated', listener);
@@ -235,10 +239,9 @@ describe('SegmentRouter', () => {
         eventBus,
         initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
         vsiValidator: vsiValidator as unknown as VsiValidator,
-        manifestBoxValidator: {
-          validate: vi.fn(),
-          reset: vi.fn(),
-        } as unknown as ManifestBoxValidator,
+        manifestBoxValidators: {
+          video: { validate: vi.fn(), reset: vi.fn() } as unknown as ManifestBoxValidator,
+        },
         sessionKeyStore,
         segmentStore,
         timeIndex: new TimeIntervalIndex(),
