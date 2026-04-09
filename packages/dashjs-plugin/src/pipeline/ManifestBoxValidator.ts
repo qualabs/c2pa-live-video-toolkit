@@ -8,36 +8,61 @@ export type ManifestBoxValidationResult = {
   manifest: unknown;
   issuer?: string | null;
   previousManifestId?: string | null;
+  expectedPreviousManifestId: string | null;
   errorCodes?: readonly string[];
 };
 
 export class ManifestBoxValidator {
   private lastManifestId: string | null = null;
   private lastState: ManifestBoxValidationState | undefined = undefined;
+  private isFirstSegment = true;
 
   async validate(bytes: Uint8Array, fallbackIndex: number): Promise<ManifestBoxValidationResult> {
+    const expectedPreviousManifestId = this.lastManifestId;
+    const wasFirstSegment = this.isFirstSegment;
+    this.isFirstSegment = false;
+
     const { result, nextManifestId, nextState } = await validateC2paManifestBoxSegment(
       bytes,
       this.lastManifestId,
       this.lastState,
     );
 
-    this.lastManifestId = nextManifestId;
-    this.lastState = nextState;
+    if (result.manifest != null) {
+      this.lastManifestId = nextManifestId;
+      this.lastState = nextState;
+    }
+
+    // The first media segment after init is signed without --previous-segment, so
+    // c2patool does not embed previousManifestId. Suppress continuity-only failures
+    // on the first segment — the chain proper starts from segment 2.
+    let isValid = result.isValid;
+    let errorCodes = result.errorCodes;
+    if (!isValid && wasFirstSegment) {
+      const nonContinuityErrors = (result.errorCodes ?? []).filter(
+        (c) => c !== 'livevideo.continuityMethod.invalid',
+      );
+      if (nonContinuityErrors.length === 0) {
+        isValid = true;
+        errorCodes = [];
+      }
+    }
 
     return {
-      isValid: result.isValid,
+      isValid,
       sequenceNumber: result.sequenceNumber ?? fallbackIndex,
       bmffHashHex: result.bmffHashHex,
       manifest: result.manifest,
       issuer: result.issuer,
       previousManifestId: result.previousManifestId,
-      errorCodes: result.errorCodes,
+      expectedPreviousManifestId,
+      errorCodes,
     };
   }
 
   reset(): void {
     this.lastManifestId = null;
     this.lastState = undefined;
+    this.isFirstSegment = true;
   }
 }

@@ -65,9 +65,34 @@ const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, 'invalid'>, StatusInfo> = {
   },
 };
 
-function buildStatusInfo(status: SegmentStatus, errorCodes: string[]): StatusInfo {
+function buildStatusInfo(
+  status: SegmentStatus,
+  errorCodes: string[],
+  segment: SegmentRecord,
+): StatusInfo {
   if (status === 'invalid') {
     const errorMessages = ERROR_CODE_MESSAGES as Record<string, string | undefined>;
+    const hasContinuityError = errorCodes.includes('livevideo.continuityMethod.invalid');
+
+    if (hasContinuityError) {
+      const prevId = segment.previousManifestId;
+      return {
+        title: 'Continuity Chain Broken',
+        description:
+          'This segment failed the previousManifestId continuity check. ' +
+          'The chain was interrupted — likely because a preceding segment was dropped or tampered with.',
+        details: [
+          `✗ previousManifestId in this segment: ${prevId ? prevId.substring(0, 20) + '…' : '(none)'}`,
+          '✗ Expected value did not match the last known manifest ID',
+          '⚠ This is a side effect of a gap attack or missing segment upstream',
+        ],
+        color: '#f97316',
+        meaning:
+          'C2PA uses a hash chain where each segment references the previous one. ' +
+          'When a segment is dropped, the chain breaks and all subsequent segments fail this check until the stream resets.',
+      };
+    }
+
     const reasons = errorCodes.map((code) => `✗ ${errorMessages[code] ?? code}`);
     return {
       title: 'Invalid Segment',
@@ -94,7 +119,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
   }
 
   const errorCodes = (segment.validationResults?.errorCodes ?? []) as string[];
-  const info = buildStatusInfo(segment.status, errorCodes);
+  const info = buildStatusInfo(segment.status, errorCodes, segment);
   const displayData = convertBuffersToHex({
     segmentNumber: segment.segmentNumber,
     sequenceNumber: segment.sequenceNumber,

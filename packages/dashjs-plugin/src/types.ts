@@ -49,6 +49,8 @@ export type SegmentRecord = {
     errorCodes?: readonly ValidationErrorCode[];
   };
   manifest?: unknown;
+  previousManifestId?: string | null;
+  continuityOk?: boolean;
 };
 
 export type PlaybackStatusDetail = {

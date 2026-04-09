@@ -120,6 +120,9 @@ export class SegmentRouter {
 
     if (result.success) {
       this.deps.activeManifest.value = null;
+      for (const validator of Object.values(this.deps.manifestBoxValidators)) {
+        validator?.reset();
+      }
     }
   }
 
@@ -244,7 +247,14 @@ export class SegmentRouter {
       return;
     }
 
-    const status: SegmentStatus = result.isValid ? 'valid' : 'invalid';
+    const continuityOk =
+      result.expectedPreviousManifestId == null ||
+      result.previousManifestId === result.expectedPreviousManifestId;
+    const isContinuityOnlyFailure =
+      !result.isValid &&
+      Array.isArray(result.errorCodes) &&
+      result.errorCodes.every((c) => c === 'livevideo.continuityMethod.invalid');
+    const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
 
@@ -263,6 +273,8 @@ export class SegmentRouter {
           errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
         },
         manifest: result.manifest,
+        previousManifestId: result.previousManifestId,
+        continuityOk,
       },
       streamKey,
       interval,

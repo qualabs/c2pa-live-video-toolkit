@@ -43,6 +43,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   const warningCount = segments.filter((s) => statusCategory(s.status) === 'warning').length;
 
   const initStatus = initData == null ? 'pending' : initData.success ? 'valid' : 'failed';
+  const isManifestBox = !initData?.sessionKeysCount;
 
   return (
     <Container>
@@ -64,7 +65,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Th>SEG #</Th>
               <Th>TYPE</Th>
               <Th>SEQ</Th>
-              <Th>KEY ID</Th>
+              <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>
               <Th>HASH</Th>
               <Th>VALIDATION</Th>
               <Th>STATUS</Th>
@@ -76,8 +77,16 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Td>INIT</Td>
               <Td>init</Td>
               <Td>—</Td>
-              <Td title="Initialization Segment">Init Seg...</Td>
-              <Td title={initData?.sessionKeysCount ? 'Contains session keys' : 'Contains C2PA manifest'}>
+              <Td
+                title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
+              >
+                {isManifestBox ? '—' : 'Init Seg...'}
+              </Td>
+              <Td
+                title={
+                  initData?.sessionKeysCount ? 'Contains session keys' : 'Contains C2PA manifest'
+                }
+              >
                 {initData?.sessionKeysCount ? 'Session Keys' : 'Manifest'}
               </Td>
               <Td>
@@ -86,11 +95,16 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                 </ValidBadge>
               </Td>
               <Td>
-                <StatusBadge $category={initStatus === 'valid' ? 'valid' : initStatus === 'failed' ? 'failed' : 'warning'}>
+                <StatusBadge
+                  $category={
+                    initStatus === 'valid' ? 'valid' : initStatus === 'failed' ? 'failed' : 'warning'
+                  }
+                >
                   <span>🔑</span>
                   <span>Init</span>
                 </StatusBadge>
               </Td>
+              {isManifestBox && <Td>—</Td>}
             </InitRow>
 
             {sortedSegments.map((segment) => {
@@ -108,9 +122,20 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td>{segment.segmentNumber}</Td>
                   <Td>{segment.mediaType}</Td>
                   <Td>{segment.sequenceNumber}</Td>
-                  <Td title={segment.keyId}>
-                    {missing ? '—' : truncate(segment.keyId)}
-                  </Td>
+                  {isManifestBox ? (
+                    <Td title={segment.previousManifestId ?? undefined}>
+                      {missing || segment.previousManifestId == null ? (
+                        '—'
+                      ) : (
+                        <ContinuityBadge $ok={segment.continuityOk ?? true}>
+                          {segment.continuityOk ? '✓' : '✗'}{' '}
+                          {truncate(segment.previousManifestId, 10)}
+                        </ContinuityBadge>
+                      )}
+                    </Td>
+                  ) : (
+                    <Td title={segment.keyId}>{missing ? '—' : truncate(segment.keyId)}</Td>
+                  )}
                   <Td title={segment.hash}>
                     {missing || segment.hash === 'N/A' ? '—' : truncate(segment.hash)}
                   </Td>
@@ -190,13 +215,34 @@ const Table = styled.table`
   font-size: 0.875rem;
   table-layout: fixed;
 
-  th:nth-child(1), td:nth-child(1) { width: 8%; }
-  th:nth-child(2), td:nth-child(2) { width: 10%; }
-  th:nth-child(3), td:nth-child(3) { width: 8%; }
-  th:nth-child(4), td:nth-child(4) { width: 18%; }
-  th:nth-child(5), td:nth-child(5) { width: 14%; }
-  th:nth-child(6), td:nth-child(6) { width: 16%; }
-  th:nth-child(7), td:nth-child(7) { width: 26%; }
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 8%;
+  }
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 10%;
+  }
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 8%;
+  }
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 18%;
+  }
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 14%;
+  }
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 16%;
+  }
+  th:nth-child(7),
+  td:nth-child(7) {
+    width: 26%;
+  }
 `;
 
 const Th = styled.th`
@@ -230,7 +276,8 @@ const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'war
   background: ${(p) => (p.$selected ? '#2a2a2a' : 'transparent')};
   box-shadow: ${(p) => {
     if (!p.$selected) return 'none';
-    const color = p.$category === 'valid' ? '#4ade80' : p.$category === 'failed' ? '#ef4444' : '#fbbf24';
+    const color =
+      p.$category === 'valid' ? '#4ade80' : p.$category === 'failed' ? '#ef4444' : '#fbbf24';
     return `inset 3px 0 0 ${color}`;
   }};
   transition: background 0.15s ease;
@@ -257,8 +304,10 @@ const ValidBadge = styled.span<{ $status: 'valid' | 'failed' | 'pending' | 'empt
   color: ${(p) => (p.$status === 'empty' || p.$status === 'pending') ? '#888' : '#fff'};
   background: ${(p) => {
     switch (p.$status) {
-      case 'valid':   return '#22c55e';
-      case 'failed':  return '#ef4444';
+      case 'valid':
+        return '#22c55e';
+      case 'failed':
+        return '#ef4444';
       case 'pending': return 'rgba(251, 191, 36, 0.2)';
       default:        return 'transparent';
     }
@@ -275,18 +324,27 @@ const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' }>`
   font-weight: 500;
   background: ${(p) => {
     switch (p.$category) {
-      case 'valid':   return 'rgba(74, 222, 128, 0.1)';
-      case 'failed':  return 'rgba(239, 68, 68, 0.1)';
-      case 'warning': return 'rgba(251, 191, 36, 0.1)';
+      case 'valid':
+        return 'rgba(74, 222, 128, 0.1)';
+      case 'failed':
+        return 'rgba(239, 68, 68, 0.1)';
+      case 'warning':
+        return 'rgba(251, 191, 36, 0.1)';
     }
   }};
-  border: 1px solid ${(p) => {
-    switch (p.$category) {
-      case 'valid':   return 'rgba(74, 222, 128, 0.3)';
-      case 'failed':  return 'rgba(239, 68, 68, 0.3)';
-      case 'warning': return 'rgba(251, 191, 36, 0.3)';
-    }
-  }};
+  border: 1px solid
+    ${(p) =>
+      p.$category === 'valid'
+        ? 'rgba(74, 222, 128, 0.3)'
+        : p.$category === 'failed'
+          ? 'rgba(239, 68, 68, 0.3)'
+          : 'rgba(251, 191, 36, 0.3)'};
+`;
+
+const ContinuityBadge = styled.span<{ $ok: boolean }>`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${(p) => (p.$ok ? '#4ade80' : '#ef4444')};
 `;
 
 const EmptyState = styled.div`
