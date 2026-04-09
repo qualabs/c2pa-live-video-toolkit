@@ -20,6 +20,7 @@ from typing import Dict
 import os
 
 _STREAM_ROOT = Path(os.environ.get("STREAM_ROOT", "/app/live-streaming"))
+_BASE_URL = os.environ.get("MANIFEST_BASE_URL", "http://localhost:8083/")
 
 # All manifests will write to this single file
 PATCHED_MANIFEST_PATH = _STREAM_ROOT / "processed" / "output" / "stream_with_ad.mpd"
@@ -63,7 +64,8 @@ def update_live_mpd_times(mpd_xml_template: str, dynamic_reset: bool) -> str:
 
     manifest = mpd_xml_template.format(
         availabilityStartTime=availability_start_time,
-        publishTime=now_iso
+        publishTime=now_iso,
+        baseUrl=_BASE_URL,
     )
 
     PATCHED_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
