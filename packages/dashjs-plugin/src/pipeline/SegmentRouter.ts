@@ -5,11 +5,11 @@ import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import { ValidationErrorCode } from '../types.js';
+import { ValidationErrorCode, SegmentStatus } from '../types.js';
 import type {
   MediaType,
   SegmentRecord,
-  SegmentStatus,
+  SegmentStatusValue,
   SequenceAnomalyReason,
   Logger,
 } from '../types.js';
@@ -41,16 +41,16 @@ type SegmentRouterDeps = {
   logger: Logger;
 };
 
-const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatus> = {
-  duplicate: 'replayed',
-  out_of_order: 'reordered',
-  gap_detected: 'warning',
-  sequence_number_below_minimum: 'invalid',
+const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatusValue> = {
+  duplicate: SegmentStatus.REPLAYED,
+  out_of_order: SegmentStatus.REORDERED,
+  gap_detected: SegmentStatus.WARNING,
+  sequence_number_below_minimum: SegmentStatus.INVALID,
 };
 
 const UNKNOWN_KEY_ID = 'unknown';
 const UNAVAILABLE_HASH = 'N/A';
-const MISSING_SEGMENT_PLACEHOLDER = '—';
+const NO_DATA = '—';
 
 type VsiSegmentParams = {
   segmentBytes: Uint8Array;
@@ -80,11 +80,11 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReason | null,
-): SegmentStatus {
+): SegmentStatusValue {
   if (sequenceReason && SEQUENCE_REASON_TO_STATUS[sequenceReason]) {
     return SEQUENCE_REASON_TO_STATUS[sequenceReason];
   }
-  return isValid ? 'valid' : 'invalid';
+  return isValid ? SegmentStatus.VALID : SegmentStatus.INVALID;
 }
 
 export class SegmentRouter {
@@ -190,7 +190,7 @@ export class SegmentRouter {
     }
 
     const status = resolveSegmentStatus(vsiResult.overall, vsiResult.sequenceReason);
-    const forceNewArrival = status === 'replayed' || status === 'reordered';
+    const forceNewArrival = status === SegmentStatus.REPLAYED || status === SegmentStatus.REORDERED;
 
     if (
       vsiResult.sequenceReason === 'gap_detected' &&
@@ -238,7 +238,10 @@ export class SegmentRouter {
     try {
       const validator = this.deps.manifestBoxValidators[mediaType];
       if (!validator) {
-        this.deps.eventBus.emit('error', { source: 'ManifestBoxValidator', error: `No validator for mediaType: ${mediaType}` });
+        this.deps.eventBus.emit('error', {
+          source: 'ManifestBoxValidator',
+          error: `No validator for mediaType: ${mediaType}`,
+        });
         return;
       }
       result = await validator.validate(segmentBytes, segmentIndex);
@@ -247,11 +250,35 @@ export class SegmentRouter {
       return;
     }
 
+    if (result.manifest == null) {
+      this.deps.segmentStore.add({
+        segmentNumber: segmentIndex,
+        mediaType,
+        sequenceNumber: segmentIndex,
+        keyId: NO_DATA,
+        hash: NO_DATA,
+        status: SegmentStatus.AD,
+        timestamp: Date.now(),
+      });
+      this.deps.eventBus.emit('segmentValidated', {
+        segmentNumber: segmentIndex,
+        status: SegmentStatus.AD,
+        hash: NO_DATA,
+        keyId: NO_DATA,
+        mediaType,
+      });
+      return;
+    }
+
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
       result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
-    const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
+    const status: SegmentStatusValue = result.isValid
+      ? SegmentStatus.VALID
+      : isContinuityOnlyFailure
+        ? SegmentStatus.WARNING
+        : SegmentStatus.INVALID;
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
 
@@ -290,7 +317,7 @@ export class SegmentRouter {
   private buildVsiSegmentRecord(
     vsiResult: VsiValidationResult,
     mediaType: MediaType,
-    status: SegmentStatus,
+    status: SegmentStatusValue,
   ): Omit<SegmentRecord, 'arrivalIndex'> {
     return {
       segmentNumber: vsiResult.sequenceNumber,
@@ -328,9 +355,9 @@ export class SegmentRouter {
         segmentNumber: n,
         mediaType,
         sequenceNumber: n,
-        keyId: MISSING_SEGMENT_PLACEHOLDER,
-        hash: MISSING_SEGMENT_PLACEHOLDER,
-        status: 'missing',
+        keyId: NO_DATA,
+        hash: NO_DATA,
+        status: SegmentStatus.MISSING,
         sequenceReason: 'gap_detected',
         timestamp: Date.now(),
       });

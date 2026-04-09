@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ERROR_CODE_MESSAGES, ValidationErrorCode } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, SegmentStatusValue } from '@c2pa-live-toolkit/dashjs-plugin';
+import {
+  ERROR_CODE_MESSAGES,
+  ValidationErrorCode,
+  SegmentStatus,
+} from '@c2pa-live-toolkit/dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 
@@ -17,7 +21,14 @@ type StatusInfo = {
   meaning: string;
 };
 
-const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, 'invalid'>, StatusInfo> = {
+const STATUS_INFO_MAP: Record<Exclude<SegmentStatusValue, typeof SegmentStatus.INVALID>, StatusInfo> = {
+  ad: {
+    title: 'No C2PA Manifest',
+    description: 'This segment carries no C2PA provenance data.',
+    details: ['▶ No C2PA manifest found in segment', '— No cryptographic validation performed'],
+    color: '#60a5fa',
+    meaning: 'The segment was served without a C2PA manifest — likely an ad or non-C2PA period.',
+  },
   valid: {
     title: 'Valid Segment',
     description: 'This segment passed all C2PA validation checks.',
@@ -66,11 +77,11 @@ const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, 'invalid'>, StatusInfo> = {
 };
 
 function buildStatusInfo(
-  status: SegmentStatus,
+  status: SegmentStatusValue,
   errorCodes: string[],
   segment: SegmentRecord,
 ): StatusInfo {
-  if (status === 'invalid') {
+  if (status === SegmentStatus.INVALID) {
     const errorMessages = ERROR_CODE_MESSAGES as Record<string, string | undefined>;
     const hasContinuityError = errorCodes.includes(ValidationErrorCode.CONTINUITY_INVALID);
 
@@ -203,9 +214,16 @@ const PreviewCard = styled.div`
 `;
 const PreviewHeader = styled.div`display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;`;
 const PreviewTitle = styled.h3`font-size: 1rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
-const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' }>`
+const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
   font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px;
-  color: ${(p) => p.$category === 'valid' ? '#4ade80' : p.$category === 'failed' ? '#ef4444' : '#fbbf24'};
+  color: ${(p) =>
+    p.$category === 'valid'
+      ? '#4ade80'
+      : p.$category === 'failed'
+        ? '#ef4444'
+        : p.$category === 'ad'
+          ? '#60a5fa'
+          : '#fbbf24'};
 `;
 const PreviewInfo = styled.div`display: flex; flex-direction: column; gap: 0.5rem;`;
 const InfoRow = styled.div`display: flex; justify-content: space-between; align-items: center;`;

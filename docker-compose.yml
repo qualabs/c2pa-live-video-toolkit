@@ -27,6 +27,7 @@ services:
       - STATIC_FILES_PATH=/usr/src/app/live-streaming
     volumes:
       - stream-data:/usr/src/app/live-streaming
+      - ./packages/attack-proxy/ad-insertion/ads:/usr/src/app/live-streaming/processed/ads:ro
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8081/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
@@ -43,6 +44,7 @@ services:
       - '3000:3000'
     environment:
       - STREAM_ROOT=/app/live-streaming
+      - MANIFEST_BASE_URL=${MANIFEST_BASE_URL:-http://localhost:8083/}
     volumes:
       - stream-data:/app/live-streaming
     depends_on:

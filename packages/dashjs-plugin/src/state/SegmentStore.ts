@@ -1,11 +1,17 @@
-import type { SegmentRecord, SegmentStatus } from '../types.js';
+import { SegmentStatus } from '../types.js';
+import type { SegmentRecord, SegmentStatusValue } from '../types.js';
 
 type Unsubscribe = () => void;
 type StoreListener = (segments: SegmentRecord[]) => void;
 
-const SEQUENCE_ANOMALY_STATUSES: SegmentStatus[] = ['replayed', 'reordered', 'missing', 'warning'];
+const SEQUENCE_ANOMALY_STATUSES: SegmentStatusValue[] = [
+  SegmentStatus.REPLAYED,
+  SegmentStatus.REORDERED,
+  SegmentStatus.MISSING,
+  SegmentStatus.WARNING,
+];
 
-function isSequenceAnomaly(status: SegmentStatus): boolean {
+function isSequenceAnomaly(status: SegmentStatusValue): boolean {
   return SEQUENCE_ANOMALY_STATUSES.includes(status);
 }
 

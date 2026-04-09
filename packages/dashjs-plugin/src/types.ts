@@ -26,7 +26,17 @@ type C2paStatusCodeKey =
 
 export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
 
-export type SegmentStatus = 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
+export const SegmentStatus = {
+  VALID: 'valid',
+  INVALID: 'invalid',
+  REPLAYED: 'replayed',
+  REORDERED: 'reordered',
+  MISSING: 'missing',
+  WARNING: 'warning',
+  AD: 'ad',
+} as const;
+
+export type SegmentStatusValue = (typeof SegmentStatus)[keyof typeof SegmentStatus];
 
 export type SequenceAnomalyReason =
   | 'duplicate'
@@ -40,7 +50,7 @@ export type SegmentRecord = {
   sequenceNumber: number;
   keyId: string;
   hash: string;
-  status: SegmentStatus;
+  status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReason;
   timestamp: number;
   arrivalIndex: number;
@@ -74,7 +84,7 @@ export type InitProcessedEvent = {
 
 export type SegmentValidatedEvent = {
   segmentNumber: number;
-  status: SegmentStatus;
+  status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReason;
   hash: string;
   keyId: string;

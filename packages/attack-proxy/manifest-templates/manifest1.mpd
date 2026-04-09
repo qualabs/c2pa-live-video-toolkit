@@ -6,7 +6,7 @@
 <ServiceDescription id="0">
     </ServiceDescription>
     <Period id="0" start="PT0.0S" duration="PT8S">
-    <BaseURL>https://c2pa-player.qualabs.dev/</BaseURL>
+    <BaseURL>{baseUrl}</BaseURL>
     <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
     <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
     <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="1" duration="49152">
@@ -15,7 +15,7 @@
     </AdaptationSet>
 </Period>
     <Period id="1" start="PT8S" duration="PT12S">
-    <BaseURL>https://c2pa-player.qualabs.dev/ads/</BaseURL>
+    <BaseURL>{baseUrl}ads/</BaseURL>
     <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
     <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
     <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="101" duration="49152">
@@ -24,7 +24,7 @@
     </AdaptationSet>
 </Period>
     <Period id="2" start="PT20S">
-    <BaseURL>https://c2pa-player.qualabs.dev/</BaseURL>
+    <BaseURL>{baseUrl}</BaseURL>
     <AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="320" maxHeight="180" par="16:9" lang="und">
     <Representation id="0" mimeType="video/mp4" codecs="avc1.64000c" bandwidth="104096" width="320" height="180" sar="1:1">
     <SegmentTemplate timescale="12288" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="6" duration="49152" presentationTimeOffset="245760">
