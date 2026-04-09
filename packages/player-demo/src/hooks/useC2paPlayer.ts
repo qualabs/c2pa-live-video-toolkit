@@ -55,22 +55,6 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
       setState((prev) => ({ ...prev, initData: event }));
     });
 
-    controller.on('segmentsMissing', (event) => {
-      console.warn(
-        `[c2pa] Missing segments detected: ${event.from}–${event.to} (count: ${event.count})`,
-      );
-    });
-
-    controller.on('segmentValidated', (event) => {
-      if (event.status !== 'valid') {
-        console.warn(
-          `[c2pa] Segment ${event.segmentNumber} (${event.mediaType}) status: ${event.status}`,
-          event.sequenceReason ? `reason: ${event.sequenceReason}` : '',
-          event.errorCodes?.length ? `codes: ${event.errorCodes.join(', ')}` : '',
-        );
-      }
-    });
-
     dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (e: unknown) => {
       const event = e as { error?: unknown };
       console.warn('[player-demo] dash.js error:', event.error);
