@@ -23,8 +23,8 @@ function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LEN
   return value.substring(0, length) + '...';
 }
 
-function isMissingSegment(segment: SegmentRecord): boolean {
-  return segment.status === 'missing';
+function isUnverifiedSegment(segment: SegmentRecord): boolean {
+  return segment.status === 'missing' || segment.status === 'ad';
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -109,7 +109,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
 
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
-              const missing = isMissingSegment(segment);
+              const missing = isUnverifiedSegment(segment);
               const isValid = segment.validationResults?.overall ?? false;
 
               return (
@@ -271,13 +271,19 @@ const InitRow = styled.tr`
   &:hover { background: #353535; }
 `;
 
-const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'warning' }>`
+const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
   cursor: pointer;
   background: ${(p) => (p.$selected ? '#2a2a2a' : 'transparent')};
   box-shadow: ${(p) => {
     if (!p.$selected) return 'none';
     const color =
-      p.$category === 'valid' ? '#4ade80' : p.$category === 'failed' ? '#ef4444' : '#fbbf24';
+      p.$category === 'valid'
+        ? '#4ade80'
+        : p.$category === 'failed'
+          ? '#ef4444'
+          : p.$category === 'ad'
+            ? '#60a5fa'
+            : '#fbbf24';
     return `inset 3px 0 0 ${color}`;
   }};
   transition: background 0.15s ease;
@@ -314,7 +320,7 @@ const ValidBadge = styled.span<{ $status: 'valid' | 'failed' | 'pending' | 'empt
   }};
 `;
 
-const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' }>`
+const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -330,6 +336,8 @@ const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' }>`
         return 'rgba(239, 68, 68, 0.1)';
       case 'warning':
         return 'rgba(251, 191, 36, 0.1)';
+      case 'ad':
+        return 'rgba(96, 165, 250, 0.1)';
     }
   }};
   border: 1px solid
@@ -338,7 +346,9 @@ const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' }>`
         ? 'rgba(74, 222, 128, 0.3)'
         : p.$category === 'failed'
           ? 'rgba(239, 68, 68, 0.3)'
-          : 'rgba(251, 191, 36, 0.3)'};
+          : p.$category === 'ad'
+            ? 'rgba(96, 165, 250, 0.3)'
+            : 'rgba(251, 191, 36, 0.3)'};
 `;
 
 const ContinuityBadge = styled.span<{ $ok: boolean }>`

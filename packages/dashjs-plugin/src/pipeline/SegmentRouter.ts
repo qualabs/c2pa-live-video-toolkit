@@ -247,6 +247,19 @@ export class SegmentRouter {
       return;
     }
 
+    if (result.manifest == null) {
+      this.deps.segmentStore.add({
+        segmentNumber: segmentIndex,
+        mediaType,
+        sequenceNumber: segmentIndex,
+        keyId: MISSING_SEGMENT_PLACEHOLDER,
+        hash: MISSING_SEGMENT_PLACEHOLDER,
+        status: 'ad',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
     const continuityOk =
       result.expectedPreviousManifestId == null ||
       result.previousManifestId === result.expectedPreviousManifestId;

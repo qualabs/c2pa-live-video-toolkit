@@ -26,7 +26,14 @@ export type ValidationErrorCode =
   | 'livevideo.sessionkey.invalid'
   | C2paStatusCode;
 
-export type SegmentStatus = 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
+export type SegmentStatus =
+  | 'valid'
+  | 'invalid'
+  | 'replayed'
+  | 'reordered'
+  | 'missing'
+  | 'warning'
+  | 'ad';
 
 export type SequenceAnomalyReason =
   | 'duplicate'
