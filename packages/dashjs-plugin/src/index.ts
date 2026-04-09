@@ -11,6 +11,7 @@ export {
   type C2paEventType,
   type SegmentRecord,
   SegmentStatus,
+  type SegmentStatusValue,
   type SequenceAnomalyReason,
   type MediaType,
   type PlaybackStatus,

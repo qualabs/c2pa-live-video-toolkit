@@ -1,6 +1,7 @@
 import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentStatusValue } from '@c2pa-live-toolkit/dashjs-plugin';
 
-export function statusIcon(status: SegmentStatus): string {
+export function statusIcon(status: SegmentStatusValue): string {
   switch (status) {
     case SegmentStatus.VALID:
       return '✓';
@@ -19,7 +20,7 @@ export function statusIcon(status: SegmentStatus): string {
   }
 }
 
-export function statusText(status: SegmentStatus): string {
+export function statusText(status: SegmentStatusValue): string {
   switch (status) {
     case SegmentStatus.VALID:
       return 'OK';
@@ -38,7 +39,7 @@ export function statusText(status: SegmentStatus): string {
   }
 }
 
-export function statusCategory(status: SegmentStatus): 'valid' | 'failed' | 'warning' | 'ad' {
+export function statusCategory(status: SegmentStatusValue): 'valid' | 'failed' | 'warning' | 'ad' {
   switch (status) {
     case SegmentStatus.VALID:
       return 'valid';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, SegmentStatusValue } from '@c2pa-live-toolkit/dashjs-plugin';
 import {
   ERROR_CODE_MESSAGES,
   ValidationErrorCode,
@@ -21,7 +21,7 @@ type StatusInfo = {
   meaning: string;
 };
 
-const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, typeof SegmentStatus.INVALID>, StatusInfo> = {
+const STATUS_INFO_MAP: Record<Exclude<SegmentStatusValue, typeof SegmentStatus.INVALID>, StatusInfo> = {
   ad: {
     title: 'No C2PA Manifest',
     description: 'This segment carries no C2PA provenance data.',
@@ -77,7 +77,7 @@ const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, typeof SegmentStatus.INVALI
 };
 
 function buildStatusInfo(
-  status: SegmentStatus,
+  status: SegmentStatusValue,
   errorCodes: string[],
   segment: SegmentRecord,
 ): StatusInfo {

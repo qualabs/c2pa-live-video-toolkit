@@ -6,7 +6,13 @@ import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import { ValidationErrorCode, SegmentStatus } from '../types.js';
-import type { MediaType, SegmentRecord, SequenceAnomalyReason, Logger } from '../types.js';
+import type {
+  MediaType,
+  SegmentRecord,
+  SegmentStatusValue,
+  SequenceAnomalyReason,
+  Logger,
+} from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -35,7 +41,7 @@ type SegmentRouterDeps = {
   logger: Logger;
 };
 
-const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatus> = {
+const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatusValue> = {
   duplicate: SegmentStatus.REPLAYED,
   out_of_order: SegmentStatus.REORDERED,
   gap_detected: SegmentStatus.WARNING,
@@ -74,7 +80,7 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReason | null,
-): SegmentStatus {
+): SegmentStatusValue {
   if (sequenceReason && SEQUENCE_REASON_TO_STATUS[sequenceReason]) {
     return SEQUENCE_REASON_TO_STATUS[sequenceReason];
   }
@@ -268,7 +274,7 @@ export class SegmentRouter {
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
       result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
-    const status: SegmentStatus = result.isValid
+    const status: SegmentStatusValue = result.isValid
       ? SegmentStatus.VALID
       : isContinuityOnlyFailure
         ? SegmentStatus.WARNING
@@ -311,7 +317,7 @@ export class SegmentRouter {
   private buildVsiSegmentRecord(
     vsiResult: VsiValidationResult,
     mediaType: MediaType,
-    status: SegmentStatus,
+    status: SegmentStatusValue,
   ): Omit<SegmentRecord, 'arrivalIndex'> {
     return {
       segmentNumber: vsiResult.sequenceNumber,

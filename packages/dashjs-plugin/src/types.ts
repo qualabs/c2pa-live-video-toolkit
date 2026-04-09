@@ -36,7 +36,7 @@ export const SegmentStatus = {
   AD: 'ad',
 } as const;
 
-export type SegmentStatus = (typeof SegmentStatus)[keyof typeof SegmentStatus];
+export type SegmentStatusValue = (typeof SegmentStatus)[keyof typeof SegmentStatus];
 
 export type SequenceAnomalyReason =
   | 'duplicate'
@@ -50,7 +50,7 @@ export type SegmentRecord = {
   sequenceNumber: number;
   keyId: string;
   hash: string;
-  status: SegmentStatus;
+  status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReason;
   timestamp: number;
   arrivalIndex: number;
@@ -84,7 +84,7 @@ export type InitProcessedEvent = {
 
 export type SegmentValidatedEvent = {
   segmentNumber: number;
-  status: SegmentStatus;
+  status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReason;
   hash: string;
   keyId: string;
