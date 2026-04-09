@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ERROR_CODE_MESSAGES, ValidationErrorCode } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord } from '@c2pa-live-toolkit/dashjs-plugin';
+import {
+  ERROR_CODE_MESSAGES,
+  ValidationErrorCode,
+  SegmentStatus,
+} from '@c2pa-live-toolkit/dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 
@@ -17,7 +21,7 @@ type StatusInfo = {
   meaning: string;
 };
 
-const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, 'invalid'>, StatusInfo> = {
+const STATUS_INFO_MAP: Record<Exclude<SegmentStatus, typeof SegmentStatus.INVALID>, StatusInfo> = {
   ad: {
     title: 'No C2PA Manifest',
     description: 'This segment carries no C2PA provenance data.',
@@ -77,7 +81,7 @@ function buildStatusInfo(
   errorCodes: string[],
   segment: SegmentRecord,
 ): StatusInfo {
-  if (status === 'invalid') {
+  if (status === SegmentStatus.INVALID) {
     const errorMessages = ERROR_CODE_MESSAGES as Record<string, string | undefined>;
     const hasContinuityError = errorCodes.includes(ValidationErrorCode.CONTINUITY_INVALID);
 

@@ -5,14 +5,8 @@ import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import { ValidationErrorCode } from '../types.js';
-import type {
-  MediaType,
-  SegmentRecord,
-  SegmentStatus,
-  SequenceAnomalyReason,
-  Logger,
-} from '../types.js';
+import { ValidationErrorCode, SegmentStatus } from '../types.js';
+import type { MediaType, SegmentRecord, SequenceAnomalyReason, Logger } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -42,10 +36,10 @@ type SegmentRouterDeps = {
 };
 
 const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatus> = {
-  duplicate: 'replayed',
-  out_of_order: 'reordered',
-  gap_detected: 'warning',
-  sequence_number_below_minimum: 'invalid',
+  duplicate: SegmentStatus.REPLAYED,
+  out_of_order: SegmentStatus.REORDERED,
+  gap_detected: SegmentStatus.WARNING,
+  sequence_number_below_minimum: SegmentStatus.INVALID,
 };
 
 const UNKNOWN_KEY_ID = 'unknown';
@@ -84,7 +78,7 @@ function resolveSegmentStatus(
   if (sequenceReason && SEQUENCE_REASON_TO_STATUS[sequenceReason]) {
     return SEQUENCE_REASON_TO_STATUS[sequenceReason];
   }
-  return isValid ? 'valid' : 'invalid';
+  return isValid ? SegmentStatus.VALID : SegmentStatus.INVALID;
 }
 
 export class SegmentRouter {
@@ -190,7 +184,7 @@ export class SegmentRouter {
     }
 
     const status = resolveSegmentStatus(vsiResult.overall, vsiResult.sequenceReason);
-    const forceNewArrival = status === 'replayed' || status === 'reordered';
+    const forceNewArrival = status === SegmentStatus.REPLAYED || status === SegmentStatus.REORDERED;
 
     if (
       vsiResult.sequenceReason === 'gap_detected' &&
@@ -257,12 +251,12 @@ export class SegmentRouter {
         sequenceNumber: segmentIndex,
         keyId: NO_DATA,
         hash: NO_DATA,
-        status: 'ad',
+        status: SegmentStatus.AD,
         timestamp: Date.now(),
       });
       this.deps.eventBus.emit('segmentValidated', {
         segmentNumber: segmentIndex,
-        status: 'ad',
+        status: SegmentStatus.AD,
         hash: NO_DATA,
         keyId: NO_DATA,
         mediaType,
@@ -274,7 +268,11 @@ export class SegmentRouter {
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
       result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
-    const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
+    const status: SegmentStatus = result.isValid
+      ? SegmentStatus.VALID
+      : isContinuityOnlyFailure
+        ? SegmentStatus.WARNING
+        : SegmentStatus.INVALID;
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
 
@@ -353,7 +351,7 @@ export class SegmentRouter {
         sequenceNumber: n,
         keyId: NO_DATA,
         hash: NO_DATA,
-        status: 'missing',
+        status: SegmentStatus.MISSING,
         sequenceReason: 'gap_detected',
         timestamp: Date.now(),
       });

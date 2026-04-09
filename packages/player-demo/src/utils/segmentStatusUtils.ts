@@ -1,55 +1,55 @@
-import type { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
 
 export function statusIcon(status: SegmentStatus): string {
   switch (status) {
-    case 'valid':
+    case SegmentStatus.VALID:
       return '✓';
-    case 'replayed':
+    case SegmentStatus.REPLAYED:
       return '♻';
-    case 'reordered':
+    case SegmentStatus.REORDERED:
       return '↕';
-    case 'missing':
+    case SegmentStatus.MISSING:
       return '⊘';
-    case 'invalid':
+    case SegmentStatus.INVALID:
       return '✗';
-    case 'warning':
+    case SegmentStatus.WARNING:
       return '⚠';
-    case 'ad':
+    case SegmentStatus.AD:
       return '▶';
   }
 }
 
 export function statusText(status: SegmentStatus): string {
   switch (status) {
-    case 'valid':
+    case SegmentStatus.VALID:
       return 'OK';
-    case 'replayed':
+    case SegmentStatus.REPLAYED:
       return 'Replayed';
-    case 'reordered':
+    case SegmentStatus.REORDERED:
       return 'Reordered';
-    case 'missing':
+    case SegmentStatus.MISSING:
       return 'Missing Segment Detected';
-    case 'invalid':
+    case SegmentStatus.INVALID:
       return 'NOK';
-    case 'warning':
+    case SegmentStatus.WARNING:
       return 'Warning';
-    case 'ad':
+    case SegmentStatus.AD:
       return 'No C2PA';
   }
 }
 
 export function statusCategory(status: SegmentStatus): 'valid' | 'failed' | 'warning' | 'ad' {
   switch (status) {
-    case 'valid':
+    case SegmentStatus.VALID:
       return 'valid';
-    case 'replayed':
-    case 'reordered':
-    case 'invalid':
+    case SegmentStatus.REPLAYED:
+    case SegmentStatus.REORDERED:
+    case SegmentStatus.INVALID:
       return 'failed';
-    case 'missing':
-    case 'warning':
+    case SegmentStatus.MISSING:
+    case SegmentStatus.WARNING:
       return 'warning';
-    case 'ad':
+    case SegmentStatus.AD:
       return 'ad';
   }
 }

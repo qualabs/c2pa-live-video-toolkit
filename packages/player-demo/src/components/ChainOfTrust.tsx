@@ -4,7 +4,7 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ValidationErrorCode } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ValidationErrorCode, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -25,7 +25,7 @@ function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LEN
 }
 
 function isUnverifiedSegment(segment: SegmentRecord): boolean {
-  return segment.status === 'missing' || segment.status === 'ad';
+  return segment.status === SegmentStatus.MISSING || segment.status === SegmentStatus.AD;
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -39,7 +39,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
     [segments],
   );
 
-  const validCount = segments.filter((s) => s.status === 'valid').length;
+  const validCount = segments.filter((s) => s.status === SegmentStatus.VALID).length;
   const failedCount = segments.filter((s) => statusCategory(s.status) === 'failed').length;
   const warningCount = segments.filter((s) => statusCategory(s.status) === 'warning').length;
 

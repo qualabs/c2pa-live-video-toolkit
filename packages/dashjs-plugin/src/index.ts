@@ -10,7 +10,7 @@ export {
   type C2paEventMap,
   type C2paEventType,
   type SegmentRecord,
-  type SegmentStatus,
+  SegmentStatus,
   type SequenceAnomalyReason,
   type MediaType,
   type PlaybackStatus,

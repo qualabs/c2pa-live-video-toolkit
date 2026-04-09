@@ -26,14 +26,17 @@ type C2paStatusCodeKey =
 
 export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
 
-export type SegmentStatus =
-  | 'valid'
-  | 'invalid'
-  | 'replayed'
-  | 'reordered'
-  | 'missing'
-  | 'warning'
-  | 'ad';
+export const SegmentStatus = {
+  VALID: 'valid',
+  INVALID: 'invalid',
+  REPLAYED: 'replayed',
+  REORDERED: 'reordered',
+  MISSING: 'missing',
+  WARNING: 'warning',
+  AD: 'ad',
+} as const;
+
+export type SegmentStatus = (typeof SegmentStatus)[keyof typeof SegmentStatus];
 
 export type SequenceAnomalyReason =
   | 'duplicate'
