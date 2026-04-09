@@ -1,6 +1,6 @@
 import { validateC2paManifestBoxSegment } from '@svta/cml-c2pa';
 import type { ManifestBoxValidationState } from '@svta/cml-c2pa';
-import { CONTINUITY_ERROR_CODE } from '../types.js';
+import { ValidationErrorCode } from '../types.js';
 
 export type ManifestBoxValidationResult = {
   isValid: boolean;
@@ -39,7 +39,7 @@ export class ManifestBoxValidator {
     let errorCodes = result.errorCodes;
     if (!isValid && wasFirstSegment) {
       const nonContinuityErrors = (result.errorCodes ?? []).filter(
-        (c) => c !== CONTINUITY_ERROR_CODE,
+        (c) => c !== ValidationErrorCode.CONTINUITY_INVALID,
       );
       if (nonContinuityErrors.length === 0) {
         isValid = true;
