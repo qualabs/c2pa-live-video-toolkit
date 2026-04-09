@@ -117,6 +117,9 @@ export type C2paOptions = {
   onSegmentValidated?: (record: SegmentRecord) => void;
 };
 
+export const CONTINUITY_ERROR_CODE =
+  'livevideo.continuityMethod.invalid' as const satisfies ValidationErrorCode;
+
 export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
   // Live video status codes (§19.7)
   'livevideo.init.invalid': 'Init segment is invalid (contains mdat box)',

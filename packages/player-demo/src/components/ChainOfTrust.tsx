@@ -4,6 +4,7 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
+import { CONTINUITY_ERROR_CODE } from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -111,6 +112,8 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               const category = statusCategory(segment.status);
               const missing = isMissingSegment(segment);
               const isValid = segment.validationResults?.overall ?? false;
+              const isContinuityOk =
+                !segment.validationResults?.errorCodes?.includes(CONTINUITY_ERROR_CODE);
 
               return (
                 <Row
@@ -127,19 +130,8 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       {missing || segment.previousManifestId == null ? (
                         '—'
                       ) : (
-                        <ContinuityBadge
-                          $ok={
-                            !segment.validationResults?.errorCodes?.includes(
-                              'livevideo.continuityMethod.invalid',
-                            )
-                          }
-                        >
-                          {!segment.validationResults?.errorCodes?.includes(
-                            'livevideo.continuityMethod.invalid',
-                          )
-                            ? '✓'
-                            : '✗'}{' '}
-                          {truncate(segment.previousManifestId, 10)}
+                        <ContinuityBadge $ok={isContinuityOk}>
+                          {isContinuityOk ? '✓' : '✗'} {truncate(segment.previousManifestId, 10)}
                         </ContinuityBadge>
                       )}
                     </Td>

@@ -13,6 +13,7 @@ import type {
   ValidationErrorCode,
   Logger,
 } from '../types.js';
+import { CONTINUITY_ERROR_CODE } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -250,7 +251,7 @@ export class SegmentRouter {
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
-      result.errorCodes.every((c) => c === 'livevideo.continuityMethod.invalid');
+      result.errorCodes.every((c) => c === CONTINUITY_ERROR_CODE);
     const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];

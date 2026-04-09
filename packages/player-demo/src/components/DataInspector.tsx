@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import type { SegmentRecord, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES, CONTINUITY_ERROR_CODE } from '@c2pa-live-toolkit/dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 
@@ -72,7 +72,7 @@ function buildStatusInfo(
 ): StatusInfo {
   if (status === 'invalid') {
     const errorMessages = ERROR_CODE_MESSAGES as Record<string, string | undefined>;
-    const hasContinuityError = errorCodes.includes('livevideo.continuityMethod.invalid');
+    const hasContinuityError = errorCodes.includes(CONTINUITY_ERROR_CODE);
 
     if (hasContinuityError) {
       const prevId = segment.previousManifestId;

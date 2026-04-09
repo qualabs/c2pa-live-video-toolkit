@@ -1,5 +1,6 @@
 import { validateC2paManifestBoxSegment } from '@svta/cml-c2pa';
 import type { ManifestBoxValidationState } from '@svta/cml-c2pa';
+import { CONTINUITY_ERROR_CODE } from '../types.js';
 
 export type ManifestBoxValidationResult = {
   isValid: boolean;
@@ -8,7 +9,6 @@ export type ManifestBoxValidationResult = {
   manifest: unknown;
   issuer?: string | null;
   previousManifestId?: string | null;
-  expectedPreviousManifestId: string | null;
   errorCodes?: readonly string[];
 };
 
@@ -18,7 +18,6 @@ export class ManifestBoxValidator {
   private isFirstSegment = true;
 
   async validate(bytes: Uint8Array, fallbackIndex: number): Promise<ManifestBoxValidationResult> {
-    const expectedPreviousManifestId = this.lastManifestId;
     const wasFirstSegment = this.isFirstSegment;
     this.isFirstSegment = false;
 
@@ -40,7 +39,7 @@ export class ManifestBoxValidator {
     let errorCodes = result.errorCodes;
     if (!isValid && wasFirstSegment) {
       const nonContinuityErrors = (result.errorCodes ?? []).filter(
-        (c) => c !== 'livevideo.continuityMethod.invalid',
+        (c) => c !== CONTINUITY_ERROR_CODE,
       );
       if (nonContinuityErrors.length === 0) {
         isValid = true;
@@ -55,7 +54,6 @@ export class ManifestBoxValidator {
       manifest: result.manifest,
       issuer: result.issuer,
       previousManifestId: result.previousManifestId,
-      expectedPreviousManifestId,
       errorCodes,
     };
   }
