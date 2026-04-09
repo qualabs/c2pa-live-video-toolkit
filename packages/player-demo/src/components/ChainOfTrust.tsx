@@ -4,7 +4,7 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
-import { CONTINUITY_ERROR_CODE } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ValidationErrorCode } from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -113,7 +113,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               const missing = isMissingSegment(segment);
               const isValid = segment.validationResults?.overall ?? false;
               const isContinuityOk =
-                !segment.validationResults?.errorCodes?.includes(CONTINUITY_ERROR_CODE);
+                !segment.validationResults?.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID);
 
               return (
                 <Row

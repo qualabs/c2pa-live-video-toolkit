@@ -1,30 +1,30 @@
 export type MediaType = 'video' | 'audio';
 
-/**
- * Standard C2PA validation status codes for manifest integrity checks,
- * mirroring the values exported by @svta/cml-c2pa so consumers can reference
- * them without importing CML directly.
- *
- * @see C2PA Spec §15.10.3 and §18.15
- */
-export type C2paStatusCode =
-  | 'assertion.hashedURI.mismatch'
-  | 'assertion.missing'
-  | 'assertion.action.ingredientMismatch'
-  | 'claim.signature.mismatch';
+// ── Validation error codes ──────────────────────────────────────────
+export const ValidationErrorCode = {
+  // Live video error codes (§19.7)
+  INIT_INVALID: 'livevideo.init.invalid',
+  MANIFEST_INVALID: 'livevideo.manifest.invalid',
+  SEGMENT_INVALID: 'livevideo.segment.invalid',
+  ASSERTION_INVALID: 'livevideo.assertion.invalid',
+  CONTINUITY_INVALID: 'livevideo.continuityMethod.invalid',
+  SESSION_KEY_INVALID: 'livevideo.sessionkey.invalid',
+  // C2PA standard integrity codes (§15 / §18)
+  HASHED_URI_MISMATCH: 'assertion.hashedURI.mismatch',
+  ASSERTION_MISSING: 'assertion.missing',
+  INGREDIENT_MISMATCH: 'assertion.action.ingredientMismatch',
+  SIGNATURE_MISMATCH: 'claim.signature.mismatch',
+} as const;
 
-/**
- * All possible error codes that can appear in validation results.
- * Combines live-video specific codes (§19.7) and standard C2PA integrity codes (§15/§18).
- */
-export type ValidationErrorCode =
-  | 'livevideo.init.invalid'
-  | 'livevideo.manifest.invalid'
-  | 'livevideo.segment.invalid'
-  | 'livevideo.assertion.invalid'
-  | 'livevideo.continuityMethod.invalid'
-  | 'livevideo.sessionkey.invalid'
-  | C2paStatusCode;
+export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
+
+type C2paStatusCodeKey =
+  | 'HASHED_URI_MISMATCH'
+  | 'ASSERTION_MISSING'
+  | 'INGREDIENT_MISMATCH'
+  | 'SIGNATURE_MISMATCH';
+
+export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
 
 export type SegmentStatus = 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
 
@@ -117,24 +117,24 @@ export type C2paOptions = {
   onSegmentValidated?: (record: SegmentRecord) => void;
 };
 
-export const CONTINUITY_ERROR_CODE =
-  'livevideo.continuityMethod.invalid' as const satisfies ValidationErrorCode;
-
 export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
   // Live video status codes (§19.7)
-  'livevideo.init.invalid': 'Init segment is invalid (contains mdat box)',
-  'livevideo.manifest.invalid': 'C2PA manifest failed validation',
-  'livevideo.segment.invalid': 'Cryptographic verification failed (signature, hash, or key)',
-  'livevideo.assertion.invalid':
+  [ValidationErrorCode.INIT_INVALID]: 'Init segment is invalid (contains mdat box)',
+  [ValidationErrorCode.MANIFEST_INVALID]: 'C2PA manifest failed validation',
+  [ValidationErrorCode.SEGMENT_INVALID]:
+    'Cryptographic verification failed (signature, hash, or key)',
+  [ValidationErrorCode.ASSERTION_INVALID]:
     'Live video assertion invalid (sequenceNumber or streamId mismatch)',
-  'livevideo.continuityMethod.invalid':
+  [ValidationErrorCode.CONTINUITY_INVALID]:
     'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
-  'livevideo.sessionkey.invalid': 'Session key is invalid or expired',
+  [ValidationErrorCode.SESSION_KEY_INVALID]: 'Session key is invalid or expired',
   // C2PA standard integrity codes (§15 / §18)
-  'assertion.hashedURI.mismatch': 'Assertion hash does not match the signed claim',
-  'assertion.missing': 'Assertion referenced in claim is missing from manifest store',
-  'assertion.action.ingredientMismatch': 'Action requires ingredient reference but none found',
-  'claim.signature.mismatch': 'Claim signature verification failed',
+  [ValidationErrorCode.HASHED_URI_MISMATCH]: 'Assertion hash does not match the signed claim',
+  [ValidationErrorCode.ASSERTION_MISSING]:
+    'Assertion referenced in claim is missing from manifest store',
+  [ValidationErrorCode.INGREDIENT_MISMATCH]:
+    'Action requires ingredient reference but none found',
+  [ValidationErrorCode.SIGNATURE_MISMATCH]: 'Claim signature verification failed',
 };
 
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];

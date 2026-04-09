@@ -5,15 +5,14 @@ import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
+import { ValidationErrorCode } from '../types.js';
 import type {
   MediaType,
   SegmentRecord,
   SegmentStatus,
   SequenceAnomalyReason,
-  ValidationErrorCode,
   Logger,
 } from '../types.js';
-import { CONTINUITY_ERROR_CODE } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -251,7 +250,7 @@ export class SegmentRouter {
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
-      result.errorCodes.every((c) => c === CONTINUITY_ERROR_CODE);
+      result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
     const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
