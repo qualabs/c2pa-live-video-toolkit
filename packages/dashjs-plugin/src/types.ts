@@ -50,7 +50,6 @@ export type SegmentRecord = {
   };
   manifest?: unknown;
   previousManifestId?: string | null;
-  continuityOk?: boolean;
 };
 
 export type PlaybackStatusDetail = {

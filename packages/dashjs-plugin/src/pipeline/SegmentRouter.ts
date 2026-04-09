@@ -247,9 +247,6 @@ export class SegmentRouter {
       return;
     }
 
-    const continuityOk =
-      result.expectedPreviousManifestId == null ||
-      result.previousManifestId === result.expectedPreviousManifestId;
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
@@ -274,7 +271,6 @@ export class SegmentRouter {
         },
         manifest: result.manifest,
         previousManifestId: result.previousManifestId,
-        continuityOk,
       },
       streamKey,
       interval,

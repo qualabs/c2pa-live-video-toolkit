@@ -127,8 +127,18 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       {missing || segment.previousManifestId == null ? (
                         '—'
                       ) : (
-                        <ContinuityBadge $ok={segment.continuityOk ?? true}>
-                          {segment.continuityOk ? '✓' : '✗'}{' '}
+                        <ContinuityBadge
+                          $ok={
+                            !segment.validationResults?.errorCodes?.includes(
+                              'livevideo.continuityMethod.invalid',
+                            )
+                          }
+                        >
+                          {!segment.validationResults?.errorCodes?.includes(
+                            'livevideo.continuityMethod.invalid',
+                          )
+                            ? '✓'
+                            : '✗'}{' '}
                           {truncate(segment.previousManifestId, 10)}
                         </ContinuityBadge>
                       )}
@@ -160,9 +170,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
           </tbody>
         </Table>
 
-        {segments.length === 0 && (
-          <EmptyState>No segments validated yet</EmptyState>
-        )}
+        {segments.length === 0 && <EmptyState>No segments validated yet</EmptyState>}
       </TableWrapper>
     </Container>
   );
