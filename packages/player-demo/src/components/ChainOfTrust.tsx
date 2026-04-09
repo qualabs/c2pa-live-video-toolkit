@@ -110,7 +110,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
 
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
-              const missing = isUnverifiedSegment(segment);
+              const isUnverified = isUnverifiedSegment(segment);
               const isValid = segment.validationResults?.overall ?? false;
               const isContinuityOk =
                 !segment.validationResults?.errorCodes?.includes(CONTINUITY_ERROR_CODE);
@@ -127,7 +127,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td>{segment.sequenceNumber}</Td>
                   {isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
-                      {missing || segment.previousManifestId == null ? (
+                      {isUnverified || segment.previousManifestId == null ? (
                         '—'
                       ) : (
                         <ContinuityBadge $ok={isContinuityOk}>
@@ -136,13 +136,13 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       )}
                     </Td>
                   ) : (
-                    <Td title={segment.keyId}>{missing ? '—' : truncate(segment.keyId)}</Td>
+                    <Td title={segment.keyId}>{isUnverified ? '—' : truncate(segment.keyId)}</Td>
                   )}
                   <Td title={segment.hash}>
-                    {missing || segment.hash === 'N/A' ? '—' : truncate(segment.hash)}
+                    {isUnverified || segment.hash === 'N/A' ? '—' : truncate(segment.hash)}
                   </Td>
                   <Td>
-                    {missing ? (
+                    {isUnverified ? (
                       <ValidBadge $status="empty">—</ValidBadge>
                     ) : (
                       <ValidBadge $status={isValid ? 'valid' : 'failed'}>

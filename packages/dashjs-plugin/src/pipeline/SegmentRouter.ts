@@ -51,7 +51,7 @@ const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatus> = {
 
 const UNKNOWN_KEY_ID = 'unknown';
 const UNAVAILABLE_HASH = 'N/A';
-const MISSING_SEGMENT_PLACEHOLDER = '—';
+const NO_DATA = '—';
 
 type VsiSegmentParams = {
   segmentBytes: Uint8Array;
@@ -239,7 +239,10 @@ export class SegmentRouter {
     try {
       const validator = this.deps.manifestBoxValidators[mediaType];
       if (!validator) {
-        this.deps.eventBus.emit('error', { source: 'ManifestBoxValidator', error: `No validator for mediaType: ${mediaType}` });
+        this.deps.eventBus.emit('error', {
+          source: 'ManifestBoxValidator',
+          error: `No validator for mediaType: ${mediaType}`,
+        });
         return;
       }
       result = await validator.validate(segmentBytes, segmentIndex);
@@ -248,11 +251,35 @@ export class SegmentRouter {
       return;
     }
 
+    if (result.manifest == null) {
+      this.deps.segmentStore.add({
+        segmentNumber: segmentIndex,
+        mediaType,
+        sequenceNumber: segmentIndex,
+        keyId: NO_DATA,
+        hash: NO_DATA,
+        status: 'ad',
+        timestamp: Date.now(),
+      });
+      this.deps.eventBus.emit('segmentValidated', {
+        segmentNumber: segmentIndex,
+        status: 'ad',
+        hash: NO_DATA,
+        keyId: NO_DATA,
+        mediaType,
+      });
+      return;
+    }
+
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
       result.errorCodes.every((c) => c === CONTINUITY_ERROR_CODE);
-    const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
+    const status: SegmentStatus = result.isValid
+      ? 'valid'
+      : isContinuityOnlyFailure
+        ? 'warning'
+        : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
 
@@ -329,8 +356,8 @@ export class SegmentRouter {
         segmentNumber: n,
         mediaType,
         sequenceNumber: n,
-        keyId: MISSING_SEGMENT_PLACEHOLDER,
-        hash: MISSING_SEGMENT_PLACEHOLDER,
+        keyId: NO_DATA,
+        hash: NO_DATA,
         status: 'missing',
         sequenceReason: 'gap_detected',
         timestamp: Date.now(),

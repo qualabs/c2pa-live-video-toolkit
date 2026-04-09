@@ -15,8 +15,6 @@ import traceback
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict
-
 import os
 
 _STREAM_ROOT = Path(os.environ.get("STREAM_ROOT", "/app/live-streaming"))
