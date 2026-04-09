@@ -60,8 +60,8 @@ export class ManifestBoxValidator {
     };
   }
 
-  reset(): void {
-    this.lastManifestId = null;
+  reset(initialManifestId?: string | null): void {
+    this.lastManifestId = initialManifestId ?? null;
     this.lastState = undefined;
     this.isFirstSegment = true;
   }

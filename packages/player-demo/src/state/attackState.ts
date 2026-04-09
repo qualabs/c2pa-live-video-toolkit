@@ -7,7 +7,7 @@ export const PROXY_BASE = import.meta.env.VITE_PROXY_URL ?? 'http://localhost:80
 
 async function post(path: string, body?: unknown): Promise<boolean> {
   try {
-    const res = await fetch(path, {
+    const res = await fetch(`${PROXY_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
