@@ -13,6 +13,7 @@ import type {
   ValidationErrorCode,
   Logger,
 } from '../types.js';
+import { CONTINUITY_ERROR_CODE } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -247,26 +248,10 @@ export class SegmentRouter {
       return;
     }
 
-    if (result.manifest == null) {
-      this.deps.segmentStore.add({
-        segmentNumber: segmentIndex,
-        mediaType,
-        sequenceNumber: segmentIndex,
-        keyId: MISSING_SEGMENT_PLACEHOLDER,
-        hash: MISSING_SEGMENT_PLACEHOLDER,
-        status: 'ad',
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
-    const continuityOk =
-      result.expectedPreviousManifestId == null ||
-      result.previousManifestId === result.expectedPreviousManifestId;
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
-      result.errorCodes.every((c) => c === 'livevideo.continuityMethod.invalid');
+      result.errorCodes.every((c) => c === CONTINUITY_ERROR_CODE);
     const status: SegmentStatus = result.isValid ? 'valid' : isContinuityOnlyFailure ? 'warning' : 'invalid';
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
@@ -287,7 +272,6 @@ export class SegmentRouter {
         },
         manifest: result.manifest,
         previousManifestId: result.previousManifestId,
-        continuityOk,
       },
       streamKey,
       interval,

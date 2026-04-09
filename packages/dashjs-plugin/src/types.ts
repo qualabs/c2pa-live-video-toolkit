@@ -57,7 +57,6 @@ export type SegmentRecord = {
   };
   manifest?: unknown;
   previousManifestId?: string | null;
-  continuityOk?: boolean;
 };
 
 export type PlaybackStatusDetail = {
@@ -124,6 +123,9 @@ export type C2paOptions = {
   logger?: Logger | false;
   onSegmentValidated?: (record: SegmentRecord) => void;
 };
+
+export const CONTINUITY_ERROR_CODE =
+  'livevideo.continuityMethod.invalid' as const satisfies ValidationErrorCode;
 
 export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
   // Live video status codes (§19.7)
