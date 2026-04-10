@@ -208,7 +208,28 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      this.deps.logger.warn(`[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`);
+      if (hasMdatContent(segmentBytes)) {
+        this.deps.segmentStore.add({
+          segmentNumber: segmentIndex,
+          mediaType,
+          sequenceNumber: segmentIndex,
+          keyId: NO_DATA,
+          hash: NO_DATA,
+          status: SegmentStatus.AD,
+          timestamp: Date.now(),
+        });
+        this.deps.eventBus.emit('segmentValidated', {
+          segmentNumber: segmentIndex,
+          status: SegmentStatus.AD,
+          hash: NO_DATA,
+          keyId: NO_DATA,
+          mediaType,
+        });
+      } else {
+        this.deps.logger.warn(
+          `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
+        );
+      }
       return;
     }
 
@@ -373,8 +394,17 @@ export class SegmentRouter {
   }
 
   private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
-    const count = to - from + 1;
+    const existing = this.deps.segmentStore
+      .getAll()
+      .filter(
+        (s) => s.mediaType === mediaType && s.sequenceNumber >= from && s.sequenceNumber <= to,
+      );
+    const isAdGap = existing.some((s) => s.status === SegmentStatus.AD);
+
+    let missingCount = 0;
     for (let n = from; n <= to; n++) {
+      if (existing.some((s) => s.sequenceNumber === n)) continue;
+      if (isAdGap) continue;
       this.deps.segmentStore.add({
         segmentNumber: n,
         mediaType,
@@ -385,7 +415,10 @@ export class SegmentRouter {
         sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
         timestamp: Date.now(),
       });
+      missingCount++;
     }
-    this.deps.eventBus.emit('segmentsMissing', { from, to, count });
+    if (missingCount > 0) {
+      this.deps.eventBus.emit('segmentsMissing', { from, to, count: missingCount });
+    }
   }
 }
