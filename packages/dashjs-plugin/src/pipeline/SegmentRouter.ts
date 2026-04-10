@@ -5,12 +5,12 @@ import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import { ValidationErrorCode, SegmentStatus } from '../types.js';
+import { ValidationErrorCode, SegmentStatus, SequenceAnomalyReason } from '../types.js';
 import type {
   MediaType,
   SegmentRecord,
   SegmentStatusValue,
-  SequenceAnomalyReason,
+  SequenceAnomalyReasonValue,
   Logger,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
@@ -41,11 +41,11 @@ type SegmentRouterDeps = {
   logger: Logger;
 };
 
-const SEQUENCE_REASON_TO_STATUS: Record<string, SegmentStatusValue> = {
-  duplicate: SegmentStatus.REPLAYED,
-  out_of_order: SegmentStatus.REORDERED,
-  gap_detected: SegmentStatus.WARNING,
-  sequence_number_below_minimum: SegmentStatus.INVALID,
+const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, SegmentStatusValue>> = {
+  [SequenceAnomalyReason.DUPLICATE]: SegmentStatus.REPLAYED,
+  [SequenceAnomalyReason.OUT_OF_ORDER]: SegmentStatus.REORDERED,
+  [SequenceAnomalyReason.GAP_DETECTED]: SegmentStatus.WARNING,
+  [SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM]: SegmentStatus.INVALID,
 };
 
 const UNKNOWN_KEY_ID = 'unknown';
@@ -79,10 +79,11 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
 
 function resolveSegmentStatus(
   isValid: boolean,
-  sequenceReason: SequenceAnomalyReason | null,
+  sequenceReason: SequenceAnomalyReasonValue | null,
 ): SegmentStatusValue {
-  if (sequenceReason && SEQUENCE_REASON_TO_STATUS[sequenceReason]) {
-    return SEQUENCE_REASON_TO_STATUS[sequenceReason];
+  if (sequenceReason) {
+    const mapped = SEQUENCE_REASON_TO_STATUS[sequenceReason];
+    if (mapped) return mapped;
   }
   return isValid ? SegmentStatus.VALID : SegmentStatus.INVALID;
 }
@@ -193,7 +194,7 @@ export class SegmentRouter {
     const forceNewArrival = status === SegmentStatus.REPLAYED || status === SegmentStatus.REORDERED;
 
     if (
-      vsiResult.sequenceReason === 'gap_detected' &&
+      vsiResult.sequenceReason === SequenceAnomalyReason.GAP_DETECTED &&
       vsiResult.sequenceMissingFrom != null &&
       vsiResult.sequenceMissingTo != null
     ) {
@@ -358,7 +359,7 @@ export class SegmentRouter {
         keyId: NO_DATA,
         hash: NO_DATA,
         status: SegmentStatus.MISSING,
-        sequenceReason: 'gap_detected',
+        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
         timestamp: Date.now(),
       });
     }

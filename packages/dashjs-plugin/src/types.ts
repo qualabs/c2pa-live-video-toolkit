@@ -38,11 +38,14 @@ export const SegmentStatus = {
 
 export type SegmentStatusValue = (typeof SegmentStatus)[keyof typeof SegmentStatus];
 
-export type SequenceAnomalyReason =
-  | 'duplicate'
-  | 'out_of_order'
-  | 'gap_detected'
-  | 'sequence_number_below_minimum';
+export const SequenceAnomalyReason = {
+  DUPLICATE: 'duplicate',
+  OUT_OF_ORDER: 'out_of_order',
+  GAP_DETECTED: 'gap_detected',
+  SEQUENCE_NUMBER_BELOW_MINIMUM: 'sequence_number_below_minimum',
+} as const;
+
+export type SequenceAnomalyReasonValue = (typeof SequenceAnomalyReason)[keyof typeof SequenceAnomalyReason];
 
 export type SegmentRecord = {
   segmentNumber: number;
@@ -51,7 +54,7 @@ export type SegmentRecord = {
   keyId: string;
   hash: string;
   status: SegmentStatusValue;
-  sequenceReason?: SequenceAnomalyReason;
+  sequenceReason?: SequenceAnomalyReasonValue;
   timestamp: number;
   arrivalIndex: number;
   validationResults?: {
@@ -85,7 +88,7 @@ export type InitProcessedEvent = {
 export type SegmentValidatedEvent = {
   segmentNumber: number;
   status: SegmentStatusValue;
-  sequenceReason?: SequenceAnomalyReason;
+  sequenceReason?: SequenceAnomalyReasonValue;
   hash: string;
   keyId: string;
   mediaType: MediaType;

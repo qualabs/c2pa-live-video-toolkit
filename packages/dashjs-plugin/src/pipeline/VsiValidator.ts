@@ -1,12 +1,12 @@
 import { validateC2paSegment } from '@svta/cml-c2pa';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SequenceTracker } from '../state/SequenceTracker.js';
-import type { SequenceAnomalyReason } from '../types.js';
+import type { SequenceAnomalyReasonValue } from '../types.js';
 
 export type VsiValidationResult = {
   isValid: boolean;
   overall: boolean;
-  sequenceReason: SequenceAnomalyReason | null;
+  sequenceReason: SequenceAnomalyReasonValue | null;
   sequenceMissingFrom?: number;
   sequenceMissingTo?: number;
   bmffHashHex: string | null;
@@ -44,7 +44,7 @@ export class VsiValidator {
     const { sequenceResult } = result;
     return {
       ...result,
-      sequenceReason: (sequenceResult.reason as SequenceAnomalyReason) ?? null,
+      sequenceReason: (sequenceResult.reason as SequenceAnomalyReasonValue) ?? null,
       sequenceMissingFrom: 'missingFrom' in sequenceResult ? sequenceResult.missingFrom : undefined,
       sequenceMissingTo: 'missingTo' in sequenceResult ? sequenceResult.missingTo : undefined,
       overall: result.isValid && sequenceResult.isValid,

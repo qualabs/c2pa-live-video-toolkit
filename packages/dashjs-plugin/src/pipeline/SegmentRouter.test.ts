@@ -8,6 +8,7 @@ import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import { SegmentStore } from '../state/SegmentStore.js';
 import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
+import { SequenceAnomalyReason } from '../types.js';
 import type { Logger } from '../types.js';
 
 const SILENT_LOGGER: Logger = {
@@ -226,7 +227,7 @@ describe('SegmentRouter', () => {
       const gapVsiResult = {
         ...makeValidVsiResult(),
         sequenceNumber: 5,
-        sequenceReason: 'gap_detected' as const,
+        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
         sequenceMissingFrom: 2,
         sequenceMissingTo: 4,
       };

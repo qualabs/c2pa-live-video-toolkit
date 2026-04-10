@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SegmentStore } from './SegmentStore.js';
+import { SequenceAnomalyReason } from '../types.js';
 import type { SegmentRecord } from '../types.js';
 
 function makeSegment(
@@ -47,16 +48,16 @@ describe('SegmentStore', () => {
 
     it('preserves the existing sequenceReason when the update has none', () => {
       const store = new SegmentStore(100);
-      store.add(makeSegment({ status: 'reordered', sequenceReason: 'out_of_order' }));
+      store.add(makeSegment({ status: 'reordered', sequenceReason: SequenceAnomalyReason.OUT_OF_ORDER }));
       store.add(makeSegment({ status: 'valid' }));
-      expect(store.getAll()[0].sequenceReason).toBe('out_of_order');
+      expect(store.getAll()[0].sequenceReason).toBe(SequenceAnomalyReason.OUT_OF_ORDER);
     });
 
     it('adopts the incoming sequenceReason when the existing one is unset', () => {
       const store = new SegmentStore(100);
       store.add(makeSegment({ status: 'valid' }));
-      store.add(makeSegment({ status: 'warning', sequenceReason: 'gap_detected' }));
-      expect(store.getAll()[0].sequenceReason).toBe('gap_detected');
+      store.add(makeSegment({ status: 'warning', sequenceReason: SequenceAnomalyReason.GAP_DETECTED }));
+      expect(store.getAll()[0].sequenceReason).toBe(SequenceAnomalyReason.GAP_DETECTED);
     });
   });
 
