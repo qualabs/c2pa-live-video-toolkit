@@ -77,6 +77,28 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+/** Returns true if the segment contains an mdat box with at least 1 byte of payload. */
+function hasMdatContent(bytes: Uint8Array): boolean {
+  let offset = 0;
+  while (offset + 8 <= bytes.length) {
+    const size =
+      (bytes[offset] << 24) |
+      (bytes[offset + 1] << 16) |
+      (bytes[offset + 2] << 8) |
+      bytes[offset + 3];
+    const type = String.fromCharCode(
+      bytes[offset + 4],
+      bytes[offset + 5],
+      bytes[offset + 6],
+      bytes[offset + 7],
+    );
+    if (size < 8) break;
+    if (type === 'mdat') return size > 8;
+    offset += size;
+  }
+  return false;
+}
+
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReasonValue | null,
@@ -252,18 +274,19 @@ export class SegmentRouter {
     }
 
     if (result.manifest == null) {
+      const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
       this.deps.segmentStore.add({
         segmentNumber: segmentIndex,
         mediaType,
         sequenceNumber: segmentIndex,
         keyId: NO_DATA,
         hash: NO_DATA,
-        status: SegmentStatus.AD,
+        status,
         timestamp: Date.now(),
       });
       this.deps.eventBus.emit('segmentValidated', {
         segmentNumber: segmentIndex,
-        status: SegmentStatus.AD,
+        status,
         hash: NO_DATA,
         keyId: NO_DATA,
         mediaType,
