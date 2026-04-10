@@ -4,7 +4,11 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ValidationErrorCode, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import {
+  ValidationErrorCode,
+  SegmentStatus,
+  SequenceAnomalyReason,
+} from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -111,7 +115,10 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
-              const isValid = segment.validationResults?.overall ?? false;
+              const isValid =
+                segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED
+                  ? true
+                  : (segment.validationResults?.overall ?? false);
               const isContinuityOk =
                 !segment.validationResults?.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID);
 
