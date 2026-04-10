@@ -4,7 +4,11 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ValidationErrorCode, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import {
+  ValidationErrorCode,
+  SegmentStatus,
+  SequenceAnomalyReason,
+} from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -26,6 +30,11 @@ function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LEN
 
 function isUnverifiedSegment(segment: SegmentRecord): boolean {
   return segment.status === SegmentStatus.MISSING || segment.status === SegmentStatus.AD;
+}
+
+function resolveValidationBadge(segment: SegmentRecord): boolean {
+  if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return true;
+  return segment.validationResults?.overall ?? false;
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -111,7 +120,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
-              const isValid = segment.validationResults?.overall ?? false;
+              const isValid = resolveValidationBadge(segment);
               const isContinuityOk =
                 !segment.validationResults?.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID);
 

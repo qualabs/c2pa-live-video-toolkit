@@ -9,6 +9,7 @@ const SEQUENCE_ANOMALY_STATUSES: SegmentStatusValue[] = [
   SegmentStatus.REORDERED,
   SegmentStatus.MISSING,
   SegmentStatus.WARNING,
+  SegmentStatus.AD,
 ];
 
 function isSequenceAnomaly(status: SegmentStatusValue): boolean {

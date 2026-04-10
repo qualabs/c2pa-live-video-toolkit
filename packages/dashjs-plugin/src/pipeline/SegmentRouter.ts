@@ -77,6 +77,46 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+/** Returns true if the segment contains an mdat box with at least 1 byte of payload. */
+function hasMdatContent(bytes: Uint8Array): boolean {
+  let offset = 0;
+  while (offset + 8 <= bytes.length) {
+    const size =
+      (bytes[offset] << 24) |
+      (bytes[offset + 1] << 16) |
+      (bytes[offset + 2] << 8) |
+      bytes[offset + 3];
+    const type = String.fromCharCode(
+      bytes[offset + 4],
+      bytes[offset + 5],
+      bytes[offset + 6],
+      bytes[offset + 7],
+    );
+    if (size < 8) break;
+    if (type === 'mdat') return size > 8;
+    offset += size;
+  }
+  return false;
+}
+
+function buildUnverifiedRecord(
+  segmentNumber: number,
+  mediaType: MediaType,
+  status: SegmentStatusValue,
+  sequenceReason?: SequenceAnomalyReasonValue,
+): Omit<SegmentRecord, 'arrivalIndex'> {
+  return {
+    segmentNumber,
+    mediaType,
+    sequenceNumber: segmentNumber,
+    keyId: NO_DATA,
+    hash: NO_DATA,
+    status,
+    sequenceReason,
+    timestamp: Date.now(),
+  };
+}
+
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReasonValue | null,
@@ -186,7 +226,22 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      this.deps.logger.warn(`[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`);
+      if (hasMdatContent(segmentBytes)) {
+        this.deps.segmentStore.add(
+          buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD),
+        );
+        this.deps.eventBus.emit('segmentValidated', {
+          segmentNumber: segmentIndex,
+          status: SegmentStatus.AD,
+          hash: NO_DATA,
+          keyId: NO_DATA,
+          mediaType,
+        });
+      } else {
+        this.deps.logger.warn(
+          `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
+        );
+      }
       return;
     }
 
@@ -252,18 +307,11 @@ export class SegmentRouter {
     }
 
     if (result.manifest == null) {
-      this.deps.segmentStore.add({
-        segmentNumber: segmentIndex,
-        mediaType,
-        sequenceNumber: segmentIndex,
-        keyId: NO_DATA,
-        hash: NO_DATA,
-        status: SegmentStatus.AD,
-        timestamp: Date.now(),
-      });
+      const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
+      this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, status));
       this.deps.eventBus.emit('segmentValidated', {
         segmentNumber: segmentIndex,
-        status: SegmentStatus.AD,
+        status,
         hash: NO_DATA,
         keyId: NO_DATA,
         mediaType,
@@ -350,19 +398,29 @@ export class SegmentRouter {
   }
 
   private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
-    const count = to - from + 1;
+    const existing = this.deps.segmentStore
+      .getAll()
+      .filter(
+        (s) => s.mediaType === mediaType && s.sequenceNumber >= from && s.sequenceNumber <= to,
+      );
+    const isAdGap = existing.some((s) => s.status === SegmentStatus.AD);
+
+    let missingCount = 0;
     for (let n = from; n <= to; n++) {
-      this.deps.segmentStore.add({
-        segmentNumber: n,
-        mediaType,
-        sequenceNumber: n,
-        keyId: NO_DATA,
-        hash: NO_DATA,
-        status: SegmentStatus.MISSING,
-        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
-        timestamp: Date.now(),
-      });
+      if (existing.some((s) => s.sequenceNumber === n)) continue;
+      if (isAdGap) continue;
+      this.deps.segmentStore.add(
+        buildUnverifiedRecord(
+          n,
+          mediaType,
+          SegmentStatus.MISSING,
+          SequenceAnomalyReason.GAP_DETECTED,
+        ),
+      );
+      missingCount++;
     }
-    this.deps.eventBus.emit('segmentsMissing', { from, to, count });
+    if (missingCount > 0) {
+      this.deps.eventBus.emit('segmentsMissing', { from, to, count: missingCount });
+    }
   }
 }
