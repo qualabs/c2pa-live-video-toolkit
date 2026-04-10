@@ -99,6 +99,24 @@ function hasMdatContent(bytes: Uint8Array): boolean {
   return false;
 }
 
+function buildUnverifiedRecord(
+  segmentNumber: number,
+  mediaType: MediaType,
+  status: SegmentStatusValue,
+  sequenceReason?: SequenceAnomalyReasonValue,
+): Omit<SegmentRecord, 'arrivalIndex'> {
+  return {
+    segmentNumber,
+    mediaType,
+    sequenceNumber: segmentNumber,
+    keyId: NO_DATA,
+    hash: NO_DATA,
+    status,
+    sequenceReason,
+    timestamp: Date.now(),
+  };
+}
+
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReasonValue | null,
@@ -209,15 +227,9 @@ export class SegmentRouter {
 
     if (!vsiResult) {
       if (hasMdatContent(segmentBytes)) {
-        this.deps.segmentStore.add({
-          segmentNumber: segmentIndex,
-          mediaType,
-          sequenceNumber: segmentIndex,
-          keyId: NO_DATA,
-          hash: NO_DATA,
-          status: SegmentStatus.AD,
-          timestamp: Date.now(),
-        });
+        this.deps.segmentStore.add(
+          buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD),
+        );
         this.deps.eventBus.emit('segmentValidated', {
           segmentNumber: segmentIndex,
           status: SegmentStatus.AD,
@@ -296,15 +308,7 @@ export class SegmentRouter {
 
     if (result.manifest == null) {
       const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
-      this.deps.segmentStore.add({
-        segmentNumber: segmentIndex,
-        mediaType,
-        sequenceNumber: segmentIndex,
-        keyId: NO_DATA,
-        hash: NO_DATA,
-        status,
-        timestamp: Date.now(),
-      });
+      this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, status));
       this.deps.eventBus.emit('segmentValidated', {
         segmentNumber: segmentIndex,
         status,
@@ -405,16 +409,14 @@ export class SegmentRouter {
     for (let n = from; n <= to; n++) {
       if (existing.some((s) => s.sequenceNumber === n)) continue;
       if (isAdGap) continue;
-      this.deps.segmentStore.add({
-        segmentNumber: n,
-        mediaType,
-        sequenceNumber: n,
-        keyId: NO_DATA,
-        hash: NO_DATA,
-        status: SegmentStatus.MISSING,
-        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
-        timestamp: Date.now(),
-      });
+      this.deps.segmentStore.add(
+        buildUnverifiedRecord(
+          n,
+          mediaType,
+          SegmentStatus.MISSING,
+          SequenceAnomalyReason.GAP_DETECTED,
+        ),
+      );
       missingCount++;
     }
     if (missingCount > 0) {

@@ -32,6 +32,11 @@ function isUnverifiedSegment(segment: SegmentRecord): boolean {
   return segment.status === SegmentStatus.MISSING || segment.status === SegmentStatus.AD;
 }
 
+function resolveValidationBadge(segment: SegmentRecord): boolean {
+  if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return true;
+  return segment.validationResults?.overall ?? false;
+}
+
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   segments,
   initData,
@@ -115,10 +120,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
-              const isValid =
-                segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED
-                  ? true
-                  : (segment.validationResults?.overall ?? false);
+              const isValid = resolveValidationBadge(segment);
               const isContinuityOk =
                 !segment.validationResults?.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID);
 
