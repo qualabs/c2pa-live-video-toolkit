@@ -32,7 +32,7 @@ export class InitSegmentProcessor {
         success: true,
         sessionKeysCount: result.sessionKeys.length,
         manifestId: result.manifestId ?? undefined,
-        manifest: result.activeManifest ?? null,
+        manifest: result.manifest ?? null,
         // CML returns string[] — cast to the known union of valid codes
         errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
       };

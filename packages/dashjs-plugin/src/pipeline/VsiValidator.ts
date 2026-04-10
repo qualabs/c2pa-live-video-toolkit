@@ -11,7 +11,7 @@ export type VsiValidationResult = {
   sequenceMissingTo?: number;
   bmffHashHex: string | null;
   kidHex: string | null;
-  manifestId?: Uint8Array;
+  manifestId: string;
   sequenceNumber: number;
   errorCodes?: readonly string[];
 };
