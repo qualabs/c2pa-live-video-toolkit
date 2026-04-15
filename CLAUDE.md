@@ -57,7 +57,7 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 
 ### Key dependency
 
-`dashjs-plugin` depends on `@svta/cml-c2pa` via a **local file reference** to `../../../common-media-library/libs/c2pa` (outside this repo). This is the SVTA Common Media Library C2PA validator.
+`dashjs-plugin` depends on [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa) from npm — the SVTA Common Media Library C2PA validator. Installed as a regular registry dependency (`^1.0.0`).
 
 ### Signing methods
 
