@@ -40,9 +40,8 @@ export function C2paPlayerUI(
 
   registerControlBar(videoPlayer);
 
-  const controlBar = videoPlayer.controlBar.progressControl.seekBar.getChild(
-    'C2PALoadProgressBar',
-  )!;
+  const controlBar =
+    videoPlayer.controlBar.progressControl.seekBar.getChild('C2PALoadProgressBar')!;
   const menuButton = initializeMenu(videoPlayer);
 
   let frictionModal: HTMLElement | undefined;

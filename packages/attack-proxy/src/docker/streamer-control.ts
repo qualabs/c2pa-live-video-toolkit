@@ -11,8 +11,12 @@ function spawnDockerCommand(args: string[]): Promise<DockerResult> {
     const proc = spawn('docker', args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
-    proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+    proc.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
     proc.on('exit', (code) => resolve({ code: code ?? 1, stdout, stderr }));
     proc.on('error', () => resolve({ code: 1, stdout: '', stderr: '' }));
   });
@@ -35,8 +39,15 @@ async function findStreamerContainer(): Promise<string> {
   throw new Error('Streamer container not found. Is the streamer service running?');
 }
 
-async function checkContainerStatus(containerId: string): Promise<{ exists: boolean; status: string | null }> {
-  const { code, stdout } = await spawnDockerCommand(['inspect', '--format', '{{.State.Status}}', containerId]);
+async function checkContainerStatus(
+  containerId: string,
+): Promise<{ exists: boolean; status: string | null }> {
+  const { code, stdout } = await spawnDockerCommand([
+    'inspect',
+    '--format',
+    '{{.State.Status}}',
+    containerId,
+  ]);
   if (code === 0) return { exists: true, status: stdout.trim() };
   return { exists: false, status: null };
 }

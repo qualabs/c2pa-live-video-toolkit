@@ -32,7 +32,12 @@ function countSegmentsInTimeline(timeline: SegmentTimeline): number {
   return segments.reduce((count, segment) => count + 1 + parseInt(segment['@_r'] || '0', 10), 0);
 }
 
-function buildSegmentKey(baseDirPrefix: string, mediaTemplate: string, repId: string, index: number): string {
+function buildSegmentKey(
+  baseDirPrefix: string,
+  mediaTemplate: string,
+  repId: string,
+  index: number,
+): string {
   return path.posix.join(
     baseDirPrefix,
     mediaTemplate
@@ -84,7 +89,13 @@ async function onNewFile(
   const startNumber = 1;
   const segmentNumber = parseInt(segmentId.match(/\d+$/)?.[0] || '0', 10);
 
-  const result = segmentService.processNewSegment(repId, fileKey, segmentNumber, startNumber, receivedTimestamp);
+  const result = segmentService.processNewSegment(
+    repId,
+    fileKey,
+    segmentNumber,
+    startNumber,
+    receivedTimestamp,
+  );
 
   if (result === 'enqueued') {
     await checkWaitingList(segmentService, repId, segmentPattern, startNumber);
@@ -110,10 +121,18 @@ async function enqueueNewSegmentsFromTimeline(
     const repeat = parseInt(segment['@_r'] || '0', 10);
 
     for (let i = 0; i <= repeat; i++) {
-      const lastProcessedIndex = streamStateService.getLastProcessedOrDefault(repId, startNumber - 1);
+      const lastProcessedIndex = streamStateService.getLastProcessedOrDefault(
+        repId,
+        startNumber - 1,
+      );
 
       if (currentIndex > lastProcessedIndex) {
-        const segmentKey = buildSegmentKey(baseDirPrefix, segmentTemplate['@_media'], repId, currentIndex);
+        const segmentKey = buildSegmentKey(
+          baseDirPrefix,
+          segmentTemplate['@_media'],
+          repId,
+          currentIndex,
+        );
         logger.info(`[${repId}] New segment detected #${currentIndex}: ${segmentKey}`);
         await onNewFile(segmentService, streamStateService, segmentKey, receivedTimestamp);
       }
@@ -140,7 +159,9 @@ function logRepresentationDebugInfo(
 
   if (pendingCount > 0) {
     const pendingFiles = readyList.map((job: Job) => job.fileKey);
-    logger.debug(`           -> Waiting in queue Rep[${repId}] (${pendingCount}): [${pendingFiles.join(', ')}]`);
+    logger.debug(
+      `           -> Waiting in queue Rep[${repId}] (${pendingCount}): [${pendingFiles.join(', ')}]`,
+    );
   }
 }
 
@@ -158,7 +179,9 @@ async function processRepresentation(
 ): Promise<boolean> {
   const repId: string = representation['@_id'];
   const timeline = segmentTemplate.SegmentTimeline;
-  const maxSegmentInTimeline = timeline?.S ? startNumber + countSegmentsInTimeline(timeline) - 1 : startNumber - 1;
+  const maxSegmentInTimeline = timeline?.S
+    ? startNumber + countSegmentsInTimeline(timeline) - 1
+    : startNumber - 1;
 
   let streamStateReset = false;
   if (streamStateService.isStreamReset(repId, maxSegmentInTimeline)) {
@@ -173,7 +196,13 @@ async function processRepresentation(
     const segmentCountInWindow = countSegmentsInTimeline(timeline);
     requirements[repId] = segmentCountInWindow;
 
-    logRepresentationDebugInfo(segmentService, streamStateService, repId, segmentCountInWindow, startNumber);
+    logRepresentationDebugInfo(
+      segmentService,
+      streamStateService,
+      repId,
+      segmentCountInWindow,
+      startNumber,
+    );
   }
 
   streamStateService.setSegmentPatterns(repId, media, init);
@@ -210,7 +239,9 @@ async function processAdaptationSets(
   for (const adaptationSet of adaptationSets) {
     const segmentTemplate = extractSegmentTemplate(adaptationSet);
     const media = path.posix.join(baseDirPrefix, segmentTemplate['@_media']);
-    logger.debug(`[manifest] SegmentTemplate @_initialization: ${segmentTemplate['@_initialization']}`);
+    logger.debug(
+      `[manifest] SegmentTemplate @_initialization: ${segmentTemplate['@_initialization']}`,
+    );
     const init = path.posix.join(baseDirPrefix, segmentTemplate['@_initialization']);
     logger.debug(`[manifest] Extracted init pattern: ${init}`);
     const startNumber = parseInt(segmentTemplate['@_startNumber'], 10);
@@ -331,7 +362,10 @@ export async function pollMpdAndHandle(
     logger.error('Error parsing MPD, will retry polling...', err);
   }
 
-  setTimeout(() => pollMpdAndHandle(segmentService, manifestService, streamStateService), nextInterval);
+  setTimeout(
+    () => pollMpdAndHandle(segmentService, manifestService, streamStateService),
+    nextInterval,
+  );
 }
 
 function logManifestRepReadiness(
@@ -373,9 +407,15 @@ async function publishReadyManifest(
       logMessage += ` (took ${Date.now() - receivedTimestamp} ms from notification to publish)`;
     }
     logger.info(logMessage);
-    await storage.saveObject(config.outputBucket, `processed/${config.mpdKey}`, Buffer.from(mpdXml));
+    await storage.saveObject(
+      config.outputBucket,
+      `processed/${config.mpdKey}`,
+      Buffer.from(mpdXml),
+    );
   } else {
-    logger.debug(`[manifest] WARNING: ${publishTime} was ready, but content not found in memory. Cleaning up.`);
+    logger.debug(
+      `[manifest] WARNING: ${publishTime} was ready, but content not found in memory. Cleaning up.`,
+    );
     manifestService.removeManifest(publishTime);
   }
 }
@@ -397,13 +437,16 @@ async function publishManifestIfReady(
     const repIds = requirements ? Object.keys(requirements) : [];
 
     if (repIds.length === 0) {
-      logger.debug(`[manifest] No requirements found for ${publishTime}. Cleaning up orphan entry.`);
+      logger.debug(
+        `[manifest] No requirements found for ${publishTime}. Cleaning up orphan entry.`,
+      );
       manifestService.removeManifest(publishTime);
       continue;
     }
 
-    const { ready: manifestIsReady, missingReps } = manifestService.isManifestReady(publishTime, (repId) =>
-      streamStateService.getLastProcessedOrDefault(repId, 0),
+    const { ready: manifestIsReady, missingReps } = manifestService.isManifestReady(
+      publishTime,
+      (repId) => streamStateService.getLastProcessedOrDefault(repId, 0),
     );
 
     logManifestRepReadiness(streamStateService, requirements!, repIds, missingReps, publishTime);
@@ -417,7 +460,10 @@ async function publishManifestIfReady(
   }
 }
 
-export function startManifestPublisher(manifestService: ManifestService, streamStateService: StreamStateService): void {
+export function startManifestPublisher(
+  manifestService: ManifestService,
+  streamStateService: StreamStateService,
+): void {
   setInterval(async () => {
     await publishManifestIfReady(manifestService, streamStateService);
   }, config.publishManifestIntervalMs);

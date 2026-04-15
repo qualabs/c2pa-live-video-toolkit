@@ -47,7 +47,13 @@ export function startProcessingLoop(
 
     try {
       if (!wasPrefetched) await waitForSegmentInBucket(job.fileKey);
-      await processFile(segmentService, streamStateService, repId, job.fileKey, job.receivedTimestamp);
+      await processFile(
+        segmentService,
+        streamStateService,
+        repId,
+        job.fileKey,
+        job.receivedTimestamp,
+      );
     } catch (error) {
       logger.error(`Error processing file ${job.fileKey}:`, error);
       const currentList = segmentService.getReadyList(repId);

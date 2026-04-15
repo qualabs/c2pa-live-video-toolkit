@@ -4,7 +4,11 @@ import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { setMfhdSequenceNumber, setTrunSampleCount } from '../mp4/moof-utils.js';
 import type { ServerResponse } from 'http';
 
-export function applyGapAttack(session: SessionState, n: number, noAttack: AttackResult): AttackResult | null {
+export function applyGapAttack(
+  session: SessionState,
+  n: number,
+  noAttack: AttackResult,
+): AttackResult | null {
   const { attackConfig, guards } = session;
 
   if (session.pendingGap && session.lastSeenSegment !== null) {
@@ -24,7 +28,11 @@ export function applyGapAttack(session: SessionState, n: number, noAttack: Attac
   return null;
 }
 
-export async function proxyGapEmptySegment(res: ServerResponse, info: SegmentInfo, attack: AttackResult): Promise<void> {
+export async function proxyGapEmptySegment(
+  res: ServerResponse,
+  info: SegmentInfo,
+  attack: AttackResult,
+): Promise<void> {
   const N = attack.gapAt as number;
   const nBytes = await fetchSegment(N, info);
   const parsed = extractMoofMdat(nBytes);

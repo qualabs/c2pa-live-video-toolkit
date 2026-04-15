@@ -7,7 +7,8 @@ const app = express();
 const PORT = 8081;
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const staticFilesRoot = process.env.STATIC_FILES_PATH ?? path.join(currentDir, '..', 'live-streaming');
+const staticFilesRoot =
+  process.env.STATIC_FILES_PATH ?? path.join(currentDir, '..', 'live-streaming');
 
 app.use(cors());
 

@@ -1,9 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import type {
-  SegmentRecord,
-  InitProcessedEvent,
-} from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import {
   ValidationErrorCode,
   SegmentStatus,
@@ -101,13 +98,21 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               </Td>
               <Td>
                 <ValidBadge $status={initStatus}>
-                  {initStatus === 'pending' ? 'PENDING' : initStatus === 'valid' ? 'VALID' : 'NOT VALID'}
+                  {initStatus === 'pending'
+                    ? 'PENDING'
+                    : initStatus === 'valid'
+                      ? 'VALID'
+                      : 'NOT VALID'}
                 </ValidBadge>
               </Td>
               <Td>
                 <StatusBadge
                   $category={
-                    initStatus === 'valid' ? 'valid' : initStatus === 'failed' ? 'failed' : 'warning'
+                    initStatus === 'valid'
+                      ? 'valid'
+                      : initStatus === 'failed'
+                        ? 'failed'
+                        : 'warning'
                   }
                 >
                   <span>🔑</span>
@@ -121,8 +126,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
               const isValid = resolveValidationBadge(segment);
-              const isContinuityOk =
-                !segment.validationResults?.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID);
+              const isContinuityOk = !segment.validationResults?.errorCodes?.includes(
+                ValidationErrorCode.CONTINUITY_INVALID,
+              );
 
               return (
                 <Row
@@ -197,7 +203,10 @@ const Title = styled.h2`
   margin: 0;
 `;
 
-const Stats = styled.div`display: flex; gap: 1rem;`;
+const Stats = styled.div`
+  display: flex;
+  gap: 1rem;
+`;
 
 const Stat = styled.span<{ $color: string }>`
   font-size: 0.875rem;
@@ -213,9 +222,16 @@ const TableWrapper = styled.div`
   max-height: ${TABLE_MAX_HEIGHT};
   overflow-y: auto;
 
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb:hover { background: #666; }
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
 `;
 
 const Table = styled.table`
@@ -277,7 +293,9 @@ const InitRow = styled.tr`
   z-index: 5;
   border-bottom: 2px solid #4ade80;
 
-  &:hover { background: #353535; }
+  &:hover {
+    background: #353535;
+  }
 `;
 
 const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
@@ -297,8 +315,12 @@ const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'war
   }};
   transition: background 0.15s ease;
 
-  &:hover { background: #252525; }
-  &:not(:last-child) { border-bottom: 1px solid #333; }
+  &:hover {
+    background: #252525;
+  }
+  &:not(:last-child) {
+    border-bottom: 1px solid #333;
+  }
 `;
 
 const Td = styled.td`
@@ -316,15 +338,17 @@ const ValidBadge = styled.span<{ $status: 'valid' | 'failed' | 'pending' | 'empt
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: ${(p) => (p.$status === 'empty' || p.$status === 'pending') ? '#888' : '#fff'};
+  color: ${(p) => (p.$status === 'empty' || p.$status === 'pending' ? '#888' : '#fff')};
   background: ${(p) => {
     switch (p.$status) {
       case 'valid':
         return '#22c55e';
       case 'failed':
         return '#ef4444';
-      case 'pending': return 'rgba(251, 191, 36, 0.2)';
-      default:        return 'transparent';
+      case 'pending':
+        return 'rgba(251, 191, 36, 0.2)';
+      default:
+        return 'transparent';
     }
   }};
 `;

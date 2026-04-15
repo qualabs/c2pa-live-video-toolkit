@@ -38,7 +38,9 @@ export class ManifestBoxValidator {
     let isValid = result.isValid;
     let errorCodes = result.errorCodes;
     if (!isValid && wasFirstSegment) {
-      const nonContinuityErrors = (result.errorCodes ?? []).filter((c) => c !== ValidationErrorCode.CONTINUITY_INVALID);
+      const nonContinuityErrors = (result.errorCodes ?? []).filter(
+        (c) => c !== ValidationErrorCode.CONTINUITY_INVALID,
+      );
       if (nonContinuityErrors.length === 0) {
         isValid = true;
         errorCodes = [];

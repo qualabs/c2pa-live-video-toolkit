@@ -75,7 +75,7 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 
 - TypeScript strict mode, target ES2020
 - ESLint + Prettier enforced (prettier errors are ESLint errors)
-- Prettier: 120 char width, single quotes, trailing commas, semicolons
+- Prettier: 100 char width, single quotes, trailing commas, semicolons
 - All packages are ES modules (`"type": "module"`)
 - Turbo handles task orchestration and caching — always use `npx turbo` or root npm scripts
 

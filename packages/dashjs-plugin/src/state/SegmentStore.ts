@@ -37,7 +37,9 @@ export class SegmentStore {
   }
 
   add(segment: Omit<SegmentRecord, 'arrivalIndex'>, forceNewArrival = false): void {
-    const existingIndex = this.segments.findIndex((s) => isSameSegment(s, segment as SegmentRecord));
+    const existingIndex = this.segments.findIndex((s) =>
+      isSameSegment(s, segment as SegmentRecord),
+    );
 
     if (existingIndex !== -1 && forceNewArrival) {
       this.segments.push({ ...segment, arrivalIndex: this.arrivalCounter++ });

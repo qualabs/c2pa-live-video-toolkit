@@ -67,7 +67,9 @@ export class CleanupService {
           if (age > maxAgeMs) {
             await fsp.unlink(fullPath);
             deletedCount++;
-            logger.debug(`[cleanup] Deleted old segment: ${fullPath} (age: ${Math.round(age / MS_PER_MINUTE)}min)`);
+            logger.debug(
+              `[cleanup] Deleted old segment: ${fullPath} (age: ${Math.round(age / MS_PER_MINUTE)}min)`,
+            );
           }
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {

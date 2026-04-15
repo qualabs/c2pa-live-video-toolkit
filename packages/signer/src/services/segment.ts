@@ -40,7 +40,11 @@ export class SegmentService {
     return false;
   }
 
-  determineSegmentAction(repId: string, segmentNumber: number, startNumber: number): 'enqueue' | 'wait' | 'ignore' {
+  determineSegmentAction(
+    repId: string,
+    segmentNumber: number,
+    startNumber: number,
+  ): 'enqueue' | 'wait' | 'ignore' {
     const lastProcessedIndex = this.repository.getLastProcessed(repId) ?? startNumber - 1;
 
     if (segmentNumber === lastProcessedIndex + 1) {
@@ -85,7 +89,11 @@ export class SegmentService {
       canContinue = false;
       const lastProcessedIndex = this.repository.getLastProcessed(repId) ?? startNumber - 1;
       const nextSegmentNumber = lastProcessedIndex + 1;
-      const expectedFileKey = this.buildFileKeyFromSegmentNumber(segmentPattern, repId, nextSegmentNumber);
+      const expectedFileKey = this.buildFileKeyFromSegmentNumber(
+        segmentPattern,
+        repId,
+        nextSegmentNumber,
+      );
 
       if (this.moveFromWaitingToReady(repId, expectedFileKey)) {
         this.repository.setLastProcessed(repId, nextSegmentNumber);
@@ -111,11 +119,17 @@ export class SegmentService {
     return files;
   }
 
-  private buildFileKeyFromSegmentNumber(segmentPattern: string, repId: string, segmentNumber: number): string {
+  private buildFileKeyFromSegmentNumber(
+    segmentPattern: string,
+    repId: string,
+    segmentNumber: number,
+  ): string {
     return segmentPattern
       .replace(REPRESENTATION_ID_PLACEHOLDER, repId)
       .replace(/\$Number(?:%0(\d+)d)?\$/, (_, padding) =>
-        padding ? segmentNumber.toString().padStart(parseInt(padding, 10), '0') : segmentNumber.toString(),
+        padding
+          ? segmentNumber.toString().padStart(parseInt(padding, 10), '0')
+          : segmentNumber.toString(),
       );
   }
 }

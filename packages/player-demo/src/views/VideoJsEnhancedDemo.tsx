@@ -21,11 +21,16 @@ const VideoJsEnhancedDemo: React.FC = () => {
       playerSlot={<VideoWrapper ref={containerRef} />}
       state={state}
       streamUrl={streamUrl}
-      onStreamChange={(url) => { setStreamUrl(url); changeStream(url); }}
+      onStreamChange={(url) => {
+        setStreamUrl(url);
+        changeStream(url);
+      }}
     />
   );
 };
 
 export default VideoJsEnhancedDemo;
 
-const VideoWrapper = styled.div`width: 100%;`;
+const VideoWrapper = styled.div`
+  width: 100%;
+`;

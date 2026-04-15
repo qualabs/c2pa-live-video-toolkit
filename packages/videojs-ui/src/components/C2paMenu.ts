@@ -238,7 +238,9 @@ function extractMenuValue(
       return activeManifest?.claimGenerator ?? null;
 
     case 'NAME': {
-      const cw = activeManifest?.assertions?.find((a) => a.label === 'stds.schema-org.CreativeWork');
+      const cw = activeManifest?.assertions?.find(
+        (a) => a.label === 'stds.schema-org.CreativeWork',
+      );
       const authors = cw?.data?.author as Array<{ name?: string }> | undefined;
       return authors?.[0]?.name ?? null;
     }

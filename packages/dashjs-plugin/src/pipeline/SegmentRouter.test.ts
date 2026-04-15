@@ -129,13 +129,17 @@ describe('SegmentRouter', () => {
   describe('InitializationSegment routing', () => {
     it('calls initProcessor for a video InitializationSegment', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'video' } }));
+      await router.route(
+        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'video' } }),
+      );
       expect(initProcessor.process).toHaveBeenCalledOnce();
     });
 
     it('ignores InitializationSegment for unsupported media types', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'text' } }));
+      await router.route(
+        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'text' } }),
+      );
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
   });

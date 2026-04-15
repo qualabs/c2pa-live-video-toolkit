@@ -1,12 +1,25 @@
 import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
 import { state } from '../state.js';
-import { fetchSegment, cacheContent, buildSegmentPath, proxySegment } from '../proxy/segment-proxy.js';
+import {
+  fetchSegment,
+  cacheContent,
+  buildSegmentPath,
+  proxySegment,
+} from '../proxy/segment-proxy.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { replaceMoofMdat } from '../mp4/mdat-utils.js';
-import { setMfhdSequenceNumber, setBaseMediaDecodeTimeInMoof, getBaseMediaDecodeTimeFromMoof } from '../mp4/moof-utils.js';
+import {
+  setMfhdSequenceNumber,
+  setBaseMediaDecodeTimeInMoof,
+  getBaseMediaDecodeTimeFromMoof,
+} from '../mp4/moof-utils.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
-export function applyOutOfOrderAttack(session: SessionState, n: number, noAttack: AttackResult): AttackResult | null {
+export function applyOutOfOrderAttack(
+  session: SessionState,
+  n: number,
+  noAttack: AttackResult,
+): AttackResult | null {
   const { attackConfig, guards } = session;
 
   if (!guards.reorder) {
@@ -18,12 +31,22 @@ export function applyOutOfOrderAttack(session: SessionState, n: number, noAttack
   }
   if (n === attackConfig.reorderSeg1) {
     console.log(`OUT-OF-ORDER [1/2]: serve seg ${attackConfig.reorderSeg2} content as slot ${n}`);
-    return { ...noAttack, reorderAttack: true, serveContentOf: attackConfig.reorderSeg2 as number, asSlot: n };
+    return {
+      ...noAttack,
+      reorderAttack: true,
+      serveContentOf: attackConfig.reorderSeg2 as number,
+      asSlot: n,
+    };
   }
   if (n === attackConfig.reorderSeg2) {
     attackConfig.enabled = false;
     console.log(`OUT-OF-ORDER [2/2]: serve seg ${attackConfig.reorderSeg1} content as slot ${n}`);
-    return { ...noAttack, reorderAttack: true, serveContentOf: attackConfig.reorderSeg1 as number, asSlot: n };
+    return {
+      ...noAttack,
+      reorderAttack: true,
+      serveContentOf: attackConfig.reorderSeg1 as number,
+      asSlot: n,
+    };
   }
 
   return null;
@@ -45,7 +68,10 @@ export async function proxyReorderAttack(
   let segBMoofMdat: ReturnType<typeof extractMoofMdat>;
 
   if (isFirst) {
-    const [bBytes, aBytes] = await Promise.all([fetchSegment(asSlot, info), fetchSegment(serveContentOf, info)]);
+    const [bBytes, aBytes] = await Promise.all([
+      fetchSegment(asSlot, info),
+      fetchSegment(serveContentOf, info),
+    ]);
     cacheContent(asSlot, bBytes);
     cacheContent(serveContentOf, aBytes);
     segBMoofMdat = extractMoofMdat(bBytes);

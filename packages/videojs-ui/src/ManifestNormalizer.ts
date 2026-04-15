@@ -1,9 +1,4 @@
-import type {
-  ActiveManifest,
-  ManifestAssertion,
-  PlaybackStatus,
-  SignatureInfo,
-} from './types.js';
+import type { ActiveManifest, ManifestAssertion, PlaybackStatus, SignatureInfo } from './types.js';
 
 /**
  * Extracts the active C2PA manifest from a playback status, normalizing the shape.

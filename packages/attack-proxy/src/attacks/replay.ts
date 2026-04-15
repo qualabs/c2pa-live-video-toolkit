@@ -3,10 +3,18 @@ import { state } from '../state.js';
 import { fetchSegment, proxySegment, buildSegmentPath } from '../proxy/segment-proxy.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { replaceMoofMdat } from '../mp4/mdat-utils.js';
-import { setMfhdSequenceNumber, setBaseMediaDecodeTimeInMoof, getBaseMediaDecodeTimeFromMoof } from '../mp4/moof-utils.js';
+import {
+  setMfhdSequenceNumber,
+  setBaseMediaDecodeTimeInMoof,
+  getBaseMediaDecodeTimeFromMoof,
+} from '../mp4/moof-utils.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
-export function applyReplayAttack(session: SessionState, n: number, noAttack: AttackResult): AttackResult | null {
+export function applyReplayAttack(
+  session: SessionState,
+  n: number,
+  noAttack: AttackResult,
+): AttackResult | null {
   const { attackConfig, guards, contentCache } = session;
 
   if (!guards.replay) {
@@ -24,7 +32,12 @@ export function applyReplayAttack(session: SessionState, n: number, noAttack: At
   if (n === attackConfig._attackSegment && contentCache.has(attackConfig.replaySegment as number)) {
     attackConfig.enabled = false;
     console.log(`REPLAY: serve seg ${attackConfig.replaySegment} content as slot ${n}`);
-    return { ...noAttack, replayAttack: true, replayFrom: attackConfig.replaySegment as number, slotNumber: n };
+    return {
+      ...noAttack,
+      replayAttack: true,
+      replayFrom: attackConfig.replaySegment as number,
+      slotNumber: n,
+    };
   }
 
   return null;
