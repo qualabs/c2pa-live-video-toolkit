@@ -187,7 +187,9 @@ export class C2paTimeline {
   }
 
   private syncPlayProgressColor(videoPlayer: VideoJsPlayer, color: string): void {
-    const playProgress = videoPlayer.el().querySelector(CSS_SELECTOR_PLAY_PROGRESS) as HTMLElement | null;
+    const playProgress = videoPlayer
+      .el()
+      .querySelector(CSS_SELECTOR_PLAY_PROGRESS) as HTMLElement | null;
     if (playProgress) {
       playProgress.style.backgroundColor = color;
       playProgress.style.color = color;
@@ -239,7 +241,9 @@ function resolveSegmentColor(status: VerificationStatus): string {
     [VERIFICATION_STATUS.FALSE]: CSS_VAR_FAILED,
     [VERIFICATION_STATUS.UNKNOWN]: CSS_VAR_UNKNOWN,
   };
-  return getComputedStyle(document.documentElement).getPropertyValue(variableByStatus[status]).trim();
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(variableByStatus[status])
+    .trim();
 }
 
 function computeSegmentProgress(

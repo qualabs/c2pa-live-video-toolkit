@@ -165,10 +165,7 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
           )}
         </DropdownSection>
 
-        <ControlButton
-          onClick={handleSsaiAdBreak}
-          disabled={isAdBreakActive || isAdBreakLoading}
-        >
+        <ControlButton onClick={handleSsaiAdBreak} disabled={isAdBreakActive || isAdBreakLoading}>
           <span>{isAdBreakLoading ? '⏳' : '📺'}</span>
           <span>{isAdBreakLoading ? 'Restarting stream…' : 'Simulate Ad Break'}</span>
         </ControlButton>
@@ -177,38 +174,102 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
   );
 };
 
-const Container = styled.div`display: flex; flex-direction: column; gap: 1rem; width: 100%;`;
-const TitleRow = styled.div`display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;`;
-const Title = styled.h2`font-size: 1.25rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
-const MethodBadge = styled.span<{ $method: 'vsi' | 'manifestbox' }>`
-  font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px;
-  background: ${(p) => p.$method === 'vsi' ? '#1a3a2a' : '#2a2a3a'};
-  color: ${(p) => p.$method === 'vsi' ? '#4ade80' : '#818cf8'};
-  border: 1px solid ${(p) => p.$method === 'vsi' ? '#2d6a4a' : '#4a4a7a'};
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
 `;
-const ControlsWrapper = styled.div`display: flex; flex-direction: column; gap: 0.75rem;`;
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+const Title = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 0;
+`;
+const MethodBadge = styled.span<{ $method: 'vsi' | 'manifestbox' }>`
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: ${(p) => (p.$method === 'vsi' ? '#1a3a2a' : '#2a2a3a')};
+  color: ${(p) => (p.$method === 'vsi' ? '#4ade80' : '#818cf8')};
+  border: 1px solid ${(p) => (p.$method === 'vsi' ? '#2d6a4a' : '#4a4a7a')};
+`;
+const ControlsWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
 const ControlButton = styled.button`
-  display: flex; align-items: center; gap: 0.75rem; padding: 1rem;
-  background: #2d2d2d; border: 1px solid #4a4a4a; border-radius: 8px;
-  color: #e5e5e5; cursor: pointer; transition: all 0.2s ease; font-size: 0.875rem; font-weight: 500;
-  &:hover:not(:disabled) { background: #353535; border-color: #5a5a5a; }
-  &:disabled { opacity: 0.7; cursor: default; }
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #2d2d2d;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  color: #e5e5e5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  &:hover:not(:disabled) {
+    background: #353535;
+    border-color: #5a5a5a;
+  }
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
 `;
 const DropdownSection = styled.div`
-  background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 8px; overflow: hidden;
+  background: #1e1e1e;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  overflow: hidden;
 `;
 const DropdownHeader = styled.button`
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem; background: #2d2d2d; border: none; color: #e5e5e5; cursor: pointer;
-  font-size: 0.875rem; font-weight: 500; transition: background 0.2s ease;
-  &:hover { background: #353535; }
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #2d2d2d;
+  border: none;
+  color: #e5e5e5;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.2s ease;
+  &:hover {
+    background: #353535;
+  }
 `;
-const DropdownContent = styled.div`padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;`;
+const DropdownContent = styled.div`
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
 const AttackButton = styled.button<{ $variant: 'danger' | 'warning' }>`
-  display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem;
-  background: ${(p) => p.$variant === 'danger' ? '#4a2d2d' : '#3a3a3a'};
-  border: 1px solid ${(p) => p.$variant === 'danger' ? '#6a4a4a' : '#555'};
-  border-radius: 6px; color: #e5e5e5; cursor: pointer; font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: ${(p) => (p.$variant === 'danger' ? '#4a2d2d' : '#3a3a3a')};
+  border: 1px solid ${(p) => (p.$variant === 'danger' ? '#6a4a4a' : '#555')};
+  border-radius: 6px;
+  color: #e5e5e5;
+  cursor: pointer;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
-  &:hover { background: ${(p) => p.$variant === 'danger' ? '#5a3d3d' : '#454545'}; }
+  &:hover {
+    background: ${(p) => (p.$variant === 'danger' ? '#5a3d3d' : '#454545')};
+  }
 `;

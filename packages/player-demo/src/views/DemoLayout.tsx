@@ -36,10 +36,13 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
     // Best-effort URL update for shareability — History API may be unavailable (e.g. file://)
     try {
       window.history.replaceState(
-        null, '',
+        null,
+        '',
         `${window.location.pathname}?url=${encodeURIComponent(inputUrl)}`,
       );
-    } catch { /* History API unavailable, URL update skipped */ }
+    } catch {
+      /* History API unavailable, URL update skipped */
+    }
   }
 
   function handleStreamChange(url: string): void {
@@ -96,30 +99,79 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
   );
 };
 
-const Container = styled.div`display: flex; flex-direction: column; gap: 1rem; width: 100%;`;
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+`;
 
-const InputRow = styled.div`display: flex; gap: 0.5rem; align-items: stretch;`;
+const InputRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+`;
 
 const StreamInput = styled.input`
-  flex: 1; padding: 0.75rem; background: #2d2d2d; border: 1px solid #4a4a4a;
-  border-radius: 6px; color: #e5e5e5; font-size: 0.875rem;
-  &::placeholder { color: #888; }
-  &:focus { outline: none; border-color: #5a5a5a; }
+  flex: 1;
+  padding: 0.75rem;
+  background: #2d2d2d;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  color: #e5e5e5;
+  font-size: 0.875rem;
+  &::placeholder {
+    color: #888;
+  }
+  &:focus {
+    outline: none;
+    border-color: #5a5a5a;
+  }
 `;
 
 const PlayButton = styled.button`
-  padding: 0.75rem 1.5rem; background: #2d2d2d; border: 1px solid #4a4a4a;
-  border-radius: 8px; color: #e5e5e5; cursor: pointer; font-size: 0.875rem; font-weight: 500;
-  transition: all 0.2s ease; white-space: nowrap;
-  &:hover:not(:disabled) { background: #353535; border-color: #5a5a5a; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  padding: 0.75rem 1.5rem;
+  background: #2d2d2d;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  color: #e5e5e5;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  &:hover:not(:disabled) {
+    background: #353535;
+    border-color: #5a5a5a;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const TwoColumnLayout = styled.div`
-  display: grid; grid-template-columns: 1.85fr 1fr; gap: 1.5rem; width: 100%;
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
+  display: grid;
+  grid-template-columns: 1.85fr 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
-const LeftColumn = styled.div`display: flex; flex-direction: column; gap: 1rem; width: 100%; min-width: 0;`;
+const LeftColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+`;
 
-const RightColumn = styled.div`display: flex; flex-direction: column; gap: 1.5rem; width: 100%; min-width: 0;`;
+const RightColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+`;

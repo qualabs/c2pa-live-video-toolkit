@@ -33,14 +33,8 @@
     "dashjs": ">=4.0.0"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.38.0",
-    "@typescript-eslint/parser": "^8.38.0",
     "dashjs": "^4.7.4",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.3",
-    "prettier": "^3.6.2",
     "typescript": "^5.8.3",
-    "vitest": "^2.1.9"
+    "vitest": "^3.0.0"
   }
 }

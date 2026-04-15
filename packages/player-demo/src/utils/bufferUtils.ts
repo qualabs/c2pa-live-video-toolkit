@@ -20,7 +20,12 @@ export function bytesToHex(bytes: unknown): string {
     bytes instanceof Uint8Array
       ? bytes
       : new Uint8Array(Object.values(bytes as Record<string, number>));
-  return '0x' + Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return (
+    '0x' +
+    Array.from(arr)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  );
 }
 
 export function convertBuffersToHex(obj: unknown): unknown {

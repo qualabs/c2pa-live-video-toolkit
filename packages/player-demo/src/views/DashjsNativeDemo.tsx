@@ -17,7 +17,10 @@ const DashjsNativeDemo: React.FC = () => {
       playerSlot={<VideoEl ref={videoRef} playsInline muted />}
       state={state}
       streamUrl={streamUrl}
-      onStreamChange={(url) => { setStreamUrl(url); changeStream(url); }}
+      onStreamChange={(url) => {
+        setStreamUrl(url);
+        changeStream(url);
+      }}
     />
   );
 };
@@ -25,5 +28,9 @@ const DashjsNativeDemo: React.FC = () => {
 export default DashjsNativeDemo;
 
 const VideoEl = styled.video`
-  width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  display: block;
 `;

@@ -21,7 +21,10 @@ type StatusInfo = {
   meaning: string;
 };
 
-const STATUS_INFO_MAP: Record<Exclude<SegmentStatusValue, typeof SegmentStatus.INVALID>, StatusInfo> = {
+const STATUS_INFO_MAP: Record<
+  Exclude<SegmentStatusValue, typeof SegmentStatus.INVALID>,
+  StatusInfo
+> = {
   ad: {
     title: 'No C2PA Manifest',
     description: 'This segment carries no C2PA provenance data.',
@@ -51,12 +54,16 @@ const STATUS_INFO_MAP: Record<Exclude<SegmentStatusValue, typeof SegmentStatus.I
       'Not a gap attack: no stall, seamless playback',
     ],
     color: '#f97316',
-    meaning: 'Authenticity does not imply freshness. Replay is detected via sequence number monotonicity.',
+    meaning:
+      'Authenticity does not imply freshness. Replay is detected via sequence number monotonicity.',
   },
   reordered: {
     title: 'Reordered Segment',
     description: 'This segment was delivered out of sequence.',
-    details: ['↕ Segment content swapped with a neighboring segment', '✗ BMFF hash mismatch detected'],
+    details: [
+      '↕ Segment content swapped with a neighboring segment',
+      '✗ BMFF hash mismatch detected',
+    ],
     color: '#f59e0b',
     meaning: 'Could be a network condition or an intentional reordering attack.',
   },
@@ -110,7 +117,8 @@ function buildStatusInfo(
       description: 'This segment failed one or more C2PA validation checks.',
       details: reasons.length > 0 ? reasons : ['✗ One or more validation checks failed'],
       color: '#ef4444',
-      meaning: 'The segment failed cryptographic validation. The content may have been tampered with.',
+      meaning:
+        'The segment failed cryptographic validation. The content may have been tampered with.',
     };
   }
   return STATUS_INFO_MAP[status];
@@ -154,9 +162,18 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
             </StatusBadge>
           </PreviewHeader>
           <PreviewInfo>
-            <InfoRow><InfoLabel>SEQ:</InfoLabel><InfoValue>{segment.sequenceNumber}</InfoValue></InfoRow>
-            <InfoRow><InfoLabel>Type:</InfoLabel><InfoValue>{segment.mediaType}</InfoValue></InfoRow>
-            <InfoRow><InfoLabel>Key ID:</InfoLabel><InfoValue>{segment.keyId.substring(0, 16)}…</InfoValue></InfoRow>
+            <InfoRow>
+              <InfoLabel>SEQ:</InfoLabel>
+              <InfoValue>{segment.sequenceNumber}</InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>Type:</InfoLabel>
+              <InfoValue>{segment.mediaType}</InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>Key ID:</InfoLabel>
+              <InfoValue>{segment.keyId.substring(0, 16)}…</InfoValue>
+            </InfoRow>
           </PreviewInfo>
           <ClickHint>Click to view details</ClickHint>
         </PreviewCard>
@@ -170,8 +187,12 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
               <CloseButton onClick={() => setShowModal(false)}>✕</CloseButton>
             </ModalHeader>
             <ModalTabs>
-              <Tab $active={activeTab === 'data'} onClick={() => setActiveTab('data')}>Segment Data</Tab>
-              <Tab $active={activeTab === 'info'} onClick={() => setActiveTab('info')}>Info</Tab>
+              <Tab $active={activeTab === 'data'} onClick={() => setActiveTab('data')}>
+                Segment Data
+              </Tab>
+              <Tab $active={activeTab === 'info'} onClick={() => setActiveTab('info')}>
+                Info
+              </Tab>
             </ModalTabs>
             <ModalBody>
               {activeTab === 'data' ? (
@@ -185,7 +206,9 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
                   </InfoTitle>
                   <InfoDescription>{info.description}</InfoDescription>
                   <DetailsList>
-                    {info.details.map((d, i) => <DetailItem key={i}>{d}</DetailItem>)}
+                    {info.details.map((d, i) => (
+                      <DetailItem key={i}>{d}</DetailItem>
+                    ))}
                   </DetailsList>
                   <MeaningBox>
                     <MeaningTitle>What does this mean?</MeaningTitle>
@@ -201,21 +224,56 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
   );
 };
 
-const Container = styled.div`display: flex; flex-direction: column; gap: 1rem; width: 100%;`;
-const Title = styled.h2`font-size: 1.25rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+`;
+const Title = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 0;
+`;
 const EmptyState = styled.div`
-  background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 8px;
-  padding: 3rem 1rem; text-align: center; color: #888; font-size: 0.875rem;
+  background: #1e1e1e;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.875rem;
 `;
 const PreviewCard = styled.div`
-  background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 8px;
-  padding: 1rem; cursor: pointer; transition: all 0.2s ease;
-  &:hover { border-color: #5a5a5a; background: #252525; }
+  background: #1e1e1e;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    border-color: #5a5a5a;
+    background: #252525;
+  }
 `;
-const PreviewHeader = styled.div`display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;`;
-const PreviewTitle = styled.h3`font-size: 1rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
+const PreviewHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+const PreviewTitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 0;
+`;
 const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
-  font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
   color: ${(p) =>
     p.$category === 'valid'
       ? '#4ade80'
@@ -225,58 +283,184 @@ const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'a
           ? '#60a5fa'
           : '#fbbf24'};
 `;
-const PreviewInfo = styled.div`display: flex; flex-direction: column; gap: 0.5rem;`;
-const InfoRow = styled.div`display: flex; justify-content: space-between; align-items: center;`;
-const InfoLabel = styled.span`color: #a0a0a0; font-size: 0.875rem; font-weight: 500;`;
-const InfoValue = styled.span`color: #e5e5e5; font-size: 0.875rem; font-family: 'Courier New', monospace;`;
+const PreviewInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+const InfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+const InfoLabel = styled.span`
+  color: #a0a0a0;
+  font-size: 0.875rem;
+  font-weight: 500;
+`;
+const InfoValue = styled.span`
+  color: #e5e5e5;
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+`;
 const ClickHint = styled.div`
-  margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #333;
-  text-align: center; color: #888; font-size: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #333;
+  text-align: center;
+  color: #888;
+  font-size: 0.75rem;
 `;
 const ModalOverlay = styled.div`
-  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 `;
 const ModalContent = styled.div`
-  background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 12px;
-  width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+  background: #1e1e1e;
+  border: 1px solid #4a4a4a;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 const ModalHeader = styled.div`
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.5rem; border-bottom: 1px solid #4a4a4a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #4a4a4a;
 `;
-const ModalTitle = styled.h2`font-size: 1.25rem; font-weight: 600; color: #e5e5e5; margin: 0;`;
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 0;
+`;
 const CloseButton = styled.button`
-  background: transparent; border: none; color: #a0a0a0; font-size: 1.5rem;
-  cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center;
-  justify-content: center; border-radius: 4px; transition: all 0.2s ease;
-  &:hover { background: #2d2d2d; color: #e5e5e5; }
+  background: transparent;
+  border: none;
+  color: #a0a0a0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  &:hover {
+    background: #2d2d2d;
+    color: #e5e5e5;
+  }
 `;
-const ModalTabs = styled.div`display: flex; border-bottom: 1px solid #4a4a4a; background: #252525;`;
+const ModalTabs = styled.div`
+  display: flex;
+  border-bottom: 1px solid #4a4a4a;
+  background: #252525;
+`;
 const Tab = styled.button<{ $active: boolean }>`
-  flex: 1; padding: 1rem; background: ${(p) => p.$active ? '#1e1e1e' : 'transparent'};
-  border: none; border-bottom: 2px solid ${(p) => p.$active ? '#4ade80' : 'transparent'};
-  color: ${(p) => p.$active ? '#e5e5e5' : '#a0a0a0'};
-  font-weight: ${(p) => p.$active ? '600' : '400'}; font-size: 0.875rem; cursor: pointer;
-  transition: all 0.2s ease; &:hover { background: #2d2d2d; color: #e5e5e5; }
+  flex: 1;
+  padding: 1rem;
+  background: ${(p) => (p.$active ? '#1e1e1e' : 'transparent')};
+  border: none;
+  border-bottom: 2px solid ${(p) => (p.$active ? '#4ade80' : 'transparent')};
+  color: ${(p) => (p.$active ? '#e5e5e5' : '#a0a0a0')};
+  font-weight: ${(p) => (p.$active ? '600' : '400')};
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: #2d2d2d;
+    color: #e5e5e5;
+  }
 `;
 const ModalBody = styled.div`
-  flex: 1; overflow-y: auto; padding: 1.5rem;
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
 `;
 const JsonViewer = styled.div`
-  background: #0d0d0d; border: 1px solid #333; border-radius: 6px; padding: 1rem;
-  pre { margin: 0; color: #e5e5e5; font-family: 'Courier New', monospace; font-size: 0.875rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+  background: #0d0d0d;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 1rem;
+  pre {
+    margin: 0;
+    color: #e5e5e5;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
 `;
-const InfoPanel = styled.div`display: flex; flex-direction: column; gap: 1.5rem;`;
-const InfoTitle = styled.h3`font-size: 1.25rem; font-weight: 600; margin: 0; text-align: center;`;
-const InfoDescription = styled.p`font-size: 1rem; color: #a0a0a0; margin: 0; text-align: center; line-height: 1.6;`;
-const DetailsList = styled.ul`list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;`;
+const InfoPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+const InfoTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+`;
+const InfoDescription = styled.p`
+  font-size: 1rem;
+  color: #a0a0a0;
+  margin: 0;
+  text-align: center;
+  line-height: 1.6;
+`;
+const DetailsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
 const DetailItem = styled.li`
-  font-size: 0.9375rem; color: #e5e5e5; padding: 0.75rem;
-  background: #252525; border-left: 3px solid #4a4a4a; border-radius: 4px; line-height: 1.5;
+  font-size: 0.9375rem;
+  color: #e5e5e5;
+  padding: 0.75rem;
+  background: #252525;
+  border-left: 3px solid #4a4a4a;
+  border-radius: 4px;
+  line-height: 1.5;
 `;
-const MeaningBox = styled.div`background: #252525; border: 1px solid #333; border-radius: 8px; padding: 1.25rem;`;
-const MeaningTitle = styled.h4`font-size: 1rem; font-weight: 600; color: #4ade80; margin: 0 0 0.75rem 0;`;
-const MeaningText = styled.p`font-size: 0.9375rem; color: #d0d0d0; margin: 0; line-height: 1.6;`;
+const MeaningBox = styled.div`
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+`;
+const MeaningTitle = styled.h4`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4ade80;
+  margin: 0 0 0.75rem 0;
+`;
+const MeaningText = styled.p`
+  font-size: 0.9375rem;
+  color: #d0d0d0;
+  margin: 0;
+  line-height: 1.6;
+`;

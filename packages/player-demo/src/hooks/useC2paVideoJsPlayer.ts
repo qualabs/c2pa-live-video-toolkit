@@ -4,7 +4,7 @@ import dashjs from 'dashjs';
 import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
 import 'video.js/dist/video-js.css';
 import '@c2pa-live-toolkit/videojs-ui/styles';
-import type { C2paPlayerInstance } from '@c2pa-live-toolkit/videojs-ui';
+import type { C2paPlayerInstance, VideoJsPlayer } from '@c2pa-live-toolkit/videojs-ui';
 import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
@@ -48,6 +48,8 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   const c2paControllerRef = useRef<C2paController | null>(null);
   const c2paUiRef = useRef<C2paPlayerInstance | null>(null);
   const unsubscribeSegmentsRef = useRef<(() => void) | null>(null);
+  // Capture the initial videoSrc so the mount effect is truly mount-only
+  const initialVideoSrcRef = useRef(videoSrc);
 
   const [c2paController, setC2paController] = useState<C2paController | null>(null);
   const [state, setState] = useState<C2paPlayerState>({ segments: [], initData: null });
@@ -69,7 +71,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
     videoJsPlayerRef.current = vjsPlayer;
 
     vjsPlayer.ready(() => {
-      const streamUrl = resolveStreamUrl(videoSrc);
+      const streamUrl = resolveStreamUrl(initialVideoSrcRef.current);
 
       const dashPlayer = dashjs.MediaPlayer().create();
       dashPlayerRef.current = dashPlayer;
@@ -112,7 +114,6 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       videoJsPlayerRef.current = null;
       setVideoJsReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -120,8 +121,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
     if (!player || !c2paController || !videoJsReady) return;
 
     c2paUiRef.current?.destroy();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- video.js Player types don't expose controlBar
-    c2paUiRef.current = C2paPlayerUI(player as any, c2paController);
+    c2paUiRef.current = C2paPlayerUI(player as unknown as VideoJsPlayer, c2paController);
 
     return () => {
       c2paUiRef.current?.destroy();

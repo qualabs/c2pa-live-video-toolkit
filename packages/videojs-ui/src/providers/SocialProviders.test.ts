@@ -3,11 +3,15 @@ import { providerInfoFromSocialUrl } from './SocialProviders.js';
 
 describe('providerInfoFromSocialUrl', () => {
   it('returns Nikon for a URL containing "nikon"', () => {
-    expect(providerInfoFromSocialUrl('https://www.nikon.com/profile/123')).toEqual({ name: 'Nikon' });
+    expect(providerInfoFromSocialUrl('https://www.nikon.com/profile/123')).toEqual({
+      name: 'Nikon',
+    });
   });
 
   it('returns YouTube for a youtube.com URL', () => {
-    expect(providerInfoFromSocialUrl('https://www.youtube.com/watch?v=abc')).toEqual({ name: 'YouTube' });
+    expect(providerInfoFromSocialUrl('https://www.youtube.com/watch?v=abc')).toEqual({
+      name: 'YouTube',
+    });
   });
 
   it('returns Instagram for an instagram.com URL', () => {
@@ -15,7 +19,9 @@ describe('providerInfoFromSocialUrl', () => {
   });
 
   it('returns Facebook for a facebook.com URL', () => {
-    expect(providerInfoFromSocialUrl('https://www.facebook.com/post/1')).toEqual({ name: 'Facebook' });
+    expect(providerInfoFromSocialUrl('https://www.facebook.com/post/1')).toEqual({
+      name: 'Facebook',
+    });
   });
 
   it('returns LinkedIn for a linkedin.com URL', () => {

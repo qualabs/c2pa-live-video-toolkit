@@ -160,7 +160,8 @@ export class SegmentRouter {
     this.deps.eventBus.emit('initProcessed', result);
 
     if (result.success) {
-      this.deps.activeManifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
+      this.deps.activeManifest.value =
+        result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
       }

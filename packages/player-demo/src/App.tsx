@@ -76,7 +76,9 @@ const LogoContainer = styled.div`
 const Logo = styled.img`
   object-fit: contain;
   filter: brightness(1.1);
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
 
   &:hover {
     transform: scale(1.05);
