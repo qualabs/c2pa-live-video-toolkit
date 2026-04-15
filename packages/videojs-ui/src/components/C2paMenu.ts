@@ -37,7 +37,6 @@ const LONG_VALUE_CHARACTER_THRESHOLD = 23;
 
 type MenuItemKey =
   | 'SIG_ISSUER'
-  | 'CERT_SUBJECT'
   | 'DATE'
   | 'CLAIM_GENERATOR'
   | 'NAME'
@@ -49,7 +48,6 @@ type MenuItemKey =
 
 const MENU_ITEM_LABELS: Record<MenuItemKey, string> = {
   SIG_ISSUER: 'Issued by',
-  CERT_SUBJECT: 'Subject name',
   DATE: 'Issued on',
   CLAIM_GENERATOR: 'App or device used',
   NAME: 'Name',
@@ -232,9 +230,6 @@ function extractMenuValue(
   switch (key) {
     case 'SIG_ISSUER':
       return sigInfo?.issuer ?? null;
-
-    case 'CERT_SUBJECT':
-      return sigInfo?.cert_subject ?? null;
 
     case 'DATE': {
       const timeValue = sigInfo?.time ?? sigInfo?.certNotBefore;

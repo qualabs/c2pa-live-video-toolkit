@@ -51,7 +51,6 @@ export type SignatureInfo = {
   issuer?: string;
   time?: string;
   certNotBefore?: string;
-  cert_subject?: string;
 };
 
 export type ManifestAssertion = {
