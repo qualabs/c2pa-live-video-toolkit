@@ -5,7 +5,6 @@ import type {
   PlaybackStatus,
   ManifestStore,
   ActiveManifest,
-  ManifestEnvelope,
 } from '../types.js';
 import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 
@@ -38,6 +37,7 @@ const LONG_VALUE_CHARACTER_THRESHOLD = 23;
 
 type MenuItemKey =
   | 'SIG_ISSUER'
+  | 'CERT_SUBJECT'
   | 'DATE'
   | 'CLAIM_GENERATOR'
   | 'NAME'
@@ -49,6 +49,7 @@ type MenuItemKey =
 
 const MENU_ITEM_LABELS: Record<MenuItemKey, string> = {
   SIG_ISSUER: 'Issued by',
+  CERT_SUBJECT: 'Subject name',
   DATE: 'Issued on',
   CLAIM_GENERATOR: 'App or device used',
   NAME: 'Name',
@@ -226,12 +227,17 @@ function extractMenuValue(
   const manifestStore = extractManifestStore(status);
   const activeManifest = resolveActiveManifest(manifestStore);
 
+  const sigInfo = activeManifest?.signatureInfo ?? activeManifest?.signature_info;
+
   switch (key) {
     case 'SIG_ISSUER':
-      return activeManifest?.signatureInfo?.issuer ?? null;
+      return sigInfo?.issuer ?? null;
+
+    case 'CERT_SUBJECT':
+      return sigInfo?.cert_subject ?? null;
 
     case 'DATE': {
-      const timeValue = activeManifest?.signatureInfo?.time;
+      const timeValue = sigInfo?.time ?? sigInfo?.certNotBefore;
       if (!timeValue) return null;
       return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
@@ -242,6 +248,12 @@ function extractMenuValue(
 
     case 'CLAIM_GENERATOR':
       return activeManifest?.claimGenerator ?? activeManifest?.claim_generator ?? null;
+
+    case 'NAME': {
+      const cw = activeManifest?.assertions?.find((a) => a.label === 'stds.schema-org.CreativeWork');
+      const authors = cw?.data?.author as Array<{ name?: string }> | undefined;
+      return authors?.[0]?.name ?? null;
+    }
 
     case 'VALIDATION_STATUS':
       return resolveValidationStatusLabel(status.verified);
@@ -256,7 +268,16 @@ function extractMenuValue(
 
 function extractManifestStore(status: PlaybackStatus): ManifestStore | null {
   try {
-    return (status.details.video?.manifest as ManifestEnvelope | undefined)?.manifestStore ?? null;
+    const manifest = status.details.video?.manifest as Record<string, unknown> | undefined;
+    if (!manifest) return null;
+
+    if (manifest.manifestStore) return manifest.manifestStore as ManifestStore;
+
+    if (manifest.signatureInfo != null || manifest.signature_info != null || 'claimGenerator' in manifest) {
+      return { activeManifest: manifest as unknown as ActiveManifest };
+    }
+
+    return null;
   } catch (error) {
     console.warn('[C2paMenu] Failed to extract manifest from playback status:', error);
     return null;
@@ -296,7 +317,7 @@ function renderMenuItemHtml(key: MenuItemKey, label: string, value: string | str
   }
 
   if (key === 'ALERT' && typeof value === 'string') {
-    return `<div class="alert-div"><img class="alert-icon" alt="alert"></div><div class="alert-content-scrollable">${value}</div>`;
+    return `<div class="alert-div"><img class="alert-icon" alt="alert"><div class="alert-content-scrollable">${value}</div></div>`;
   }
 
   if (key === 'VALIDATION_STATUS' && value === 'Failed') {

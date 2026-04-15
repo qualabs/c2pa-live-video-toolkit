@@ -50,12 +50,21 @@ export type MediaType = 'video' | 'audio';
 export type SignatureInfo = {
   issuer?: string;
   time?: string;
+  certNotBefore?: string;
+  cert_subject?: string;
+};
+
+export type ManifestAssertion = {
+  label: string;
+  data: Record<string, unknown>;
 };
 
 export type ActiveManifest = {
   signatureInfo?: SignatureInfo;
+  signature_info?: SignatureInfo;
   claimGenerator?: string;
   claim_generator?: string;
+  assertions?: ManifestAssertion[];
 };
 
 export type ManifestStore = {
