@@ -1,6 +1,7 @@
 import videojs from 'video.js';
 import type { VideoJsPlayer, VjsComponent, PlaybackStatus } from '../types.js';
 import { extractActiveManifest } from '../ManifestNormalizer.js';
+import { CREATIVE_WORK_ASSERTION_LABEL, VALIDATION_STATUS_VALUES } from '../types.js';
 import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 
 /**
@@ -184,7 +185,7 @@ export function updateMenuItems(
       (item.el() as HTMLElement).style.display = 'block';
       item.el().innerHTML = renderMenuItemHtml(key, label, value);
 
-      if (key === 'VALIDATION_STATUS' && value === 'Failed') {
+      if (key === 'VALIDATION_STATUS' && value === VALIDATION_STATUS_VALUES.FAILED) {
         item.el().classList.add('validation-padding');
       }
     } else {
@@ -238,7 +239,7 @@ function extractMenuValue(
       return activeManifest?.claimGenerator ?? null;
 
     case 'NAME': {
-      const cw = activeManifest?.assertions?.find((a) => a.label === 'stds.schema-org.CreativeWork');
+      const cw = activeManifest?.assertions?.find((a) => a.label === CREATIVE_WORK_ASSERTION_LABEL);
       const authors = cw?.data?.author as Array<{ name?: string }> | undefined;
       return authors?.[0]?.name ?? null;
     }
@@ -255,9 +256,9 @@ function extractMenuValue(
 }
 
 function resolveValidationStatusLabel(verified: boolean | undefined): string {
-  if (verified === true) return 'Passed';
-  if (verified === false) return 'Failed';
-  return 'Unknown';
+  if (verified === true) return VALIDATION_STATUS_VALUES.PASSED;
+  if (verified === false) return VALIDATION_STATUS_VALUES.FAILED;
+  return VALIDATION_STATUS_VALUES.UNKNOWN;
 }
 
 function buildAlertMessage(compromisedRegions: string[]): string | null {
@@ -282,7 +283,7 @@ function renderMenuItemHtml(key: MenuItemKey, label: string, value: string | str
     return `<div class="alert-div"><img class="alert-icon" alt="alert"><div class="alert-content-scrollable">${value}</div></div>`;
   }
 
-  if (key === 'VALIDATION_STATUS' && value === 'Failed') {
+  if (key === 'VALIDATION_STATUS' && value === VALIDATION_STATUS_VALUES.FAILED) {
     return `<span class="itemName nextLine">${label}</span>`;
   }
 
