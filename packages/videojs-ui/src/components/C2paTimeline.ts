@@ -9,7 +9,13 @@ const CSS_VAR_PASSED = '--c2pa-passed';
 const CSS_VAR_FAILED = '--c2pa-failed';
 const CSS_VAR_UNKNOWN = '--c2pa-unknown';
 
-type VerificationStatus = 'true' | 'false' | 'unknown';
+const VERIFICATION_STATUS = {
+  TRUE: 'true',
+  FALSE: 'false',
+  UNKNOWN: 'unknown',
+} as const;
+
+type VerificationStatus = (typeof VERIFICATION_STATUS)[keyof typeof VERIFICATION_STATUS];
 
 export type OnSeekingResult = {
   seeking: boolean;
@@ -85,7 +91,7 @@ export class C2paTimeline {
       segment.style.width = `${computeSegmentProgress(currentTime, startTime, endTime, videoPlayer.duration())}%`;
       segment.style.zIndex = String(zIndex--);
 
-      if (segment.dataset.verificationStatus === 'false') {
+      if (segment.dataset.verificationStatus === VERIFICATION_STATUS.FALSE) {
         hasInvalidSegment = true;
       }
     }
@@ -155,11 +161,11 @@ export class C2paTimeline {
     }
 
     const isGapAhead = lastEndTime !== seekTime;
-    const isAlreadyUnknown = lastSegment.dataset.verificationStatus === 'unknown';
+    const isAlreadyUnknown = lastSegment.dataset.verificationStatus === VERIFICATION_STATUS.UNKNOWN;
 
     if (!isMonolithic && isGapAhead && !isAlreadyUnknown) {
       // In streaming mode, a seek beyond the last known segment creates an unknown gap.
-      const unknownSegment = this.createSegment(lastEndTime, seekTime, 'unknown');
+      const unknownSegment = this.createSegment(lastEndTime, seekTime, VERIFICATION_STATUS.UNKNOWN);
       (controlBar.el() as HTMLElement).appendChild(unknownSegment);
       this.segments.push(unknownSegment);
     }
@@ -201,7 +207,7 @@ export class C2paTimeline {
 
   private getMonolithicCompromisedRegions(videoPlayer: VideoJsPlayer): string[] {
     const firstSegment = this.segments[0];
-    if (firstSegment?.dataset.verificationStatus === 'false') {
+    if (firstSegment?.dataset.verificationStatus === VERIFICATION_STATUS.FALSE) {
       return [`${formatTime(0)}-${formatTime(videoPlayer.duration())}`];
     }
     return [];
@@ -209,7 +215,7 @@ export class C2paTimeline {
 
   private getStreamingCompromisedRegions(): string[] {
     return this.segments
-      .filter((s) => s.dataset.verificationStatus === 'false')
+      .filter((s) => s.dataset.verificationStatus === VERIFICATION_STATUS.FALSE)
       .map((s) => {
         const start = parseFloat(s.dataset.startTime ?? '');
         const end = parseFloat(s.dataset.endTime ?? '');
@@ -224,14 +230,14 @@ export class C2paTimeline {
 
 function toVerificationStatus(verified: boolean | undefined): VerificationStatus {
   if (typeof verified === 'boolean') return String(verified) as VerificationStatus;
-  return 'unknown';
+  return VERIFICATION_STATUS.UNKNOWN;
 }
 
 function resolveSegmentColor(status: VerificationStatus): string {
   const variableByStatus: Record<VerificationStatus, string> = {
-    'true': CSS_VAR_PASSED,
-    'false': CSS_VAR_FAILED,
-    'unknown': CSS_VAR_UNKNOWN,
+    [VERIFICATION_STATUS.TRUE]: CSS_VAR_PASSED,
+    [VERIFICATION_STATUS.FALSE]: CSS_VAR_FAILED,
+    [VERIFICATION_STATUS.UNKNOWN]: CSS_VAR_UNKNOWN,
   };
   return getComputedStyle(document.documentElement).getPropertyValue(variableByStatus[status]).trim();
 }
