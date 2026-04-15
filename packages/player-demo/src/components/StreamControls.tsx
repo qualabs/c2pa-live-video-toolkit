@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import {
   injectGapAttack,
   injectOutOfOrderAttack,
@@ -24,6 +24,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 interface StreamControlsProps {
   segments: SegmentRecord[];
+  initData: InitProcessedEvent | null;
   currentStreamUrl?: string;
   onValidateManifest: () => void;
   onStreamChange: (url: string) => void;
@@ -31,6 +32,7 @@ interface StreamControlsProps {
 
 export const StreamControls: React.FC<StreamControlsProps> = ({
   segments,
+  initData,
   currentStreamUrl,
   onValidateManifest,
   onStreamChange,
@@ -40,11 +42,9 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
   const [isAdBreakLoading, setIsAdBreakLoading] = useState(false);
 
   const validationMethod: 'vsi' | 'manifestbox' | null = React.useMemo(() => {
-    if (segments.length === 0) return null;
-    // ManifestBox segments have no keyId beyond a placeholder
-    const hasManifestBox = segments.some((s) => s.keyId === 'N/A' || s.manifest != null);
-    return hasManifestBox ? 'manifestbox' : 'vsi';
-  }, [segments]);
+    if (segments.length === 0 || initData == null) return null;
+    return initData.sessionKeysCount > 0 ? 'vsi' : 'manifestbox';
+  }, [segments, initData]);
 
   // Reset ad break state when stream returns to base
   useEffect(() => {

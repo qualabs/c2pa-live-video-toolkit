@@ -50,27 +50,23 @@ export type MediaType = 'video' | 'audio';
 export type SignatureInfo = {
   issuer?: string;
   time?: string;
+  certNotBefore?: string;
+};
+
+export type ManifestAssertion = {
+  label: string;
+  data: Record<string, unknown>;
 };
 
 export type ActiveManifest = {
   signatureInfo?: SignatureInfo;
   claimGenerator?: string;
-  claim_generator?: string;
-};
-
-export type ManifestStore = {
-  activeManifest?: ActiveManifest;
-  active_manifest?: string;
-  manifests?: Record<string, ActiveManifest>;
-};
-
-export type ManifestEnvelope = {
-  manifestStore?: ManifestStore;
+  assertions?: ManifestAssertion[];
 };
 
 export type PlaybackStatusDetail = {
   verified: boolean | undefined;
-  manifest: ManifestEnvelope | unknown;
+  manifest: unknown;
   error: string | null;
 };
 

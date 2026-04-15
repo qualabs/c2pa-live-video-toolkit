@@ -16,7 +16,6 @@ type PlaybackTrackerDeps = {
 type SegmentSearchResult = {
   valid: boolean;
   manifest: unknown;
-  vsi?: unknown;
 };
 
 type StoredSegment = { interval: [number, number] };
@@ -26,14 +25,6 @@ function resolveDetailFromSegment(
   activeManifest: unknown,
 ): PlaybackStatusDetail {
   const manifest = segment.manifest ?? activeManifest;
-
-  if (segment.vsi !== undefined) {
-    return {
-      verified: segment.valid,
-      manifest,
-      error: segment.valid ? null : 'VSI validation failed',
-    };
-  }
 
   if (!manifest) {
     return {

@@ -77,6 +77,7 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
         <RightColumn>
           <StreamControls
             segments={state.segments}
+            initData={state.initData}
             currentStreamUrl={streamUrl}
             onValidateManifest={() => setShowManifestModal(true)}
             onStreamChange={handleStreamChange}
