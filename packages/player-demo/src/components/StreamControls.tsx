@@ -9,6 +9,7 @@ import {
   disableAllAttacks,
   getCurrentSegmentNumber,
 } from '../state/attackState.js';
+import { DEFAULT_STREAM_URL } from '../constants.js';
 
 const AD_MANIFEST_ENDPOINT = '/manifest';
 const AD_STREAM_URL = '/stream_with_ad.mpd';
@@ -48,15 +49,15 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
 
   // Reset ad break state when stream returns to base
   useEffect(() => {
-    if (currentStreamUrl?.includes('stream_with_ad.mpd')) return;
+    if (currentStreamUrl?.includes(AD_STREAM_URL)) return;
     setIsAdBreakActive(false);
   }, [currentStreamUrl]);
 
   async function ensureBaseStream(): Promise<void> {
     setIsAdBreakActive(false);
-    if (currentStreamUrl?.includes('stream_with_ad.mpd')) {
+    if (currentStreamUrl?.includes(AD_STREAM_URL)) {
       await disableAllAttacks();
-      onStreamChange('/stream.mpd');
+      onStreamChange(DEFAULT_STREAM_URL);
     }
   }
 
