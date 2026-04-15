@@ -18,8 +18,7 @@ export function registerControlBar(videoPlayer: VideoJsPlayer): VjsComponent {
     update(_e?: Event): void {}
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  videojs.registerComponent(COMPONENT_NAME, C2PALoadProgressBar as any);
+  videojs.registerComponent(COMPONENT_NAME, C2PALoadProgressBar as typeof LoadProgressBar);
   videoPlayer.controlBar.progressControl.seekBar.addChild(COMPONENT_NAME);
 
   const controlBar = videoPlayer.controlBar.progressControl.seekBar.getChild(COMPONENT_NAME);

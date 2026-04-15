@@ -7,6 +7,36 @@ export interface VjsComponent {
 }
 
 /**
+ * Options accepted by the video.js MenuItem constructor.
+ */
+export interface VjsMenuItemOptions {
+  label: string;
+  id: string;
+}
+
+/**
+ * Constructor shape for the video.js MenuItem component. The public typings do
+ * not parameterize its options, so we expose the concrete signature we use.
+ */
+export type VjsMenuItemConstructor = new (
+  player: unknown,
+  options: VjsMenuItemOptions,
+) => VjsComponent;
+
+/**
+ * Subset of the video.js MenuButton prototype methods our code relies on.
+ * `unpressButton` exists at runtime on MenuButton but is absent from the
+ * public typings. It is declared here because module augmentation does not
+ * solve the case: `MenuButton` is declared only as `interface` in the public
+ * typings (no constructor signature), so `class X extends getComponent('MenuButton')`
+ * resolves its base to `Component` — the interface augment is never seen by
+ * `super.unpressButton()`.
+ */
+export interface VjsMenuButtonPrototype {
+  unpressButton(this: unknown): void;
+}
+
+/**
  * Minimal interface for the video.js seekbar component.
  */
 interface VjsSeekBar extends VjsComponent {

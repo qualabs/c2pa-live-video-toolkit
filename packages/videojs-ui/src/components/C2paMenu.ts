@@ -1,5 +1,11 @@
 import videojs from 'video.js';
-import type { VideoJsPlayer, VjsComponent, PlaybackStatus } from '../types.js';
+import type {
+  VideoJsPlayer,
+  VjsComponent,
+  VjsMenuItemConstructor,
+  VjsMenuButtonPrototype,
+  PlaybackStatus,
+} from '../types.js';
 import { extractActiveManifest } from '../ManifestNormalizer.js';
 import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 
@@ -73,11 +79,11 @@ function ensureMenuComponentRegistered(): void {
     private closeOnNextClick = false;
 
     createItems(): VjsComponent[] {
+      const TypedMenuItem = MenuItem as VjsMenuItemConstructor;
       return this.options_.menuItems.map((item) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MenuItem constructor types are incomplete
-        const menuItem = new (MenuItem as any)(this.player_, { label: item.label, id: item.id });
+        const menuItem = new TypedMenuItem(this.player_, { label: item.label, id: item.id });
         (menuItem as MenuItemInternals).handleClick = () => {};
-        return menuItem as VjsComponent;
+        return menuItem;
       });
     }
 
@@ -93,8 +99,7 @@ function ensureMenuComponentRegistered(): void {
     unpressButton(): void {
       if (this.closeOnNextClick) {
         this.closeOnNextClick = false;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- unpressButton exists at runtime but not in MenuButton typings
-        (MenuButton.prototype as any).unpressButton.call(this);
+        (MenuButton.prototype as unknown as VjsMenuButtonPrototype).unpressButton.call(this);
       }
     }
 
@@ -103,8 +108,7 @@ function ensureMenuComponentRegistered(): void {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registerComponent expects typeof Component; subclass is not directly assignable
-  videojs.registerComponent(MENU_BUTTON_COMPONENT_NAME, C2PAMenuButton as any);
+  videojs.registerComponent(MENU_BUTTON_COMPONENT_NAME, C2PAMenuButton as typeof MenuButton);
   menuComponentRegistered = true;
 }
 
