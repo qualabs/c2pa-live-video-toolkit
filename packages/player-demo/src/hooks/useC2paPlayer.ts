@@ -32,6 +32,8 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
   const dashPlayerRef = useRef<dashjs.MediaPlayerClass | null>(null);
   const c2paControllerRef = useRef<C2paController | null>(null);
   const isInitializedRef = useRef(false);
+  // Capture the initial videoSrc so the mount effect is truly mount-only
+  const initialVideoSrcRef = useRef(videoSrc);
 
   const [c2paController, setC2paController] = useState<C2paController | null>(null);
   const [state, setState] = useState<C2paPlayerState>({ segments: [], initData: null });
@@ -41,7 +43,7 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    const streamUrl = resolveStreamUrl(videoSrc);
+    const streamUrl = resolveStreamUrl(initialVideoSrcRef.current);
     setCurrentStreamUrl(streamUrl);
 
     const dashPlayer = dashjs.MediaPlayer().create();
@@ -82,7 +84,6 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
       c2paControllerRef.current = null;
       isInitializedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
