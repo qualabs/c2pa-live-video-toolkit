@@ -60,25 +60,13 @@ export type ManifestAssertion = {
 
 export type ActiveManifest = {
   signatureInfo?: SignatureInfo;
-  signature_info?: SignatureInfo;
   claimGenerator?: string;
-  claim_generator?: string;
   assertions?: ManifestAssertion[];
-};
-
-export type ManifestStore = {
-  activeManifest?: ActiveManifest;
-  active_manifest?: string;
-  manifests?: Record<string, ActiveManifest>;
-};
-
-export type ManifestEnvelope = {
-  manifestStore?: ManifestStore;
 };
 
 export type PlaybackStatusDetail = {
   verified: boolean | undefined;
-  manifest: ManifestEnvelope | unknown;
+  manifest: unknown;
   error: string | null;
 };
 

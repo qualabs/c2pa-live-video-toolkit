@@ -1,11 +1,6 @@
 import videojs from 'video.js';
-import type {
-  VideoJsPlayer,
-  VjsComponent,
-  PlaybackStatus,
-  ManifestStore,
-  ActiveManifest,
-} from '../types.js';
+import type { VideoJsPlayer, VjsComponent, PlaybackStatus } from '../types.js';
+import { extractActiveManifest } from '../ManifestNormalizer.js';
 import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 
 /**
@@ -222,10 +217,8 @@ function extractMenuValue(
   status: PlaybackStatus,
   compromisedRegions: string[],
 ): string | string[] | null {
-  const manifestStore = extractManifestStore(status);
-  const activeManifest = resolveActiveManifest(manifestStore);
-
-  const sigInfo = activeManifest?.signatureInfo ?? activeManifest?.signature_info;
+  const activeManifest = extractActiveManifest(status);
+  const sigInfo = activeManifest?.signatureInfo;
 
   switch (key) {
     case 'SIG_ISSUER':
@@ -242,7 +235,7 @@ function extractMenuValue(
     }
 
     case 'CLAIM_GENERATOR':
-      return activeManifest?.claimGenerator ?? activeManifest?.claim_generator ?? null;
+      return activeManifest?.claimGenerator ?? null;
 
     case 'NAME': {
       const cw = activeManifest?.assertions?.find((a) => a.label === 'stds.schema-org.CreativeWork');
@@ -259,32 +252,6 @@ function extractMenuValue(
     default:
       return null;
   }
-}
-
-function extractManifestStore(status: PlaybackStatus): ManifestStore | null {
-  try {
-    const manifest = status.details.video?.manifest as Record<string, unknown> | undefined;
-    if (!manifest) return null;
-
-    if (manifest.manifestStore) return manifest.manifestStore as ManifestStore;
-
-    if (manifest.signatureInfo != null || manifest.signature_info != null || 'claimGenerator' in manifest) {
-      return { activeManifest: manifest as unknown as ActiveManifest };
-    }
-
-    return null;
-  } catch (error) {
-    console.warn('[C2paMenu] Failed to extract manifest from playback status:', error);
-    return null;
-  }
-}
-
-function resolveActiveManifest(manifestStore: ManifestStore | null): ActiveManifest | null {
-  if (!manifestStore) return null;
-  if (manifestStore.activeManifest) return manifestStore.activeManifest;
-  const snakeCaseKey = manifestStore.active_manifest;
-  if (snakeCaseKey) return manifestStore.manifests?.[snakeCaseKey] ?? null;
-  return null;
 }
 
 function resolveValidationStatusLabel(verified: boolean | undefined): string {
