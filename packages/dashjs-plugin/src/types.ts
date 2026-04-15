@@ -18,7 +18,11 @@ export const ValidationErrorCode = {
 
 export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
 
-type C2paStatusCodeKey = 'HASHED_URI_MISMATCH' | 'ASSERTION_MISSING' | 'INGREDIENT_MISMATCH' | 'SIGNATURE_MISMATCH';
+type C2paStatusCodeKey =
+  | 'HASHED_URI_MISMATCH'
+  | 'ASSERTION_MISSING'
+  | 'INGREDIENT_MISMATCH'
+  | 'SIGNATURE_MISMATCH';
 
 export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
 
@@ -41,7 +45,8 @@ export const SequenceAnomalyReason = {
   SEQUENCE_NUMBER_BELOW_MINIMUM: 'sequence_number_below_minimum',
 } as const;
 
-export type SequenceAnomalyReasonValue = (typeof SequenceAnomalyReason)[keyof typeof SequenceAnomalyReason];
+export type SequenceAnomalyReasonValue =
+  (typeof SequenceAnomalyReason)[keyof typeof SequenceAnomalyReason];
 
 export type SegmentRecord = {
   segmentNumber: number;
@@ -130,14 +135,17 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
   // Live video status codes (§19.7)
   [ValidationErrorCode.INIT_INVALID]: 'Init segment is invalid (contains mdat box)',
   [ValidationErrorCode.MANIFEST_INVALID]: 'C2PA manifest failed validation',
-  [ValidationErrorCode.SEGMENT_INVALID]: 'Cryptographic verification failed (signature, hash, or key)',
-  [ValidationErrorCode.ASSERTION_INVALID]: 'Live video assertion invalid (sequenceNumber or streamId mismatch)',
+  [ValidationErrorCode.SEGMENT_INVALID]:
+    'Cryptographic verification failed (signature, hash, or key)',
+  [ValidationErrorCode.ASSERTION_INVALID]:
+    'Live video assertion invalid (sequenceNumber or streamId mismatch)',
   [ValidationErrorCode.CONTINUITY_INVALID]:
     'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
   [ValidationErrorCode.SESSION_KEY_INVALID]: 'Session key is invalid or expired',
   // C2PA standard integrity codes (§15 / §18)
   [ValidationErrorCode.HASHED_URI_MISMATCH]: 'Assertion hash does not match the signed claim',
-  [ValidationErrorCode.ASSERTION_MISSING]: 'Assertion referenced in claim is missing from manifest store',
+  [ValidationErrorCode.ASSERTION_MISSING]:
+    'Assertion referenced in claim is missing from manifest store',
   [ValidationErrorCode.INGREDIENT_MISMATCH]: 'Action requires ingredient reference but none found',
   [ValidationErrorCode.SIGNATURE_MISMATCH]: 'Claim signature verification failed',
 };

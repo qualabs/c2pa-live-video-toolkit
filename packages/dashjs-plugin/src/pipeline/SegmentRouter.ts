@@ -6,7 +6,13 @@ import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import { ValidationErrorCode, SegmentStatus, SequenceAnomalyReason } from '../types.js';
-import type { MediaType, SegmentRecord, SegmentStatusValue, SequenceAnomalyReasonValue, Logger } from '../types.js';
+import type {
+  MediaType,
+  SegmentRecord,
+  SegmentStatusValue,
+  SequenceAnomalyReasonValue,
+  Logger,
+} from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
@@ -75,8 +81,17 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
 function hasMdatContent(bytes: Uint8Array): boolean {
   let offset = 0;
   while (offset + 8 <= bytes.length) {
-    const size = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
-    const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+    const size =
+      (bytes[offset] << 24) |
+      (bytes[offset + 1] << 16) |
+      (bytes[offset + 2] << 8) |
+      bytes[offset + 3];
+    const type = String.fromCharCode(
+      bytes[offset + 4],
+      bytes[offset + 5],
+      bytes[offset + 6],
+      bytes[offset + 7],
+    );
     if (size < 8) break;
     if (type === 'mdat') return size > 8;
     offset += size;
@@ -102,7 +117,10 @@ function buildUnverifiedRecord(
   };
 }
 
-function resolveSegmentStatus(isValid: boolean, sequenceReason: SequenceAnomalyReasonValue | null): SegmentStatusValue {
+function resolveSegmentStatus(
+  isValid: boolean,
+  sequenceReason: SequenceAnomalyReasonValue | null,
+): SegmentStatusValue {
   if (sequenceReason) {
     const mapped = SEQUENCE_REASON_TO_STATUS[sequenceReason];
     if (mapped) return mapped;
@@ -142,7 +160,8 @@ export class SegmentRouter {
     this.deps.eventBus.emit('initProcessed', result);
 
     if (result.success) {
-      this.deps.activeManifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
+      this.deps.activeManifest.value =
+        result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
       }
@@ -188,8 +207,16 @@ export class SegmentRouter {
   }
 
   private async handleVsiSegment(params: VsiSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType, chunkStart, chunkEnd, segmentIndex, representationId, segmentType } =
-      params;
+    const {
+      segmentBytes,
+      streamKey,
+      mediaType,
+      chunkStart,
+      chunkEnd,
+      segmentIndex,
+      representationId,
+      segmentType,
+    } = params;
 
     let vsiResult: VsiValidationResult | null = null;
     try {
@@ -201,7 +228,9 @@ export class SegmentRouter {
 
     if (!vsiResult) {
       if (hasMdatContent(segmentBytes)) {
-        this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD));
+        this.deps.segmentStore.add(
+          buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD),
+        );
         this.deps.eventBus.emit('segmentValidated', {
           segmentNumber: segmentIndex,
           status: SegmentStatus.AD,
@@ -210,7 +239,9 @@ export class SegmentRouter {
           mediaType,
         });
       } else {
-        this.deps.logger.warn(`[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`);
+        this.deps.logger.warn(
+          `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
+        );
       }
       return;
     }
@@ -223,7 +254,11 @@ export class SegmentRouter {
       vsiResult.sequenceMissingFrom != null &&
       vsiResult.sequenceMissingTo != null
     ) {
-      this.recordMissingSegments(mediaType, vsiResult.sequenceMissingFrom, vsiResult.sequenceMissingTo);
+      this.recordMissingSegments(
+        mediaType,
+        vsiResult.sequenceMissingFrom,
+        vsiResult.sequenceMissingTo,
+      );
     }
 
     const record = this.buildVsiSegmentRecord(vsiResult, mediaType, status);
@@ -253,7 +288,8 @@ export class SegmentRouter {
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType, chunkStart, chunkEnd, segmentIndex, segmentType } = params;
+    const { segmentBytes, streamKey, mediaType, chunkStart, chunkEnd, segmentIndex, segmentType } =
+      params;
 
     let result;
     try {
@@ -365,7 +401,9 @@ export class SegmentRouter {
   private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
     const existing = this.deps.segmentStore
       .getAll()
-      .filter((s) => s.mediaType === mediaType && s.sequenceNumber >= from && s.sequenceNumber <= to);
+      .filter(
+        (s) => s.mediaType === mediaType && s.sequenceNumber >= from && s.sequenceNumber <= to,
+      );
     const isAdGap = existing.some((s) => s.status === SegmentStatus.AD);
 
     let missingCount = 0;
@@ -373,7 +411,12 @@ export class SegmentRouter {
       if (existing.some((s) => s.sequenceNumber === n)) continue;
       if (isAdGap) continue;
       this.deps.segmentStore.add(
-        buildUnverifiedRecord(n, mediaType, SegmentStatus.MISSING, SequenceAnomalyReason.GAP_DETECTED),
+        buildUnverifiedRecord(
+          n,
+          mediaType,
+          SegmentStatus.MISSING,
+          SequenceAnomalyReason.GAP_DETECTED,
+        ),
       );
       missingCount++;
     }

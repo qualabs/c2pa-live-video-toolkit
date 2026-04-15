@@ -20,7 +20,10 @@ type SegmentSearchResult = {
 
 type StoredSegment = { interval: [number, number] };
 
-function resolveDetailFromSegment(segment: SegmentSearchResult, activeManifest: unknown): PlaybackStatusDetail {
+function resolveDetailFromSegment(
+  segment: SegmentSearchResult,
+  activeManifest: unknown,
+): PlaybackStatusDetail {
   const manifest = segment.manifest ?? activeManifest;
 
   if (!manifest) {
@@ -44,7 +47,10 @@ function resolveDetailFromSegment(segment: SegmentSearchResult, activeManifest: 
  * - true (valid) wins over undefined (unknown), unless current is already false
  * - undefined propagates only when nothing definitive is known yet
  */
-function combineVerificationResults(current: boolean | undefined, incoming: boolean | undefined): boolean | undefined {
+function combineVerificationResults(
+  current: boolean | undefined,
+  incoming: boolean | undefined,
+): boolean | undefined {
   if (incoming === false) return false;
   if (incoming === true && current !== false) return true;
   return current === false ? false : undefined;
@@ -67,7 +73,10 @@ export class PlaybackTracker {
   }
 
   private buildPlaybackStatus(currentTime: number): PlaybackStatus {
-    const searchInterval: [number, number] = [currentTime, currentTime + PLAYBACK_SEARCH_WINDOW_SECONDS];
+    const searchInterval: [number, number] = [
+      currentTime,
+      currentTime + PLAYBACK_SEARCH_WINDOW_SECONDS,
+    ];
 
     let verified: boolean | undefined = undefined;
     const details: Partial<Record<MediaType, PlaybackStatusDetail>> = {};
@@ -105,7 +114,10 @@ export class PlaybackTracker {
         continue;
       }
 
-      const detail = resolveDetailFromSegment(found[0] as SegmentSearchResult, this.deps.activeManifest.value);
+      const detail = resolveDetailFromSegment(
+        found[0] as SegmentSearchResult,
+        this.deps.activeManifest.value,
+      );
       details[mediaType] = detail;
       verified = combineVerificationResults(verified, detail.verified);
     }
@@ -119,6 +131,8 @@ export class PlaybackTracker {
   private hasOverlappingIntervals(segments: StoredSegment[]): boolean {
     if (segments.length <= 1) return false;
     const first = segments[0].interval;
-    return segments.some((s, i) => i > 0 && s.interval[0] === first[0] && s.interval[1] === first[1]);
+    return segments.some(
+      (s, i) => i > 0 && s.interval[0] === first[0] && s.interval[1] === first[1],
+    );
   }
 }

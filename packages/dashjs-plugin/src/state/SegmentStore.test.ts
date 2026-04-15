@@ -48,7 +48,9 @@ describe('SegmentStore', () => {
 
     it('preserves the existing sequenceReason when the update has none', () => {
       const store = new SegmentStore(100);
-      store.add(makeSegment({ status: 'reordered', sequenceReason: SequenceAnomalyReason.OUT_OF_ORDER }));
+      store.add(
+        makeSegment({ status: 'reordered', sequenceReason: SequenceAnomalyReason.OUT_OF_ORDER }),
+      );
       store.add(makeSegment({ status: 'valid' }));
       expect(store.getAll()[0].sequenceReason).toBe(SequenceAnomalyReason.OUT_OF_ORDER);
     });
@@ -56,7 +58,9 @@ describe('SegmentStore', () => {
     it('adopts the incoming sequenceReason when the existing one is unset', () => {
       const store = new SegmentStore(100);
       store.add(makeSegment({ status: 'valid' }));
-      store.add(makeSegment({ status: 'warning', sequenceReason: SequenceAnomalyReason.GAP_DETECTED }));
+      store.add(
+        makeSegment({ status: 'warning', sequenceReason: SequenceAnomalyReason.GAP_DETECTED }),
+      );
       expect(store.getAll()[0].sequenceReason).toBe(SequenceAnomalyReason.GAP_DETECTED);
     });
   });

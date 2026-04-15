@@ -12,7 +12,13 @@ export interface ChildBoxLocation {
 }
 
 export function readUint32BE(buffer: Uint8Array, offset: number): number {
-  return ((buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3]) >>> 0;
+  return (
+    ((buffer[offset] << 24) |
+      (buffer[offset + 1] << 16) |
+      (buffer[offset + 2] << 8) |
+      buffer[offset + 3]) >>>
+    0
+  );
 }
 
 export function writeUint32BE(buffer: Uint8Array, offset: number, value: number): void {
@@ -46,7 +52,12 @@ export function findBox(segmentBytes: Uint8Array | Buffer, boxType: string): Box
 
     if (boxSize === 0 || boxSize > buffer.length || offset + boxSize > buffer.length) break;
 
-    const type = String.fromCharCode(buffer[offset + 4], buffer[offset + 5], buffer[offset + 6], buffer[offset + 7]);
+    const type = String.fromCharCode(
+      buffer[offset + 4],
+      buffer[offset + 5],
+      buffer[offset + 6],
+      buffer[offset + 7],
+    );
 
     if (type === boxType) {
       return { offset, size: boxSize, headerSize, fullBox: buffer.slice(offset, offset + boxSize) };
@@ -56,15 +67,25 @@ export function findBox(segmentBytes: Uint8Array | Buffer, boxType: string): Box
   return null;
 }
 
-export function findChildBox(parentBoxData: Uint8Array | Buffer, childType: string, parentHeaderSize = 8): ChildBoxLocation | null {
-  const buffer = parentBoxData instanceof Uint8Array ? parentBoxData : new Uint8Array(parentBoxData);
+export function findChildBox(
+  parentBoxData: Uint8Array | Buffer,
+  childType: string,
+  parentHeaderSize = 8,
+): ChildBoxLocation | null {
+  const buffer =
+    parentBoxData instanceof Uint8Array ? parentBoxData : new Uint8Array(parentBoxData);
   let offset = parentHeaderSize;
 
   while (offset < buffer.length - 8) {
     const boxSize = readUint32BE(buffer, offset);
     if (boxSize === 0 || boxSize > buffer.length - offset) break;
 
-    const type = String.fromCharCode(buffer[offset + 4], buffer[offset + 5], buffer[offset + 6], buffer[offset + 7]);
+    const type = String.fromCharCode(
+      buffer[offset + 4],
+      buffer[offset + 5],
+      buffer[offset + 6],
+      buffer[offset + 7],
+    );
 
     if (type === childType) {
       return { offset, size: boxSize, data: buffer.slice(offset, offset + boxSize) };

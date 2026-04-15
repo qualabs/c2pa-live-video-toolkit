@@ -22,7 +22,11 @@ export function extractMoofMdat(segmentBytes: Uint8Array | Buffer): MoofMdatExtr
   };
 }
 
-export function replaceMoofMdat(segmentBytes: Uint8Array | Buffer, newMoof: Uint8Array | Buffer, newMdat: Uint8Array | Buffer): Uint8Array {
+export function replaceMoofMdat(
+  segmentBytes: Uint8Array | Buffer,
+  newMoof: Uint8Array | Buffer,
+  newMdat: Uint8Array | Buffer,
+): Uint8Array {
   const buffer = segmentBytes instanceof Uint8Array ? segmentBytes : new Uint8Array(segmentBytes);
   const boxes: { type: string; offset: number; size: number; data: Uint8Array }[] = [];
   let offset = 0;
@@ -34,7 +38,12 @@ export function replaceMoofMdat(segmentBytes: Uint8Array | Buffer, newMoof: Uint
     }
     if (boxSize === 0 || boxSize > buffer.length || offset + boxSize > buffer.length) break;
 
-    const type = String.fromCharCode(buffer[offset + 4], buffer[offset + 5], buffer[offset + 6], buffer[offset + 7]);
+    const type = String.fromCharCode(
+      buffer[offset + 4],
+      buffer[offset + 5],
+      buffer[offset + 6],
+      buffer[offset + 7],
+    );
     boxes.push({ type, offset, size: boxSize, data: buffer.slice(offset, offset + boxSize) });
     offset += boxSize;
   }
@@ -42,7 +51,9 @@ export function replaceMoofMdat(segmentBytes: Uint8Array | Buffer, newMoof: Uint
   const newMoofArray = newMoof instanceof Uint8Array ? newMoof : new Uint8Array(newMoof);
   const newMdatArray = newMdat instanceof Uint8Array ? newMdat : new Uint8Array(newMdat);
 
-  const parts = boxes.map((box) => (box.type === 'moof' ? newMoofArray : box.type === 'mdat' ? newMdatArray : box.data));
+  const parts = boxes.map((box) =>
+    box.type === 'moof' ? newMoofArray : box.type === 'mdat' ? newMdatArray : box.data,
+  );
 
   const totalLength = parts.reduce((sum, p) => sum + p.length, 0);
   const result = new Uint8Array(totalLength);

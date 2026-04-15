@@ -42,7 +42,10 @@ export class ManifestBoxSigningStrategy extends BaseSigningStrategy {
     });
   }
 
-  private async resolveInitSegmentPath(representationId: string, initPattern: string): Promise<string> {
+  private async resolveInitSegmentPath(
+    representationId: string,
+    initPattern: string,
+  ): Promise<string> {
     const initKey = initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, representationId);
     const initPath = `${TEMP_DIR}/${path.basename(initKey)}`;
 

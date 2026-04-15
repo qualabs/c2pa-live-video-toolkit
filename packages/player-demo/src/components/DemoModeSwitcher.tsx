@@ -59,12 +59,28 @@ const ModeLink = styled(NavLink)`
   }
 `;
 
-const ModeIcon = styled.span`font-size: 1.25rem;`;
+const ModeIcon = styled.span`
+  font-size: 1.25rem;
+`;
 
-const ModeInfo = styled.div`display: flex; flex-direction: column; gap: 0.125rem;`;
+const ModeInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+`;
 
-const ModeName = styled.span`font-size: 0.875rem; font-weight: 600;`;
+const ModeName = styled.span`
+  font-size: 0.875rem;
+  font-weight: 600;
+`;
 
-const ModeDesc = styled.span`font-size: 0.7rem; opacity: 0.7;`;
+const ModeDesc = styled.span`
+  font-size: 0.7rem;
+  opacity: 0.7;
+`;
 
-const Divider = styled.div`width: 1px; background: #4a4a4a; flex-shrink: 0;`;
+const Divider = styled.div`
+  width: 1px;
+  background: #4a4a4a;
+  flex-shrink: 0;
+`;

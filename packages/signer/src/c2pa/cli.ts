@@ -57,7 +57,11 @@ export interface VsiSignOptions {
   previousSegmentPath?: string;
 }
 
-async function executeC2paToolCommand(command: string, label: string, startTime: number): Promise<void> {
+async function executeC2paToolCommand(
+  command: string,
+  label: string,
+  startTime: number,
+): Promise<void> {
   const { stdout, stderr } = await execAsync(command);
 
   logger.debug(`[${label}] stdout: ${stdout.trim()}`);
@@ -78,7 +82,8 @@ async function executeC2paToolCommand(command: string, label: string, startTime:
  * capturing `MANIFEST_ID` from stdout as the legacy binary required.
  */
 export async function signManifestSegment(options: ManifestSignOptions): Promise<void> {
-  const { segmentsDir, segmentGlob, outputDir, manifestPath, initPath, previousSegmentPath } = options;
+  const { segmentsDir, segmentGlob, outputDir, manifestPath, initPath, previousSegmentPath } =
+    options;
   const startTime = Date.now();
 
   const args: string[] = [
@@ -115,7 +120,15 @@ export async function signManifestSegment(options: ManifestSignOptions): Promise
  * assertion. Subsequent calls use `--previous-segment` to resume the sequence counter.
  */
 export async function signVsiSegment(options: VsiSignOptions): Promise<void> {
-  const { segmentsDir, segmentGlob, outputDir, manifestPath, sessionKeyPath, initPath, previousSegmentPath } = options;
+  const {
+    segmentsDir,
+    segmentGlob,
+    outputDir,
+    manifestPath,
+    sessionKeyPath,
+    initPath,
+    previousSegmentPath,
+  } = options;
   const startTime = Date.now();
 
   const args: string[] = [

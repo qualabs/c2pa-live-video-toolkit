@@ -1,4 +1,10 @@
-import { readUint32BE, writeUint32BE, readUint64BE, writeUint64BE, findChildBox } from './mp4-utils.js';
+import {
+  readUint32BE,
+  writeUint32BE,
+  readUint64BE,
+  writeUint64BE,
+  findChildBox,
+} from './mp4-utils.js';
 
 const SAMPLE_SIZE_PRESENT = 0x000200;
 const SAMPLE_DURATION_PRESENT = 0x000100;
@@ -24,15 +30,25 @@ export function getBaseMediaDecodeTimeFromMoof(moofData: Uint8Array | Buffer): n
   return version === 0 ? readUint32BE(tfdt.data, 12) : readUint64BE(tfdt.data, 12);
 }
 
-export function setMfhdSequenceNumber(moofData: Uint8Array | Buffer, newSequenceNumber: number): Uint8Array {
-  const result = new Uint8Array(moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData));
+export function setMfhdSequenceNumber(
+  moofData: Uint8Array | Buffer,
+  newSequenceNumber: number,
+): Uint8Array {
+  const result = new Uint8Array(
+    moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData),
+  );
 
   let offset = 8;
   while (offset < result.length - 8) {
     const boxSize = readUint32BE(result, offset);
     if (boxSize === 0 || boxSize > result.length - offset) break;
 
-    const type = String.fromCharCode(result[offset + 4], result[offset + 5], result[offset + 6], result[offset + 7]);
+    const type = String.fromCharCode(
+      result[offset + 4],
+      result[offset + 5],
+      result[offset + 6],
+      result[offset + 7],
+    );
 
     if (type === 'mfhd') {
       writeUint32BE(result, offset + 12, newSequenceNumber);
@@ -44,8 +60,13 @@ export function setMfhdSequenceNumber(moofData: Uint8Array | Buffer, newSequence
   return result;
 }
 
-export function setBaseMediaDecodeTimeInMoof(moofData: Uint8Array | Buffer, newTimestamp: number): Uint8Array {
-  const result = new Uint8Array(moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData));
+export function setBaseMediaDecodeTimeInMoof(
+  moofData: Uint8Array | Buffer,
+  newTimestamp: number,
+): Uint8Array {
+  const result = new Uint8Array(
+    moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData),
+  );
 
   const traf = findChildBox(result, 'traf');
   if (!traf) return result;
@@ -56,7 +77,12 @@ export function setBaseMediaDecodeTimeInMoof(moofData: Uint8Array | Buffer, newT
     const boxSize = readUint32BE(result, tfdtOffset);
     if (boxSize === 0 || boxSize > traf.size) break;
 
-    const type = String.fromCharCode(result[tfdtOffset + 4], result[tfdtOffset + 5], result[tfdtOffset + 6], result[tfdtOffset + 7]);
+    const type = String.fromCharCode(
+      result[tfdtOffset + 4],
+      result[tfdtOffset + 5],
+      result[tfdtOffset + 6],
+      result[tfdtOffset + 7],
+    );
 
     if (type === 'tfdt') {
       const version = result[tfdtOffset + 8];
@@ -84,7 +110,9 @@ export function getTrackIdFromMoof(moofData: Uint8Array | Buffer): number | null
 }
 
 export function setTrackIdInMoof(moofData: Uint8Array | Buffer, newTrackId: number): Uint8Array {
-  const result = new Uint8Array(moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData));
+  const result = new Uint8Array(
+    moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData),
+  );
 
   const traf = findChildBox(result, 'traf');
   if (!traf) return result;
@@ -132,7 +160,10 @@ export function getTrunSampleSizes(moofData: Uint8Array | Buffer): number[] | nu
   return sizes;
 }
 
-export function rewriteTrunSampleSizes(moofData: Uint8Array | Buffer, newSizes: number[]): Uint8Array {
+export function rewriteTrunSampleSizes(
+  moofData: Uint8Array | Buffer,
+  newSizes: number[],
+): Uint8Array {
   const buf = new Uint8Array(moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData));
   const traf = findChildBox(buf, 'traf', 8);
   if (!traf) return buf;
@@ -182,7 +213,10 @@ export function getTrunSampleDurations(moofData: Uint8Array | Buffer): number[] 
   return durations;
 }
 
-export function rewriteTrunSampleDurations(moofData: Uint8Array | Buffer, newDurations: number[]): Uint8Array {
+export function rewriteTrunSampleDurations(
+  moofData: Uint8Array | Buffer,
+  newDurations: number[],
+): Uint8Array {
   const buf = new Uint8Array(moofData instanceof Uint8Array ? moofData : new Uint8Array(moofData));
   const traf = findChildBox(buf, 'traf', 8);
   if (!traf) return buf;

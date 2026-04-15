@@ -22,7 +22,9 @@ export class EventBus {
     const entries = this.listeners.get(event);
     if (!entries) return;
 
-    const filtered = entries.filter((entry) => entry.listener !== (listener as EventListener<C2paEventType>));
+    const filtered = entries.filter(
+      (entry) => entry.listener !== (listener as EventListener<C2paEventType>),
+    );
     this.listeners.set(event, filtered);
   }
 
@@ -44,7 +46,11 @@ export class EventBus {
     this.listeners.clear();
   }
 
-  private addListener<T extends C2paEventType>(event: T, listener: EventListener<T>, once: boolean): void {
+  private addListener<T extends C2paEventType>(
+    event: T,
+    listener: EventListener<T>,
+    once: boolean,
+  ): void {
     const entries = this.listeners.get(event) ?? [];
     entries.push({ listener: listener as EventListener<C2paEventType>, once });
     this.listeners.set(event, entries);

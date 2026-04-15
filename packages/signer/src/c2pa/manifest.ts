@@ -51,7 +51,10 @@ function injectStreamId(manifest: C2paManifest, streamId: string): void {
   }
 }
 
-async function loadManifestContent(ref?: string, useVsiMethod = false): Promise<{ text: string; source: string }> {
+async function loadManifestContent(
+  ref?: string,
+  useVsiMethod = false,
+): Promise<{ text: string; source: string }> {
   if (!ref) {
     const defaultFile = useVsiMethod ? './segment_manifest_vsi.json' : './segment_manifest.json';
     const text = await fs.readFile(defaultFile, 'utf-8');
