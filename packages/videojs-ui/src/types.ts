@@ -83,6 +83,8 @@ export type SignatureInfo = {
   certNotBefore?: string;
 };
 
+export const CREATIVE_WORK_ASSERTION_LABEL = 'stds.schema-org.CreativeWork';
+
 export type ManifestAssertion = {
   label: string;
   data: Record<string, unknown>;
@@ -104,6 +106,12 @@ export type PlaybackStatus = {
   verified: boolean | undefined;
   details: Partial<Record<MediaType, PlaybackStatusDetail>>;
 };
+
+export const VALIDATION_STATUS_VALUES = {
+  PASSED: 'Passed',
+  FAILED: 'Failed',
+  UNKNOWN: 'Unknown',
+} as const;
 
 /**
  * Minimal interface for the C2paController events this package consumes.
