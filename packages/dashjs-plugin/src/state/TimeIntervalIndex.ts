@@ -1,7 +1,7 @@
 import IntervalTreeDefault from '@flatten-js/interval-tree';
 
 // @flatten-js/interval-tree ships as CJS; double-cast via unknown for ESM interop
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const IntervalTreeConstructor = IntervalTreeDefault as unknown as new () => IntervalTreeApi;
 
 type TimeInterval = [number, number];

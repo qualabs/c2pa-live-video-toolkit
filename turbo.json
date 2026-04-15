@@ -9,8 +9,12 @@
       "persistent": true,
       "cache": false
     },
-    "lint": {},
+    "lint": {
+      "inputs": ["src/**", "$TURBO_ROOT$/.prettierrc*", "$TURBO_ROOT$/eslint.config.*"]
+    },
     "typecheck": {},
-    "format": {}
+    "format": {
+      "inputs": ["src/**", "$TURBO_ROOT$/.prettierrc*"]
+    }
   }
 }

@@ -41,9 +41,7 @@ export class ManifestService {
 
   getManifestQueueSorted(): Array<{ publishTime: string; receivedTimestamp: number }> {
     const queue = this.repository.getManifestQueue();
-    return [...queue].sort(
-      (a, b) => new Date(a.publishTime).getTime() - new Date(b.publishTime).getTime(),
-    );
+    return [...queue].sort((a, b) => new Date(a.publishTime).getTime() - new Date(b.publishTime).getTime());
   }
 
   getManifestRequirements(publishTime: string): Record<string, number> | undefined {

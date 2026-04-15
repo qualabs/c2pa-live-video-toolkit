@@ -7,13 +7,7 @@ export interface IStorage {
    * @param acl (Optional) The access control list for the object.
    * @param mimeType (Optional) The MIME type of the object.
    */
-  saveObject(
-    bucket: string,
-    key: string,
-    body: Buffer,
-    acl?: string,
-    mimeType?: string,
-  ): Promise<void>;
+  saveObject(bucket: string, key: string, body: Buffer, acl?: string, mimeType?: string): Promise<void>;
 
   /**
    * Gets an object as a readable stream.
