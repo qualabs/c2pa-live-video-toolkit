@@ -6,10 +6,7 @@ function buildSegmentNumberCapture(_fullMatch: string, paddingWidth: string): st
   return paddingWidth ? `(?<segmentId>\\d{${paddingWidth}})` : `(?<segmentId>\\d+)`;
 }
 
-export function extractSegmentInfo(
-  fileKey: string,
-  pattern: string,
-): { repId: string; segmentId: string } | null {
+export function extractSegmentInfo(fileKey: string, pattern: string): { repId: string; segmentId: string } | null {
   const regexPattern = escapePatternSpecialChars(pattern)
     .replace(/\$RepresentationID\$/g, '(?<repId>[^\\/-]+)')
     .replace(/\$Number(?:%0(\d+)d)?\$/g, buildSegmentNumberCapture);

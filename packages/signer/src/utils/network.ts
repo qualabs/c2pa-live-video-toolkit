@@ -10,10 +10,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function waitForSegmentInBucket(
-  key: string,
-  delayMs = DEFAULT_POLL_DELAY_MS,
-): Promise<void> {
+export async function waitForSegmentInBucket(key: string, delayMs = DEFAULT_POLL_DELAY_MS): Promise<void> {
   for (;;) {
     try {
       logger.debug(`[prefetch] Checking for segment ${key} in storage...`);

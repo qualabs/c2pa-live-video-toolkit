@@ -38,9 +38,7 @@ export abstract class BaseSigningStrategy implements ISigningStrategy {
   }
 
   private logSigningStart(representationId: string, isFirstSegment: boolean): void {
-    const phase = isFirstSegment
-      ? '[first segment, including init]...'
-      : '[chained from prev segment]...';
+    const phase = isFirstSegment ? '[first segment, including init]...' : '[chained from prev segment]...';
     logger.info(`[${representationId}] Signing with ${this.methodName} method ${phase}`);
   }
 
@@ -52,8 +50,7 @@ export abstract class BaseSigningStrategy implements ISigningStrategy {
   ): SigningResult {
     return {
       signedSegmentPath: path.join(outputDir, segmentBasename),
-      signedInitPath:
-        isFirstSegment && initPath ? path.join(outputDir, path.basename(initPath)) : undefined,
+      signedInitPath: isFirstSegment && initPath ? path.join(outputDir, path.basename(initPath)) : undefined,
     };
   }
 }
