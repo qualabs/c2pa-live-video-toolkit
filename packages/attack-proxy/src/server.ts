@@ -5,6 +5,7 @@ import attackRouter from './routes/attack.js';
 import segmentRouter from './routes/segment.js';
 import streamerRouter from './routes/streamer.js';
 import { router as manifestRouter, registerFallbackProxy } from './routes/fallback.js';
+import { logger } from './utils/logger.js';
 
 const app = express();
 
@@ -18,5 +19,5 @@ app.use(segmentRouter);
 registerFallbackProxy(app);
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Attack proxy running on http://0.0.0.0:${PORT}`);
+  logger.info(`Attack proxy running on http://0.0.0.0:${PORT}`);
 });

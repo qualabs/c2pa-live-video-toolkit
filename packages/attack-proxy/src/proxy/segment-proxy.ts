@@ -1,7 +1,8 @@
-import http from 'http';
-import { ORIGIN, CONTENT_CACHE_SIZE } from '../config.js';
+import { CONTENT_CACHE_SIZE } from '../config.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { state } from '../state.js';
+import { fetchFromOrigin } from './fetchFromOrigin.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import type { SegmentInfo } from '../types.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
@@ -21,14 +22,18 @@ export function buildSegmentPath(info: SegmentInfo, number: number): string {
   }
 }
 
+const CHUNK_STREAM_REGEX = /chunk-stream(\d+)-(\d+)\.m4s$/;
+const SEGMENT_REGEX = /segment-(\d+)\.m4s$/;
+const MEDIA_TRACK_REGEX = /(video|audio)_(\d+)_(\d+)\.m4s$/;
+
 export function parseSegmentFilename(filename: string): SegmentInfo | null {
-  let m = filename.match(/chunk-stream(\d+)-(\d+)\.m4s$/);
+  let m = filename.match(CHUNK_STREAM_REGEX);
   if (m) return { streamId: m[1], number: +m[2], pattern: 'chunk-stream' };
 
-  m = filename.match(/segment-(\d+)\.m4s$/);
+  m = filename.match(SEGMENT_REGEX);
   if (m) return { streamId: '0', number: +m[1], pattern: 'segment' };
 
-  m = filename.match(/(video|audio)_(\d+)_(\d+)\.m4s$/);
+  m = filename.match(MEDIA_TRACK_REGEX);
   if (m) return { streamId: m[2], number: +m[3], pattern: m[1] };
 
   return null;
@@ -49,64 +54,42 @@ export function cacheContent(segNum: number, segmentBytes: Buffer): void {
   }
 }
 
-export function fetchSegment(segNum: number, info: SegmentInfo): Promise<Buffer> {
+export async function fetchSegment(segNum: number, info: SegmentInfo): Promise<Buffer> {
   const targetPath = buildSegmentPath(info, segNum);
-  return new Promise((resolve, reject) => {
-    http
-      .get(`${ORIGIN}${targetPath}`, (res) => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on('data', (c: Buffer) => chunks.push(c));
-        res.on('end', () => resolve(Buffer.concat(chunks)));
-      })
-      .on('error', reject);
-  });
+  const response = await fetchFromOrigin(targetPath);
+  if (response.statusCode !== 200) {
+    throw new Error(`HTTP ${response.statusCode}`);
+  }
+  return response.body;
 }
 
-export function proxySegment(
-  req: IncomingMessage,
+export async function proxySegment(
+  _req: IncomingMessage,
   res: ServerResponse,
   targetPath: string,
   segmentNumber: number | null,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    http
-      .get(`${ORIGIN}${targetPath}`, (originRes) => {
-        if (originRes.statusCode !== 200) {
-          res.writeHead(originRes.statusCode ?? 502, originRes.headers);
-          originRes.pipe(res);
-          return resolve();
-        }
-        const chunks: Buffer[] = [];
-        originRes.on('data', (chunk: Buffer) => chunks.push(chunk));
-        originRes.on('end', () => {
-          try {
-            const segmentBytes = Buffer.concat(chunks);
-            if (segmentNumber !== null) {
-              cacheContent(segmentNumber, segmentBytes);
-            }
-            res.writeHead(originRes.statusCode ?? 200, {
-              ...originRes.headers,
-              'Content-Length': segmentBytes.length,
-            });
-            res.end(segmentBytes);
-            resolve();
-          } catch (err) {
-            console.error('Segment processing error:', (err as Error).message);
-            res.statusCode = 500;
-            res.end('Internal Server Error');
-            reject(err);
-          }
-        });
-      })
-      .on('error', (err) => {
-        console.error('Proxy error:', err.message);
-        res.statusCode = 502;
-        res.end('Bad Gateway');
-        reject(err);
-      });
-  });
+  try {
+    const response = await fetchFromOrigin(targetPath);
+
+    if (response.statusCode !== 200) {
+      res.writeHead(response.statusCode, response.headers);
+      res.end(response.body);
+      return;
+    }
+
+    if (segmentNumber !== null) {
+      cacheContent(segmentNumber, response.body);
+    }
+
+    res.writeHead(response.statusCode, {
+      ...response.headers,
+      'Content-Length': response.body.length,
+    });
+    res.end(response.body);
+  } catch (err) {
+    logger.error('Proxy error:', errorMessage(err));
+    res.statusCode = 502;
+    res.end('Bad Gateway');
+  }
 }

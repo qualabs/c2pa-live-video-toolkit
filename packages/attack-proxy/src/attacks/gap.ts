@@ -2,6 +2,7 @@ import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
 import { fetchSegment } from '../proxy/segment-proxy.js';
 import { extractMoofMdat } from '../mp4/mdat-utils.js';
 import { setMfhdSequenceNumber, setTrunSampleCount } from '../mp4/moof-utils.js';
+import { logger } from '../utils/logger.js';
 import type { ServerResponse } from 'http';
 
 export function applyGapAttack(
@@ -21,7 +22,7 @@ export function applyGapAttack(
       guards.gap = true;
       attackConfig.enabled = false;
     }
-    console.log(`GAP: serving zero-sample segment ${n} (moof+empty mdat)`);
+    logger.info(`GAP: serving zero-sample segment ${n} (moof+empty mdat)`);
     return { ...noAttack, gapEmptySegment: true, gapAt: n };
   }
 
@@ -33,12 +34,17 @@ export async function proxyGapEmptySegment(
   info: SegmentInfo,
   attack: AttackResult,
 ): Promise<void> {
-  const N = attack.gapAt as number;
+  if (attack.gapAt == null) {
+    res.statusCode = 500;
+    res.end();
+    return;
+  }
+  const N = attack.gapAt;
   const nBytes = await fetchSegment(N, info);
   const parsed = extractMoofMdat(nBytes);
 
   if (!parsed?.moof) {
-    console.error('[GAP] No moof in segment N');
+    logger.error('[GAP] No moof in segment N');
     res.statusCode = 502;
     res.end();
     return;

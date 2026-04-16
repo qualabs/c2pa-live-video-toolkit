@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { restartStreamerContainer } from '../docker/streamer-control.js';
 import { resetState } from '../state.js';
+import { logger, errorMessage } from '../utils/logger.js';
 
 const router = Router();
 
@@ -8,11 +9,11 @@ router.post('/restart', async (_req, res) => {
   try {
     await restartStreamerContainer();
     resetState();
-    console.log('Streamer restarted, attack state reset');
+    logger.info('Streamer restarted, attack state reset');
     res.json({ ok: true });
   } catch (error) {
-    const errorMsg = (error as Error).message ?? 'Unknown error';
-    console.error('Failed to restart streamer container:', errorMsg);
+    const errorMsg = errorMessage(error);
+    logger.error('Failed to restart streamer container:', errorMsg);
     res.status(500).json({
       ok: false,
       error: errorMsg,
