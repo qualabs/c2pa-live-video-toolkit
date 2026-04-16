@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "format": "prettier --write 'src/**/*.{ts,tsx}'"
+    "format": "prettier --write 'src/**/*.{ts,tsx}'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -20,6 +22,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
