@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { logger } from '../utils/logger.js';
 
 interface DockerResult {
   code: number;
@@ -62,7 +63,7 @@ export async function restartStreamerContainer(): Promise<void> {
 
   const { code, stdout, stderr } = await spawnDockerCommand(['restart', containerId]);
   if (code === 0) {
-    console.log(`Streamer container restarted: ${containerId}`);
+    logger.info(`Streamer container restarted: ${containerId}`);
   } else {
     throw new Error(`Docker restart failed: ${stderr || stdout}`);
   }

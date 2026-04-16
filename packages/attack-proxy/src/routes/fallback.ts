@@ -1,37 +1,35 @@
 import { Router } from 'express';
-import http from 'http';
-import { ORIGIN } from '../config.js';
+import { fetchFromOrigin } from '../proxy/fetchFromOrigin.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import type { Application } from 'express';
 
 export const router = Router();
 
-router.get('/stream_with_ad.mpd', (_req, res) => {
-  http
-    .get(`${ORIGIN}/stream_with_ad.mpd`, (originRes) => {
-      if (originRes.statusCode !== 200) {
-        res.writeHead(originRes.statusCode ?? 502, originRes.headers);
-        originRes.pipe(res);
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': 'application/dash+xml' });
-      originRes.pipe(res);
-    })
-    .on('error', (err) => {
-      console.error('Failed to fetch stream_with_ad.mpd:', err.message);
-      res.status(502).send('Bad Gateway');
-    });
+router.get('/stream_with_ad.mpd', async (_req, res) => {
+  try {
+    const response = await fetchFromOrigin('/stream_with_ad.mpd');
+    if (response.statusCode !== 200) {
+      res.writeHead(response.statusCode, response.headers);
+      res.end(response.body);
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/dash+xml' });
+    res.end(response.body);
+  } catch (err) {
+    logger.error('Failed to fetch stream_with_ad.mpd:', errorMessage(err));
+    res.status(502).send('Bad Gateway');
+  }
 });
 
 export function registerFallbackProxy(app: Application): void {
-  app.use((req, res) => {
-    http
-      .get(`${ORIGIN}${req.path}`, (originRes) => {
-        res.writeHead(originRes.statusCode ?? 502, originRes.headers);
-        originRes.pipe(res);
-      })
-      .on('error', (err) => {
-        console.error('Proxy error:', err.message);
-        res.status(502).send('Bad Gateway');
-      });
+  app.use(async (req, res) => {
+    try {
+      const response = await fetchFromOrigin(req.path);
+      res.writeHead(response.statusCode, response.headers);
+      res.end(response.body);
+    } catch (err) {
+      logger.error('Proxy error:', errorMessage(err));
+      res.status(502).send('Bad Gateway');
+    }
   });
 }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { state } from '../state.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -11,21 +12,21 @@ router.post('/gap', (_req, res) => {
   state.attackConfig = { ...state.attackConfig, enabled: true, type: 'gap', gapAt: null };
   state.pendingGap = true;
   resetGuards();
-  console.log('Gap attack armed');
+  logger.info('Gap attack armed');
   res.json({ ok: true });
 });
 
 router.post('/out-of-order', (_req, res) => {
   state.attackConfig = { ...state.attackConfig, enabled: true, type: 'out-of-order' };
   resetGuards();
-  console.log('Out-of-order attack armed');
+  logger.info('Out-of-order attack armed');
   res.json({ ok: true });
 });
 
 router.post('/replay', (_req, res) => {
   state.attackConfig = { ...state.attackConfig, enabled: true, type: 'replay' };
   resetGuards();
-  console.log('Replay attack armed');
+  logger.info('Replay attack armed');
   res.json({ ok: true });
 });
 
@@ -33,7 +34,7 @@ router.post('/mdat-swap', (_req, res) => {
   state.pendingMoofTamper = true;
   state.mdatAttackAt = null;
   state.attackConfig = { ...state.attackConfig, enabled: true, type: 'mdat-swap' };
-  console.log('Mdat-swap attack armed');
+  logger.info('Mdat-swap attack armed');
   res.json({ ok: true });
 });
 

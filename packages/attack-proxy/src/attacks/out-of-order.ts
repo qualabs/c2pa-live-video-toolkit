@@ -6,13 +6,13 @@ import {
   buildSegmentPath,
   proxySegment,
 } from '../proxy/segment-proxy.js';
-import { extractMoofMdat } from '../mp4/mdat-utils.js';
-import { replaceMoofMdat } from '../mp4/mdat-utils.js';
+import { extractMoofMdat, replaceMoofMdat } from '../mp4/mdat-utils.js';
 import {
   setMfhdSequenceNumber,
   setBaseMediaDecodeTimeInMoof,
   getBaseMediaDecodeTimeFromMoof,
 } from '../mp4/moof-utils.js';
+import { logger } from '../utils/logger.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 export function applyOutOfOrderAttack(
@@ -26,25 +26,28 @@ export function applyOutOfOrderAttack(
     attackConfig.reorderSeg1 = n + 1;
     attackConfig.reorderSeg2 = n + 2;
     guards.reorder = true;
-    console.log(`OUT-OF-ORDER: Armed for seg ${n + 1} and ${n + 2}`);
+    logger.info(`OUT-OF-ORDER: Armed for seg ${n + 1} and ${n + 2}`);
     return noAttack;
   }
+
+  if (attackConfig.reorderSeg1 === null || attackConfig.reorderSeg2 === null) return null;
+
   if (n === attackConfig.reorderSeg1) {
-    console.log(`OUT-OF-ORDER [1/2]: serve seg ${attackConfig.reorderSeg2} content as slot ${n}`);
+    logger.info(`OUT-OF-ORDER [1/2]: serve seg ${attackConfig.reorderSeg2} content as slot ${n}`);
     return {
       ...noAttack,
       reorderAttack: true,
-      serveContentOf: attackConfig.reorderSeg2 as number,
+      serveContentOf: attackConfig.reorderSeg2,
       asSlot: n,
     };
   }
   if (n === attackConfig.reorderSeg2) {
     attackConfig.enabled = false;
-    console.log(`OUT-OF-ORDER [2/2]: serve seg ${attackConfig.reorderSeg1} content as slot ${n}`);
+    logger.info(`OUT-OF-ORDER [2/2]: serve seg ${attackConfig.reorderSeg1} content as slot ${n}`);
     return {
       ...noAttack,
       reorderAttack: true,
-      serveContentOf: attackConfig.reorderSeg1 as number,
+      serveContentOf: attackConfig.reorderSeg1,
       asSlot: n,
     };
   }
@@ -58,8 +61,11 @@ export async function proxyReorderAttack(
   info: SegmentInfo,
   attack: AttackResult,
 ): Promise<void> {
-  const asSlot = attack.asSlot as number;
-  const serveContentOf = attack.serveContentOf as number;
+  if (attack.asSlot == null || attack.serveContentOf == null) {
+    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+  }
+
+  const { asSlot, serveContentOf } = attack;
   const isFirst = asSlot === state.attackConfig.reorderSeg1;
 
   let segAFull: Buffer;
@@ -86,7 +92,7 @@ export async function proxyReorderAttack(
     const cachedA = state.contentCache.get(serveContentOf);
     const cachedB = state.contentCache.get(asSlot);
     if (!cachedA?.full || !cachedB) {
-      console.error(`[REORDER] Missing cache for ${serveContentOf} or ${asSlot}`);
+      logger.error(`[REORDER] Missing cache for ${serveContentOf} or ${asSlot}`);
       return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
     }
     segAFull = cachedA.full;
@@ -97,7 +103,7 @@ export async function proxyReorderAttack(
 
   const tfdt = segBMoofMdat ? getBaseMediaDecodeTimeFromMoof(segBMoofMdat.moof) : null;
   if (tfdt == null) {
-    console.warn('[REORDER] Could not get tfdt, passing through');
+    logger.warn('[REORDER] Could not get tfdt, passing through');
     return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
   }
 
