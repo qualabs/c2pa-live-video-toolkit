@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createFrictionModal, showFrictionModal } from './C2paFrictionModal.js';
+import { createFrictionModal, showFrictionModal } from '../components/C2paFrictionModal.js';
 import type { VideoJsPlayer } from '../types.js';
 
 function makePlayer(): VideoJsPlayer & { playerEl: HTMLElement } {

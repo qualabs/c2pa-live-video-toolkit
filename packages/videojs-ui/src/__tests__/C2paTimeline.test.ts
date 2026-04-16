@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { C2paTimeline, formatTime } from './C2paTimeline.js';
+import { C2paTimeline, formatTime } from '../components/C2paTimeline.js';
 import type { VjsComponent, VideoJsPlayer } from '../types.js';
 
 // --- Helpers ---

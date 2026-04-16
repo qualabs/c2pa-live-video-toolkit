@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SegmentRouter } from './SegmentRouter.js';
-import type { InitSegmentProcessor } from './InitSegmentProcessor.js';
-import type { VsiValidator } from './VsiValidator.js';
-import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
+import { SegmentRouter } from '../pipeline/SegmentRouter.js';
+import type { InitSegmentProcessor } from '../pipeline/InitSegmentProcessor.js';
+import type { VsiValidator } from '../pipeline/VsiValidator.js';
+import type { ManifestBoxValidator } from '../pipeline/ManifestBoxValidator.js';
 import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import { SegmentStore } from '../state/SegmentStore.js';
