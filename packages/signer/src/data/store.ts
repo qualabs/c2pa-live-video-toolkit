@@ -34,6 +34,23 @@ interface SegmentStore {
   previousSignedSegmentPaths: Map<string, string>;
 }
 
+export function resetStore(): void {
+  segmentStore.segmentPatterns.clear();
+  segmentStore.initPatterns.clear();
+  segmentStore.lastProcessed.clear();
+  segmentStore.readyLists.clear();
+  segmentStore.waitingSets.clear();
+  segmentStore.segments.clear();
+  segmentStore.processedLists.clear();
+  segmentStore.globalWaitingList.clear();
+  segmentStore.manifestContent.clear();
+  segmentStore.manifestRequirements.clear();
+  segmentStore.manifestQueue.length = 0;
+  segmentStore.manifestEnqueued.clear();
+  segmentStore.mpdPollingInterval = DEFAULT_MPD_POLLING_INTERVAL_MS;
+  segmentStore.previousSignedSegmentPaths.clear();
+}
+
 export const segmentStore: SegmentStore = {
   segmentPatterns: new Map<string, string>(),
   initPatterns: new Map<string, string>(),

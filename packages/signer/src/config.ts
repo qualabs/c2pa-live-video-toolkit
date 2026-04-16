@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { requireEnv } from './utils/env.js';
 
 dotenv.config();
 
@@ -8,14 +9,6 @@ const DEFAULT_HEALTH_PORT = 8080;
 const DEFAULT_CLEANUP_MAX_AGE_MINUTES = 30;
 const DEFAULT_CLEANUP_INTERVAL_MS = 60000;
 const DEFAULT_C2PATOOL_PATH = '/usr/local/bin/c2patool';
-
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
-}
 
 export const config = {
   inputBucket: requireEnv('INPUT_BUCKET'),
