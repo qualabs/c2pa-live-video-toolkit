@@ -49,9 +49,6 @@ const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, Segm
   [SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM]: SegmentStatus.INVALID,
 };
 
-const UNKNOWN_KEY_ID = 'unknown';
-const UNAVAILABLE_HASH = 'N/A';
-const NO_DATA = '—';
 
 type VsiSegmentParams = {
   segmentBytes: Uint8Array;
@@ -103,9 +100,8 @@ function buildUnverifiedRecord(
   return {
     segmentNumber,
     mediaType,
-    sequenceNumber: segmentNumber,
-    keyId: NO_DATA,
-    hash: NO_DATA,
+    keyId: null,
+    hash: null,
     status,
     sequenceReason,
     timestamp: Date.now(),
@@ -121,9 +117,8 @@ function buildVsiSegmentRecord(
   return {
     segmentNumber: vsiResult.sequenceNumber,
     mediaType,
-    sequenceNumber: vsiResult.sequenceNumber,
-    keyId: vsiResult.kidHex ?? UNKNOWN_KEY_ID,
-    hash: vsiResult.bmffHashHex ?? UNAVAILABLE_HASH,
+    keyId: vsiResult.kidHex,
+    hash: vsiResult.bmffHashHex,
     status,
     sequenceReason: vsiResult.sequenceReason ?? undefined,
     timestamp: Date.now(),
@@ -233,7 +228,7 @@ export class SegmentRouter {
       return;
     }
 
-    const status = resolveSegmentStatus(vsiResult.overall, vsiResult.sequenceReason);
+    const status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
 
     if (
       vsiResult.sequenceReason === SequenceAnomalyReason.GAP_DETECTED &&
@@ -288,15 +283,12 @@ export class SegmentRouter {
       : isContinuityOnlyFailure
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
-    const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
-
     this.emitSegmentValidated(
       this.withArrivalIndex({
         segmentNumber: result.sequenceNumber,
         mediaType,
-        sequenceNumber: result.sequenceNumber,
-        keyId: UNAVAILABLE_HASH,
-        hash,
+        keyId: null,
+        hash: result.bmffHashHex,
         status,
         timestamp: Date.now(),
         errorCodes: asValidationErrorCodes(result.errorCodes),

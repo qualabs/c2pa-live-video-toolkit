@@ -1,6 +1,6 @@
 /**
  * Builds a stable string key identifying a specific stream representation.
- * Used as the lookup key in the time-interval index and sequence tracker.
+ * Used as the lookup key in the sequence tracker.
  *
  * Format: `<mediaType>-<representationId>`
  * Fallbacks: `unknown` for missing mediaType, `default` for missing representationId.

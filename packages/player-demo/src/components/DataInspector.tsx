@@ -141,7 +141,6 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
   const info = buildStatusInfo(segment.status, errorCodes, segment);
   const displayData = convertBuffersToHex({
     segmentNumber: segment.segmentNumber,
-    sequenceNumber: segment.sequenceNumber,
     mediaType: segment.mediaType,
     keyId: segment.keyId,
     hash: segment.hash,
@@ -164,7 +163,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
           <PreviewInfo>
             <InfoRow>
               <InfoLabel>SEQ:</InfoLabel>
-              <InfoValue>{segment.sequenceNumber}</InfoValue>
+              <InfoValue>{segment.segmentNumber}</InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>Type:</InfoLabel>

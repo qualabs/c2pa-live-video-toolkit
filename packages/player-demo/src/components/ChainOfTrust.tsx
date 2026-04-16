@@ -139,7 +139,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                 >
                   <Td>{segment.segmentNumber}</Td>
                   <Td>{segment.mediaType}</Td>
-                  <Td>{segment.sequenceNumber}</Td>
+                  <Td>{segment.segmentNumber}</Td>
                   {isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
                       {isUnverified || segment.previousManifestId == null ? (
@@ -154,7 +154,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                     <Td title={segment.keyId}>{isUnverified ? '—' : truncate(segment.keyId)}</Td>
                   )}
                   <Td title={segment.hash}>
-                    {isUnverified || segment.hash === 'N/A' ? '—' : truncate(segment.hash)}
+                    {isUnverified || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
                   <Td>
                     {isUnverified ? (

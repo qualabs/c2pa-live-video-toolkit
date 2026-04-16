@@ -42,7 +42,6 @@ function makeChunk(overrides: Partial<DashjsChunk> = {}): DashjsChunk {
 function makeValidVsiResult() {
   return {
     isValid: true,
-    overall: true,
     sequenceNumber: 1,
     bmffHashHex: 'hash-abc',
     kidHex: 'kid-1',

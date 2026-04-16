@@ -56,7 +56,7 @@ describe('InitSegmentProcessor', () => {
     await processor.process(new Uint8Array([0x00]));
 
     expect(sessionKeyStore.hasKeys()).toBe(true);
-    expect(sessionKeyStore.get('kid-1')).toBe(mockKey);
+    expect(sessionKeyStore.getAll()[0]).toBe(mockKey);
   });
 
   it('returns failure when validation throws', async () => {

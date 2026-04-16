@@ -61,12 +61,11 @@ describe('VsiValidator', () => {
 
     expect(result).not.toBeNull();
     expect(result!.isValid).toBe(true);
-    expect(result!.overall).toBe(true);
     expect(result!.sequenceNumber).toBe(1);
     expect(result!.bmffHashHex).toBe('hash-abc');
   });
 
-  it('sets overall to false when sequence validation fails', async () => {
+  it('sets isValid to false when sequence validation fails', async () => {
     mockValidate.mockResolvedValue(
       makeCmlResult({
         sequenceResult: { isValid: false, reason: 'duplicate' },
@@ -75,7 +74,7 @@ describe('VsiValidator', () => {
 
     const result = await validator.validate(new Uint8Array([0x00]), 'video-rep1');
 
-    expect(result!.overall).toBe(false);
+    expect(result!.isValid).toBe(false);
     expect(result!.sequenceReason).toBe('duplicate');
   });
 

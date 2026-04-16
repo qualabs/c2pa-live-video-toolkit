@@ -28,13 +28,6 @@ export const ValidationErrorCode = {
 
 export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
 
-type C2paStatusCodeKey =
-  | 'HASHED_URI_MISMATCH'
-  | 'ASSERTION_MISSING'
-  | 'INGREDIENT_MISMATCH'
-  | 'SIGNATURE_MISMATCH';
-
-export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
 
 export const SegmentStatus = {
   VALID: 'valid',
@@ -61,9 +54,8 @@ export type SequenceAnomalyReasonValue =
 export type SegmentRecord = {
   segmentNumber: number;
   mediaType: MediaType;
-  sequenceNumber: number;
-  keyId: string;
-  hash: string;
+  keyId: string | null;
+  hash: string | null;
   status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReasonValue;
   errorCodes?: readonly ValidationErrorCode[];
@@ -142,7 +134,6 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
 };
 
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];
-export const PLAYBACK_SEARCH_WINDOW_SECONDS = 0.01;
 
 export function isMediaType(type: string): type is MediaType {
   return type === 'video' || type === 'audio';

@@ -5,13 +5,11 @@ import type { SequenceAnomalyReasonValue } from '../types.js';
 
 export type VsiValidationResult = {
   isValid: boolean;
-  overall: boolean;
   sequenceReason: SequenceAnomalyReasonValue | null;
   sequenceMissingFrom?: number;
   sequenceMissingTo?: number;
   bmffHashHex: string | null;
   kidHex: string | null;
-  manifestId: string;
   sequenceNumber: number;
   errorCodes?: readonly string[];
 };
@@ -43,11 +41,14 @@ export class VsiValidator {
 
     const { sequenceResult } = result;
     return {
-      ...result,
+      isValid: result.isValid && sequenceResult.isValid,
       sequenceReason: (sequenceResult.reason as SequenceAnomalyReasonValue) ?? null,
       sequenceMissingFrom: 'missingFrom' in sequenceResult ? sequenceResult.missingFrom : undefined,
       sequenceMissingTo: 'missingTo' in sequenceResult ? sequenceResult.missingTo : undefined,
-      overall: result.isValid && sequenceResult.isValid,
+      bmffHashHex: result.bmffHashHex,
+      kidHex: result.kidHex,
+      sequenceNumber: result.sequenceNumber,
+      errorCodes: result.errorCodes,
     };
   }
 }

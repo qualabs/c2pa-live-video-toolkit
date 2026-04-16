@@ -8,7 +8,6 @@ export type {
 
 export type {
   C2paManifest,
-  C2paStatusCode,
   C2paOptions,
   C2paEventMap,
   C2paEventType,
@@ -16,7 +15,6 @@ export type {
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
   MediaType,
-  MutableRef,
   InitProcessedEvent,
   SegmentsMissingEvent,
   ErrorEvent,

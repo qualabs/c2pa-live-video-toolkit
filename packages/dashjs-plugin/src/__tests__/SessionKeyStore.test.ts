@@ -7,17 +7,6 @@ function makeKey(kid: string): ValidatedSessionKey {
 }
 
 describe('SessionKeyStore', () => {
-  it('returns null for an unknown kid', () => {
-    expect(new SessionKeyStore().get('unknown-kid')).toBeNull();
-  });
-
-  it('stores and retrieves a key by kid', () => {
-    const store = new SessionKeyStore();
-    const key = makeKey('kid-1');
-    store.add(key);
-    expect(store.get('kid-1')).toBe(key);
-  });
-
   it('hasKeys returns false when the store is empty', () => {
     expect(new SessionKeyStore().hasKeys()).toBe(false);
   });
