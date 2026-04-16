@@ -1,5 +1,5 @@
 import type { EventBus } from './events/EventBus.js';
-import type { SegmentStore } from './state/SegmentStore.js';
+import type { SegmentRouter } from './pipeline/SegmentRouter.js';
 import type { SessionKeyStore } from './state/SessionKeyStore.js';
 import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
@@ -9,7 +9,7 @@ import type { C2paEventMap, C2paEventType, PlaybackStatus, MutableRef, C2paManif
 
 type C2paControllerDeps = {
   eventBus: EventBus;
-  segmentStore: SegmentStore;
+  segmentRouter: SegmentRouter;
   sessionKeyStore: SessionKeyStore;
   sequenceTracker: SequenceTracker;
   timeIndex: TimeIntervalIndex;
@@ -47,7 +47,7 @@ export class C2paController {
   }
 
   reset(): void {
-    this.deps.segmentStore.clear();
+    this.deps.segmentRouter.reset();
     this.deps.sessionKeyStore.clear();
     this.deps.sequenceTracker.clearAll();
     this.deps.timeIndex.clear();

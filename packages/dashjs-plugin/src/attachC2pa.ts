@@ -1,7 +1,6 @@
 import { EventBus } from './events/EventBus.js';
 import { SessionKeyStore } from './state/SessionKeyStore.js';
 import { SequenceTracker } from './state/SequenceTracker.js';
-import { SegmentStore } from './state/SegmentStore.js';
 import { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
 import { InitSegmentProcessor } from './pipeline/InitSegmentProcessor.js';
 import { VsiValidator } from './pipeline/VsiValidator.js';
@@ -10,7 +9,7 @@ import { SegmentRouter } from './pipeline/SegmentRouter.js';
 import { PlaybackTracker } from './playback/PlaybackTracker.js';
 import { C2paController } from './C2paController.js';
 import type { C2paOptions, Logger, MediaType, MutableRef, C2paManifest } from './types.js';
-import { DEFAULT_MEDIA_TYPES, DEFAULT_MAX_STORED_SEGMENTS } from './types.js';
+import { DEFAULT_MEDIA_TYPES } from './types.js';
 
 const SILENT_LOGGER: Logger = {
   log: () => undefined,
@@ -54,21 +53,17 @@ type DashjsPlaybackEvent = {
  */
 export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2paController {
   const supportedMediaTypes: MediaType[] = options.mediaTypes ?? DEFAULT_MEDIA_TYPES;
-  const maxStoredSegments = options.maxStoredSegments ?? DEFAULT_MAX_STORED_SEGMENTS;
   const logger = buildLogger(options.logger);
 
-  // Shared mutable state containers (passed by reference)
   const manifest: MutableRef<C2paManifest | null> = { value: null };
   const currentQuality: Record<string, string | number | null> = {};
   for (const mediaType of supportedMediaTypes) {
     currentQuality[mediaType] = null;
   }
 
-  // State stores (instance-scoped — safe for multiple players on the same page)
   const eventBus = new EventBus();
   const sessionKeyStore = new SessionKeyStore();
   const sequenceTracker = new SequenceTracker();
-  const segmentStore = new SegmentStore(maxStoredSegments);
   const timeIndex = new TimeIntervalIndex();
 
   // Pipeline
@@ -85,7 +80,6 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     vsiValidator,
     manifestBoxValidators,
     sessionKeyStore,
-    segmentStore,
     timeIndex,
     manifest,
     currentQuality,
@@ -122,18 +116,9 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     playbackTracker.handleTimeUpdate(time);
   });
 
-  // Wire up direct callback if provided
-  if (options.onSegmentValidated) {
-    const callback = options.onSegmentValidated;
-    eventBus.on('segmentValidated', () => {
-      const latest = segmentStore.getLast();
-      if (latest) callback(latest);
-    });
-  }
-
   const controller = new C2paController({
     eventBus,
-    segmentStore,
+    segmentRouter,
     sessionKeyStore,
     sequenceTracker,
     timeIndex,

@@ -54,9 +54,7 @@ Returns a `C2paController` instance.
 ```ts
 type C2paOptions = {
   mediaTypes?: ('video' | 'audio')[];  // Default: ['video', 'audio']
-  maxStoredSegments?: number;           // Segment history limit. Default: 1000
   logger?: Logger | false;             // Custom logger or false to disable all logs
-  onSegmentValidated?: (record: SegmentRecord) => void; // Direct callback per segment
 };
 ```
 

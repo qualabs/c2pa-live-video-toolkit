@@ -5,7 +5,6 @@ import type { VsiValidator } from '../pipeline/VsiValidator.js';
 import type { ManifestBoxValidator } from '../pipeline/ManifestBoxValidator.js';
 import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
-import { SegmentStore } from '../state/SegmentStore.js';
 import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 import { SequenceAnomalyReason } from '../types.js';
@@ -68,7 +67,6 @@ function makeValidManifestBoxResult() {
 type BuiltDeps = {
   router: SegmentRouter;
   eventBus: EventBus;
-  segmentStore: SegmentStore;
   sessionKeyStore: SessionKeyStore;
   initProcessor: { process: ReturnType<typeof vi.fn> };
   vsiValidator: { validate: ReturnType<typeof vi.fn> };
@@ -77,7 +75,6 @@ type BuiltDeps = {
 
 function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
   const eventBus = new EventBus();
-  const segmentStore = new SegmentStore(100);
   const timeIndex = new TimeIntervalIndex();
 
   const initProcessor = {
@@ -106,7 +103,6 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
       audio: manifestBoxValidator as unknown as ManifestBoxValidator,
     },
     sessionKeyStore,
-    segmentStore,
     timeIndex,
     manifest: { value: null },
     currentQuality: {},
@@ -114,15 +110,7 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     logger: SILENT_LOGGER,
   });
 
-  return {
-    router,
-    eventBus,
-    segmentStore,
-    sessionKeyStore,
-    initProcessor,
-    vsiValidator,
-    manifestBoxValidator,
-  };
+  return { router, eventBus, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
 }
 
 describe('SegmentRouter', () => {
@@ -190,13 +178,6 @@ describe('SegmentRouter', () => {
       await router.route(makeChunk());
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'invalid' });
     });
-
-    it('adds the validated segment to the store', async () => {
-      const { router, segmentStore } = buildDeps();
-      await router.route(makeChunk());
-      expect(segmentStore.getAll()).toHaveLength(1);
-      expect(segmentStore.getAll()[0].status).toBe('valid');
-    });
   });
 
   describe('VSI path', () => {
@@ -211,16 +192,7 @@ describe('SegmentRouter', () => {
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
 
-    it('adds the validated segment to the store', async () => {
-      const sessionKeyStore = new SessionKeyStore();
-      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
-      const { router, segmentStore } = buildDeps(sessionKeyStore);
-      await router.route(makeChunk());
-      expect(segmentStore.getAll()).toHaveLength(1);
-      expect(segmentStore.getAll()[0].status).toBe('valid');
-    });
-
-    it('records missing segments and emits segmentsMissing on gap_detected', async () => {
+    it('emits segmentsMissing with correct range on gap_detected', async () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
 
@@ -233,7 +205,6 @@ describe('SegmentRouter', () => {
       };
 
       const eventBus = new EventBus();
-      const segmentStore = new SegmentStore(100);
       const vsiValidator = { validate: vi.fn().mockResolvedValue(gapVsiResult) };
 
       const router = new SegmentRouter({
@@ -244,7 +215,6 @@ describe('SegmentRouter', () => {
           video: { validate: vi.fn(), reset: vi.fn() } as unknown as ManifestBoxValidator,
         },
         sessionKeyStore,
-        segmentStore,
         timeIndex: new TimeIntervalIndex(),
         manifest: { value: null },
         currentQuality: {},
@@ -258,9 +228,6 @@ describe('SegmentRouter', () => {
       await router.route(makeChunk({ index: 4 }));
 
       expect(missingListener).toHaveBeenCalledWith({ from: 2, to: 4, count: 3 });
-      const missingSegments = segmentStore.getAll().filter((s) => s.status === 'missing');
-      expect(missingSegments).toHaveLength(3);
-      expect(missingSegments.map((s) => s.segmentNumber)).toEqual([2, 3, 4]);
     });
   });
 });

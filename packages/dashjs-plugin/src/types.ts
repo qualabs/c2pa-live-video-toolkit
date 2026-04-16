@@ -149,9 +149,7 @@ export type Logger = {
 
 export type C2paOptions = {
   mediaTypes?: MediaType[];
-  maxStoredSegments?: number;
   logger?: Logger | false;
-  onSegmentValidated?: (record: SegmentRecord) => void;
 };
 
 export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
@@ -174,7 +172,6 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
 };
 
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];
-export const DEFAULT_MAX_STORED_SEGMENTS = 100;
 export const PLAYBACK_SEARCH_WINDOW_SECONDS = 0.01;
 
 export function isMediaType(type: string): type is MediaType {
