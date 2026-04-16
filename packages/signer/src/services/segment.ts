@@ -1,6 +1,6 @@
 import type { SegmentRepository } from '../data/repository.js';
 import { Job } from '../data/store.js';
-import { REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
+import { resolveSegmentKey } from '../utils/segment.js';
 
 export class SegmentService {
   constructor(private readonly repository: SegmentRepository) {}
@@ -124,12 +124,6 @@ export class SegmentService {
     repId: string,
     segmentNumber: number,
   ): string {
-    return segmentPattern
-      .replace(REPRESENTATION_ID_PLACEHOLDER, repId)
-      .replace(/\$Number(?:%0(\d+)d)?\$/, (_, padding) =>
-        padding
-          ? segmentNumber.toString().padStart(parseInt(padding, 10), '0')
-          : segmentNumber.toString(),
-      );
+    return resolveSegmentKey(segmentPattern, repId, segmentNumber);
   }
 }

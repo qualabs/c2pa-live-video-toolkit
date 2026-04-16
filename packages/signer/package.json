@@ -9,7 +9,9 @@
     "start": "node dist/c2pa-live-worker.js",
     "dev": "ts-node src/c2pa-live-worker.ts",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
-    "lint": "eslint 'src/**/*.{ts,tsx}' --fix"
+    "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.0.0"
   }
 }

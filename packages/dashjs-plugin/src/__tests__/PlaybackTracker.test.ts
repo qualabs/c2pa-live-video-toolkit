@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PlaybackTracker } from './PlaybackTracker.js';
+import { PlaybackTracker } from '../playback/PlaybackTracker.js';
 import { EventBus } from '../events/EventBus.js';
 import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import type { Logger } from '../types.js';

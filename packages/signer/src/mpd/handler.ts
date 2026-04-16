@@ -6,17 +6,15 @@ import { SegmentService } from '../services/segment.js';
 import { ManifestService } from '../services/ManifestService.js';
 import { StreamStateService } from '../services/StreamStateService.js';
 import { parseISODurationToMs } from '../utils/parseISODuration.js';
-import { extractSegmentInfo } from '../utils/segment.js';
+import { extractSegmentInfo, resolveSegmentKey } from '../utils/segment.js';
 import { startProcessingLoop, checkWaitingList } from '../segment/queue.js';
 import { Job } from '../data/store.js';
 import { MpdParser } from './MpdParser.js';
 import { MpdFetcher } from './MpdFetcher.js';
 import { InitSegmentPreparer } from './InitSegmentPreparer.js';
-import { REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
+import { DEFAULT_MPD_POLLING_INTERVAL_MS } from '../constants.js';
 import { logger } from '../utils/logger.js';
 import type { AdaptationSet, Representation, SegmentTemplate, SegmentTimeline } from './types.js';
-
-const DEFAULT_POLLING_INTERVAL_MS = 12000;
 
 const storage = createStorage();
 const mpdParser = new MpdParser();
@@ -38,14 +36,7 @@ function buildSegmentKey(
   repId: string,
   index: number,
 ): string {
-  return path.posix.join(
-    baseDirPrefix,
-    mediaTemplate
-      .replace(REPRESENTATION_ID_PLACEHOLDER, repId)
-      .replace(/\$Number(?:%0(\d+)d)?\$/, (_: string, pad: string) =>
-        pad ? String(index).padStart(parseInt(pad, 10), '0') : String(index),
-      ),
-  );
+  return path.posix.join(baseDirPrefix, resolveSegmentKey(mediaTemplate, repId, index));
 }
 
 function extractSegmentTemplate(adaptationSet: AdaptationSet): SegmentTemplate {
@@ -165,18 +156,23 @@ function logRepresentationDebugInfo(
   }
 }
 
+interface RepresentationContext {
+  representation: Representation;
+  segmentTemplate: SegmentTemplate;
+  media: string;
+  init: string;
+  baseDirPrefix: string;
+  startNumber: number;
+  receivedTimestamp: number;
+  requirements: Record<string, number>;
+}
+
 async function processRepresentation(
   segmentService: SegmentService,
   streamStateService: StreamStateService,
-  representation: Representation,
-  segmentTemplate: SegmentTemplate,
-  media: string,
-  init: string,
-  baseDirPrefix: string,
-  startNumber: number,
-  receivedTimestamp: number,
-  requirements: Record<string, number>,
+  ctx: RepresentationContext,
 ): Promise<boolean> {
+  const { representation, segmentTemplate, media, init, baseDirPrefix, startNumber, receivedTimestamp, requirements } = ctx;
   const repId: string = representation['@_id'];
   const timeline = segmentTemplate.SegmentTimeline;
   const maxSegmentInTimeline = timeline?.S
@@ -252,14 +248,16 @@ async function processAdaptationSets(
       const wasReset = await processRepresentation(
         segmentService,
         streamStateService,
-        representation,
-        segmentTemplate,
-        media,
-        init,
-        baseDirPrefix,
-        startNumber,
-        receivedTimestamp,
-        requirements,
+        { 
+          representation, 
+          segmentTemplate, 
+          media, 
+          init, 
+          baseDirPrefix, 
+          startNumber, 
+          receivedTimestamp, 
+          requirements 
+        },
       );
       streamStateReset = streamStateReset || wasReset;
     }
@@ -340,7 +338,7 @@ export async function pollMpdAndHandle(
   const mpdXml = await mpdFetcher.fetchValidMpd(config.inputBucket, config.mpdKey);
   logger.info('Successfully fetched MPD.');
 
-  let nextInterval = DEFAULT_POLLING_INTERVAL_MS;
+  let nextInterval = DEFAULT_MPD_POLLING_INTERVAL_MS;
 
   try {
     const parsed = mpdParser.parse(mpdXml);
@@ -434,9 +432,7 @@ async function publishManifestIfReady(
     logger.debug(`[manifest] Checking manifest with publishTime: ${publishTime}`);
 
     const requirements = manifestService.getManifestRequirements(publishTime);
-    const repIds = requirements ? Object.keys(requirements) : [];
-
-    if (repIds.length === 0) {
+    if (!requirements || Object.keys(requirements).length === 0) {
       logger.debug(
         `[manifest] No requirements found for ${publishTime}. Cleaning up orphan entry.`,
       );
@@ -444,12 +440,13 @@ async function publishManifestIfReady(
       continue;
     }
 
+    const repIds = Object.keys(requirements);
     const { ready: manifestIsReady, missingReps } = manifestService.isManifestReady(
       publishTime,
       (repId) => streamStateService.getLastProcessedOrDefault(repId, 0),
     );
 
-    logManifestRepReadiness(streamStateService, requirements!, repIds, missingReps, publishTime);
+    logManifestRepReadiness(streamStateService, requirements, repIds, missingReps, publishTime);
 
     if (manifestIsReady) {
       await publishReadyManifest(manifestService, publishTime, receivedTimestamp);

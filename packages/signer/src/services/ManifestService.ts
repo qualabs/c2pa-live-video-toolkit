@@ -54,15 +54,15 @@ export class ManifestService {
     const content = this.repository.getManifestContent(publishTime);
     if (!content) return undefined;
 
-    this.repository.deleteManifestContent(publishTime);
-    this.repository.deleteManifestRequirements(publishTime);
-    this.repository.removeFromManifestQueue(publishTime);
-    this.repository.removeFromManifestEnqueued(publishTime);
-
+    this.cleanupManifestState(publishTime);
     return content;
   }
 
   removeManifest(publishTime: string): void {
+    this.cleanupManifestState(publishTime);
+  }
+
+  private cleanupManifestState(publishTime: string): void {
     this.repository.deleteManifestContent(publishTime);
     this.repository.deleteManifestRequirements(publishTime);
     this.repository.removeFromManifestQueue(publishTime);

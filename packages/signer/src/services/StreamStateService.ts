@@ -38,7 +38,6 @@ export class StreamStateService {
     this.repository.setLastProcessed(repId, startNumber - 1);
     this.repository.clearReadyList(repId);
     this.repository.clearWaitingSet(repId);
-    this.repository.clearPreviousManifestId(repId);
     this.repository.clearPreviousSignedSegmentPath(repId);
   }
 

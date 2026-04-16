@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildStreamKey } from './streamKey.js';
+import { buildStreamKey } from '../utils/streamKey.js';
 
 describe('buildStreamKey', () => {
   it('builds a key from mediaType and representationId', () => {

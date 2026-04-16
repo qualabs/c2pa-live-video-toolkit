@@ -4,11 +4,11 @@ import { config } from '../config.js';
 import { createStorage } from '../services/storage/storageFactory.js';
 import { SegmentService } from '../services/segment.js';
 import { StreamStateService } from '../services/StreamStateService.js';
-import { extractSegmentInfo } from '../utils/segment.js';
+import { extractSegmentInfo, resolveInitKey } from '../utils/segment.js';
 import { streamToBuffer } from '../utils/stream.js';
 import { createSigningStrategy } from './signing/signingStrategyFactory.js';
 import type { SigningContext } from './signing/ISigningStrategy.js';
-import { TEMP_DIR, REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
+import { TEMP_DIR } from '../constants.js';
 import { logger } from '../utils/logger.js';
 
 const storage = createStorage();
@@ -167,10 +167,7 @@ async function uploadSignedFiles(
   await storage.saveObject(config.outputBucket, outputKey, segmentBuffer);
 
   if (signedInitPath && context.initPattern) {
-    const initKey = context.initPattern.replace(
-      REPRESENTATION_ID_PLACEHOLDER,
-      context.representationId,
-    );
+    const initKey = resolveInitKey(context.initPattern, context.representationId);
     const initBuffer = await fs.readFile(signedInitPath);
     await storage.saveObject(config.outputBucket, `processed/${initKey}`, initBuffer);
     logger.info(`[${representationId}] Signed init uploaded: processed/${initKey}`);

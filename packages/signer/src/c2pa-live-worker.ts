@@ -20,11 +20,7 @@ const manifestService = new ManifestService(segmentRepository);
 const streamStateService = new StreamStateService(segmentRepository);
 const cleanupService = new CleanupService();
 
-(async () => {
-  // 0. Clean processed/output directory and session keys on startup
-  logger.info('Cleaning processed output and session keys...');
-
-  // Clean processed/output directory
+async function cleanProcessedOutputDir(): Promise<void> {
   const processedOutputDir = path.join(config.outputBucket, PROCESSED_OUTPUT_SUBDIR);
   try {
     const files = await fs.readdir(processedOutputDir);
@@ -44,8 +40,9 @@ const cleanupService = new CleanupService();
       logger.error('Failed to clean processed output directory:', error);
     }
   }
+}
 
-  // Clean session key files and cached init segments from /tmp
+async function cleanTempFiles(): Promise<void> {
   try {
     const tmpFiles = await fs.readdir(TEMP_DIR);
     let deletedKeys = 0;
@@ -71,6 +68,12 @@ const cleanupService = new CleanupService();
   } catch (error: unknown) {
     logger.error('Failed to clean /tmp files:', error);
   }
+}
+
+(async () => {
+  logger.info('Cleaning processed output and session keys...');
+  await cleanProcessedOutputDir();
+  await cleanTempFiles();
 
   // 1. Initialize credentials
   await initializeCredentials();

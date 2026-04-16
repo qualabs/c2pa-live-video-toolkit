@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TimeIntervalIndex } from './TimeIntervalIndex.js';
+import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 
 function makeEntry(valid: boolean, interval: [number, number]) {
   return {

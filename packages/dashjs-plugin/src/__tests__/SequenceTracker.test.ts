@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SequenceTracker } from './SequenceTracker.js';
+import { SequenceTracker } from '../state/SequenceTracker.js';
 import type { SequenceState } from '@svta/cml-c2pa';
 
 function makeState(lastSequenceNumber: number): SequenceState {

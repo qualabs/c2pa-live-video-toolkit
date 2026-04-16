@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SessionKeyStore } from './SessionKeyStore.js';
+import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 
 function makeKey(kid: string): ValidatedSessionKey {

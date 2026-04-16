@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SegmentStore } from './SegmentStore.js';
+import { SegmentStore } from '../state/SegmentStore.js';
 import { SequenceAnomalyReason } from '../types.js';
 import type { SegmentRecord } from '../types.js';
 

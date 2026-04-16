@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { providerInfoFromSocialUrl } from './SocialProviders.js';
+import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
 
 describe('providerInfoFromSocialUrl', () => {
   it('returns Nikon for a URL containing "nikon"', () => {

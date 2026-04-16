@@ -14,7 +14,7 @@ export interface ManifestQueueItem {
   receivedTimestamp: number;
 }
 
-const DEFAULT_MPD_POLLING_INTERVAL_MS = 12000;
+import { DEFAULT_MPD_POLLING_INTERVAL_MS } from '../constants.js';
 
 interface SegmentStore {
   segmentPatterns: Map<string, string>;
@@ -30,10 +30,25 @@ interface SegmentStore {
   manifestQueue: ManifestQueueItem[];
   manifestEnqueued: Set<string>;
   mpdPollingInterval: number;
-  // ManifestBox method: last signed manifest URN per representation (for previousManifestId chain)
-  previousManifestIds: Map<string, string>;
   // c2patool live-video-sign: path to the last signed segment per representation (for --previous-segment)
   previousSignedSegmentPaths: Map<string, string>;
+}
+
+export function resetStore(): void {
+  segmentStore.segmentPatterns.clear();
+  segmentStore.initPatterns.clear();
+  segmentStore.lastProcessed.clear();
+  segmentStore.readyLists.clear();
+  segmentStore.waitingSets.clear();
+  segmentStore.segments.clear();
+  segmentStore.processedLists.clear();
+  segmentStore.globalWaitingList.clear();
+  segmentStore.manifestContent.clear();
+  segmentStore.manifestRequirements.clear();
+  segmentStore.manifestQueue.length = 0;
+  segmentStore.manifestEnqueued.clear();
+  segmentStore.mpdPollingInterval = DEFAULT_MPD_POLLING_INTERVAL_MS;
+  segmentStore.previousSignedSegmentPaths.clear();
 }
 
 export const segmentStore: SegmentStore = {
@@ -50,6 +65,5 @@ export const segmentStore: SegmentStore = {
   manifestQueue: [] as ManifestQueueItem[],
   manifestEnqueued: new Set<string>(),
   mpdPollingInterval: DEFAULT_MPD_POLLING_INTERVAL_MS,
-  previousManifestIds: new Map<string, string>(),
   previousSignedSegmentPaths: new Map<string, string>(),
 };
