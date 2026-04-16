@@ -9,10 +9,18 @@ const DEFAULT_CLEANUP_MAX_AGE_MINUTES = 30;
 const DEFAULT_CLEANUP_INTERVAL_MS = 60000;
 const DEFAULT_C2PATOOL_PATH = '/usr/local/bin/c2patool';
 
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}
+
 export const config = {
-  inputBucket: process.env.INPUT_BUCKET!,
-  mpdKey: process.env.MPD_KEY!,
-  outputBucket: process.env.OUTPUT_BUCKET!,
+  inputBucket: requireEnv('INPUT_BUCKET'),
+  mpdKey: requireEnv('MPD_KEY'),
+  outputBucket: requireEnv('OUTPUT_BUCKET'),
   publishManifestIntervalMs: parseInt(
     process.env.PUBLISH_MANIFEST_INTERVAL_MS || String(DEFAULT_PUBLISH_MANIFEST_INTERVAL_MS),
     10,

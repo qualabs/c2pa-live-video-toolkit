@@ -3,7 +3,8 @@ import fs from 'fs/promises';
 import { config } from '../config.js';
 import { streamToBuffer } from '../utils/stream.js';
 import type { IStorage } from '../services/storage/IStorage.js';
-import { TEMP_DIR, REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
+import { TEMP_DIR } from '../constants.js';
+import { resolveInitKey } from '../utils/segment.js';
 import { logger } from '../utils/logger.js';
 
 export class InitSegmentPreparer {
@@ -20,7 +21,7 @@ export class InitSegmentPreparer {
     logger.debug(`[init] Rep ${repId} initPattern: ${initPattern}`);
 
     try {
-      const initKey = initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, repId);
+      const initKey = resolveInitKey(initPattern, repId);
       const outputKey = `processed/${initKey}`;
 
       if (await this.storage.objectExists(config.outputBucket, outputKey)) {

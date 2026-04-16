@@ -1,3 +1,9 @@
+import { REPRESENTATION_ID_PLACEHOLDER } from '../constants.js';
+
+export function resolveInitKey(initPattern: string, representationId: string): string {
+  return initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, representationId);
+}
+
 function escapePatternSpecialChars(pattern: string): string {
   return pattern.replace(/\./g, '\\.').replace(/-/g, '\\-').replace(/\//g, '\\/');
 }

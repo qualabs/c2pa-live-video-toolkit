@@ -1,11 +1,8 @@
 import type { IStorage } from '../services/storage/IStorage.js';
 import { logger } from '../utils/logger.js';
+import { sleep } from '../utils/sleep.js';
 
 const RETRY_DELAY_MS = 1000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export class MpdFetcher {
   constructor(private readonly storage: IStorage) {}

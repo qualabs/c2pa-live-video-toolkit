@@ -64,13 +64,16 @@ export async function initializeCredentials(): Promise<void> {
 }
 
 export function getCertPath(): string {
+  if (!certPath) throw new Error('Credentials not initialized. Call initializeCredentials() first.');
   return certPath;
 }
 
 export function getPrivateKeyPath(): string {
+  if (!privateKeyPath) throw new Error('Credentials not initialized. Call initializeCredentials() first.');
   return privateKeyPath;
 }
 
 export function getCertHash(): string {
+  if (!certHashB64) throw new Error('Credentials not initialized. Call initializeCredentials() first.');
   return certHashB64;
 }

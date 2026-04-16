@@ -2,7 +2,8 @@ import path from 'path';
 import { signVsiSegment } from '../../c2pa/cli.js';
 import { BaseSigningStrategy } from './BaseSigningStrategy.js';
 import type { SigningContext } from './ISigningStrategy.js';
-import { TEMP_DIR, CURRENT_MANIFEST_PATH, REPRESENTATION_ID_PLACEHOLDER } from '../../constants.js';
+import { TEMP_DIR, CURRENT_MANIFEST_PATH } from '../../constants.js';
+import { resolveInitKey } from '../../utils/segment.js';
 import { config } from '../../config.js';
 
 export class VsiSigningStrategy extends BaseSigningStrategy {
@@ -17,7 +18,7 @@ export class VsiSigningStrategy extends BaseSigningStrategy {
     if (!initPattern) {
       throw new Error(`Could not find init pattern for ${representationId}`);
     }
-    const initKey = initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, representationId);
+    const initKey = resolveInitKey(initPattern, representationId);
     return `${TEMP_DIR}/${path.basename(initKey)}`;
   }
 

@@ -6,7 +6,8 @@ import { config } from '../../config.js';
 import { BaseSigningStrategy } from './BaseSigningStrategy.js';
 import type { IStorage } from '../../services/storage/IStorage.js';
 import type { SigningContext } from './ISigningStrategy.js';
-import { TEMP_DIR, CURRENT_MANIFEST_PATH, REPRESENTATION_ID_PLACEHOLDER } from '../../constants.js';
+import { TEMP_DIR, CURRENT_MANIFEST_PATH } from '../../constants.js';
+import { resolveInitKey } from '../../utils/segment.js';
 import { logger } from '../../utils/logger.js';
 
 export class ManifestBoxSigningStrategy extends BaseSigningStrategy {
@@ -46,7 +47,7 @@ export class ManifestBoxSigningStrategy extends BaseSigningStrategy {
     representationId: string,
     initPattern: string,
   ): Promise<string> {
-    const initKey = initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, representationId);
+    const initKey = resolveInitKey(initPattern, representationId);
     const initPath = `${TEMP_DIR}/${path.basename(initKey)}`;
 
     try {

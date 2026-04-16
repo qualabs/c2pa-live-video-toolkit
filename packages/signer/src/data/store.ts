@@ -14,7 +14,7 @@ export interface ManifestQueueItem {
   receivedTimestamp: number;
 }
 
-const DEFAULT_MPD_POLLING_INTERVAL_MS = 12000;
+import { DEFAULT_MPD_POLLING_INTERVAL_MS } from '../constants.js';
 
 interface SegmentStore {
   segmentPatterns: Map<string, string>;
