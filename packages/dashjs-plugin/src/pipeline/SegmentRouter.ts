@@ -3,7 +3,6 @@ import type { InitSegmentProcessor } from './InitSegmentProcessor.js';
 import type { VsiValidator, VsiValidationResult } from './VsiValidator.js';
 import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
-import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import {
   ValidationErrorCode,
   SegmentStatus,
@@ -38,9 +37,7 @@ type SegmentRouterDeps = {
   vsiValidator: VsiValidator;
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   sessionKeyStore: SessionKeyStore;
-  timeIndex: TimeIntervalIndex;
   manifest: MutableRef<C2paManifest | null>;
-  currentQuality: Record<string, string | number | null>;
   supportedMediaTypes: MediaType[];
   logger: Logger;
 };
@@ -60,21 +57,13 @@ type VsiSegmentParams = {
   segmentBytes: Uint8Array;
   streamKey: string;
   mediaType: MediaType;
-  chunkStart: number;
-  chunkEnd: number;
   segmentIndex: number;
-  representationId?: string | number;
-  segmentType: string;
 };
 
 type ManifestBoxSegmentParams = {
   segmentBytes: Uint8Array;
-  streamKey: string;
   mediaType: MediaType;
-  chunkStart: number;
-  chunkEnd: number;
   segmentIndex: number;
-  segmentType: string;
 };
 
 function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
@@ -207,48 +196,20 @@ export class SegmentRouter {
     // Copy bytes before queueMicrotask — dash.js transfers the underlying
     // ArrayBuffer to MSE after this function returns, detaching it.
     const segmentBytes = new Uint8Array(toUint8Array(chunk.bytes));
-    const chunkStart = chunk.start;
-    const chunkEnd = chunk.end;
     const segmentIndex = chunk.index + 1;
 
     if (!this.deps.sessionKeyStore.hasKeys()) {
-      await this.handleManifestBoxSegment({
-        segmentBytes,
-        streamKey,
-        mediaType,
-        chunkStart,
-        chunkEnd,
-        segmentIndex,
-        segmentType: chunk.segmentType,
-      });
+      await this.handleManifestBoxSegment({ segmentBytes, mediaType, segmentIndex });
       return;
     }
 
     queueMicrotask(() => {
-      void this.handleVsiSegment({
-        segmentBytes,
-        streamKey,
-        mediaType,
-        chunkStart,
-        chunkEnd,
-        segmentIndex,
-        representationId: chunk.representationId,
-        segmentType: chunk.segmentType,
-      });
+      void this.handleVsiSegment({ segmentBytes, streamKey, mediaType, segmentIndex });
     });
   }
 
   private async handleVsiSegment(params: VsiSegmentParams): Promise<void> {
-    const {
-      segmentBytes,
-      streamKey,
-      mediaType,
-      chunkStart,
-      chunkEnd,
-      segmentIndex,
-      representationId,
-      segmentType,
-    } = params;
+    const { segmentBytes, streamKey, mediaType, segmentIndex } = params;
 
     let vsiResult: VsiValidationResult | null = null;
     try {
@@ -287,25 +248,11 @@ export class SegmentRouter {
     }
 
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
-    const interval: [number, number] = [chunkStart, chunkEnd];
-
-    this.deps.timeIndex.insert(streamKey, interval, {
-      type: segmentType,
-      manifest: null,
-      interval,
-      valid: vsiResult.overall,
-    });
-
-    if (this.deps.currentQuality[mediaType] === null) {
-      this.deps.currentQuality[mediaType] = representationId ?? null;
-    }
-
     this.emitSegmentValidated(this.withArrivalIndex(record));
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType, chunkStart, chunkEnd, segmentIndex, segmentType } =
-      params;
+    const { segmentBytes, mediaType, segmentIndex } = params;
 
     let result;
     try {
@@ -342,14 +289,6 @@ export class SegmentRouter {
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
-    const interval: [number, number] = [chunkStart, chunkEnd];
-
-    this.deps.timeIndex.insert(streamKey, interval, {
-      type: segmentType,
-      manifest: result.manifest,
-      interval,
-      valid: result.isValid,
-    });
 
     this.emitSegmentValidated(
       this.withArrivalIndex({

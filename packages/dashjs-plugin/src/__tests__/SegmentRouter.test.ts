@@ -5,7 +5,6 @@ import type { VsiValidator } from '../pipeline/VsiValidator.js';
 import type { ManifestBoxValidator } from '../pipeline/ManifestBoxValidator.js';
 import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
-import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 import { SequenceAnomalyReason } from '../types.js';
 import type { Logger } from '../types.js';
@@ -75,7 +74,6 @@ type BuiltDeps = {
 
 function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
   const eventBus = new EventBus();
-  const timeIndex = new TimeIntervalIndex();
 
   const initProcessor = {
     process: vi.fn().mockResolvedValue({
@@ -103,9 +101,7 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
       audio: manifestBoxValidator as unknown as ManifestBoxValidator,
     },
     sessionKeyStore,
-    timeIndex,
     manifest: { value: null },
-    currentQuality: {},
     supportedMediaTypes: ['video', 'audio'],
     logger: SILENT_LOGGER,
   });
@@ -215,9 +211,7 @@ describe('SegmentRouter', () => {
           video: { validate: vi.fn(), reset: vi.fn() } as unknown as ManifestBoxValidator,
         },
         sessionKeyStore,
-        timeIndex: new TimeIntervalIndex(),
         manifest: { value: null },
-        currentQuality: {},
         supportedMediaTypes: ['video', 'audio'],
         logger: SILENT_LOGGER,
       });

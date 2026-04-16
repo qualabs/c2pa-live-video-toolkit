@@ -73,34 +73,6 @@ export type SegmentRecord = {
   previousManifestId?: string | null;
 };
 
-export const VerificationStatus = {
-  VERIFIED: 'verified',
-  INVALID: 'invalid',
-  INCONCLUSIVE: 'inconclusive',
-} as const;
-
-export type VerificationStatusValue = (typeof VerificationStatus)[keyof typeof VerificationStatus];
-
-export const PlaybackDiagnostic = {
-  NO_MANIFEST: 'no_manifest',
-  VALIDATION_FAILED: 'validation_failed',
-  NO_SEGMENT_FOUND: 'no_segment_found',
-  AMBIGUOUS_SEGMENTS: 'ambiguous_segments',
-} as const;
-
-export type PlaybackDiagnosticValue = (typeof PlaybackDiagnostic)[keyof typeof PlaybackDiagnostic];
-
-export type PlaybackStatusDetail = {
-  verified: VerificationStatusValue;
-  manifest: C2paManifest | null;
-  error: PlaybackDiagnosticValue | null;
-};
-
-export type PlaybackStatus = {
-  verified: VerificationStatusValue;
-  details: Partial<Record<MediaType, PlaybackStatusDetail>>;
-};
-
 export type InitProcessedEvent = {
   success: boolean;
   sessionKeysCount: number;
@@ -124,7 +96,6 @@ export type ErrorEvent = {
 export type C2paEventMap = {
   segmentValidated: SegmentRecord;
   initProcessed: InitProcessedEvent;
-  playbackStatus: PlaybackStatus;
   segmentsMissing: SegmentsMissingEvent;
   error: ErrorEvent;
   reset: Record<string, never>;
@@ -135,7 +106,6 @@ export type C2paEventType = keyof C2paEventMap;
 export const C2paEvent = {
   SEGMENT_VALIDATED: 'segmentValidated',
   INIT_PROCESSED: 'initProcessed',
-  PLAYBACK_STATUS: 'playbackStatus',
   SEGMENTS_MISSING: 'segmentsMissing',
   ERROR: 'error',
   RESET: 'reset',
