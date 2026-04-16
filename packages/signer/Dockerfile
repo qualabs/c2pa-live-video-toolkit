@@ -9,7 +9,7 @@ COPY tsconfig.base.json ./
 
 # Copy signer package manifest and install dependencies
 COPY packages/signer/package*.json ./packages/signer/
-RUN npm install --workspace=@c2pa-live/signer
+RUN npm install --workspace=@c2pa-live/signer --no-audit --no-fund
 
 # Copy signer source and compile
 COPY packages/signer/tsconfig.json ./packages/signer/
