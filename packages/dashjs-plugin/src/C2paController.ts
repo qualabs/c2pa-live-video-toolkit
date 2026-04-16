@@ -5,7 +5,7 @@ import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
 import type { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
 import type { PlaybackTracker } from './playback/PlaybackTracker.js';
-import type { C2paEventMap, C2paEventType, SegmentRecord, PlaybackStatus } from './types.js';
+import type { C2paEventMap, C2paEventType, SegmentRecord, PlaybackStatus, MutableRef, C2paManifest } from './types.js';
 
 type C2paControllerDeps = {
   eventBus: EventBus;
@@ -16,7 +16,7 @@ type C2paControllerDeps = {
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   playbackTracker: PlaybackTracker;
   currentQuality: Record<string, string | number | null>;
-  activeManifest: { value: unknown };
+  manifest: MutableRef<C2paManifest | null>;
   detachFn: () => void;
 };
 
@@ -62,7 +62,7 @@ export class C2paController {
     for (const validator of Object.values(this.deps.manifestBoxValidators)) {
       validator?.reset();
     }
-    this.deps.activeManifest.value = null;
+    this.deps.manifest.value = null;
 
     for (const key of Object.keys(this.deps.currentQuality)) {
       this.deps.currentQuality[key] = null;

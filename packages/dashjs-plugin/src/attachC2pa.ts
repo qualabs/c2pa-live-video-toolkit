@@ -9,7 +9,7 @@ import { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
 import { SegmentRouter } from './pipeline/SegmentRouter.js';
 import { PlaybackTracker } from './playback/PlaybackTracker.js';
 import { C2paController } from './C2paController.js';
-import type { C2paOptions, Logger, MediaType } from './types.js';
+import type { C2paOptions, Logger, MediaType, MutableRef, C2paManifest } from './types.js';
 import { DEFAULT_MEDIA_TYPES, DEFAULT_MAX_STORED_SEGMENTS } from './types.js';
 
 const SILENT_LOGGER: Logger = {
@@ -58,7 +58,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
   const logger = buildLogger(options.logger);
 
   // Shared mutable state containers (passed by reference)
-  const activeManifest = { value: null as unknown };
+  const manifest: MutableRef<C2paManifest | null> = { value: null };
   const currentQuality: Record<string, string | number | null> = {};
   for (const mediaType of supportedMediaTypes) {
     currentQuality[mediaType] = null;
@@ -87,7 +87,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     sessionKeyStore,
     segmentStore,
     timeIndex,
-    activeManifest,
+    manifest,
     currentQuality,
     supportedMediaTypes,
     logger,
@@ -96,7 +96,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
   const playbackTracker = new PlaybackTracker({
     eventBus,
     timeIndex,
-    activeManifest,
+    manifest,
     currentQuality,
     supportedMediaTypes,
     logger,
@@ -140,7 +140,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     manifestBoxValidators,
     playbackTracker,
     currentQuality,
-    activeManifest,
+    manifest,
     detachFn: () => {
       isDetached = true;
     },

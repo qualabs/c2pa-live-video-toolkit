@@ -1,4 +1,14 @@
+import type { C2paManifest } from '@svta/cml-c2pa';
+
 export type MediaType = 'video' | 'audio';
+
+export type MutableRef<T> = { value: T };
+
+/**
+ * Re-export the CML manifest type so consumers don't need a direct CML dependency
+ * just to reference the manifest shape.
+ */
+export type { C2paManifest };
 
 // ── Validation error codes ──────────────────────────────────────────
 export const ValidationErrorCode = {
@@ -62,13 +72,13 @@ export type SegmentRecord = {
     overall: boolean;
     errorCodes?: readonly ValidationErrorCode[];
   };
-  manifest?: unknown;
+  manifest?: C2paManifest | null;
   previousManifestId?: string | null;
 };
 
 export type PlaybackStatusDetail = {
   verified: boolean | undefined;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   error: string | null;
 };
 
@@ -81,7 +91,7 @@ export type InitProcessedEvent = {
   success: boolean;
   sessionKeysCount: number;
   manifestId: string | undefined;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   errorCodes?: readonly ValidationErrorCode[];
   error?: string;
 };
@@ -153,3 +163,17 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];
 export const DEFAULT_MAX_STORED_SEGMENTS = 1000;
 export const PLAYBACK_SEARCH_WINDOW_SECONDS = 0.01;
+
+export function isMediaType(type: string): type is MediaType {
+  return type === 'video' || type === 'audio';
+}
+
+/**
+ * Narrows CML's `string[]` error codes to the known `ValidationErrorCode` union.
+ * CML returns string[] — this single cast point avoids `as` scattered across call sites.
+ */
+export function asValidationErrorCodes(
+  codes?: readonly string[],
+): ValidationErrorCode[] | undefined {
+  return codes as ValidationErrorCode[] | undefined;
+}

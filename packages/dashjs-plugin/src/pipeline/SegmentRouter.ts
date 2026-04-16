@@ -5,13 +5,21 @@ import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { SegmentStore } from '../state/SegmentStore.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import { ValidationErrorCode, SegmentStatus, SequenceAnomalyReason } from '../types.js';
+import {
+  ValidationErrorCode,
+  SegmentStatus,
+  SequenceAnomalyReason,
+  isMediaType,
+  asValidationErrorCodes,
+} from '../types.js';
 import type {
   MediaType,
   SegmentRecord,
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
   Logger,
+  MutableRef,
+  C2paManifest,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
@@ -35,7 +43,7 @@ type SegmentRouterDeps = {
   sessionKeyStore: SessionKeyStore;
   segmentStore: SegmentStore;
   timeIndex: TimeIntervalIndex;
-  activeManifest: { value: unknown };
+  manifest: MutableRef<C2paManifest | null>;
   currentQuality: Record<string, string | number | null>;
   supportedMediaTypes: MediaType[];
   logger: Logger;
@@ -77,10 +85,12 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+const BOX_HEADER_SIZE = 8;
+
 /** Returns true if the segment contains an mdat box with at least 1 byte of payload. */
 function hasMdatContent(bytes: Uint8Array): boolean {
   let offset = 0;
-  while (offset + 8 <= bytes.length) {
+  while (offset + BOX_HEADER_SIZE <= bytes.length) {
     const size =
       (bytes[offset] << 24) |
       (bytes[offset + 1] << 16) |
@@ -92,8 +102,8 @@ function hasMdatContent(bytes: Uint8Array): boolean {
       bytes[offset + 6],
       bytes[offset + 7],
     );
-    if (size < 8) break;
-    if (type === 'mdat') return size > 8;
+    if (size < BOX_HEADER_SIZE) break;
+    if (type === 'mdat') return size > BOX_HEADER_SIZE;
     offset += size;
   }
   return false;
@@ -114,6 +124,29 @@ function buildUnverifiedRecord(
     status,
     sequenceReason,
     timestamp: Date.now(),
+  };
+}
+
+function buildVsiSegmentRecord(
+  vsiResult: VsiValidationResult,
+  mediaType: MediaType,
+  status: SegmentStatusValue,
+  manifest: C2paManifest | null,
+): Omit<SegmentRecord, 'arrivalIndex'> {
+  return {
+    segmentNumber: vsiResult.sequenceNumber,
+    mediaType,
+    sequenceNumber: vsiResult.sequenceNumber,
+    keyId: vsiResult.kidHex ?? UNKNOWN_KEY_ID,
+    hash: vsiResult.bmffHashHex ?? UNAVAILABLE_HASH,
+    status,
+    sequenceReason: vsiResult.sequenceReason ?? undefined,
+    timestamp: Date.now(),
+    validationResults: {
+      overall: vsiResult.overall,
+      errorCodes: asValidationErrorCodes(vsiResult.errorCodes),
+    },
+    manifest: manifest,
   };
 }
 
@@ -141,18 +174,16 @@ export class SegmentRouter {
       return;
     }
 
-    if (
-      chunk.segmentType !== 'MediaSegment' ||
-      !this.deps.supportedMediaTypes.includes(chunk.mediaInfo.type as MediaType)
-    ) {
+    const mediaType = chunk.mediaInfo.type;
+    if (chunk.segmentType !== 'MediaSegment' || !isMediaType(mediaType)) {
       return;
     }
 
-    await this.handleMediaSegment(chunk);
+    await this.handleMediaSegment(chunk, mediaType);
   }
 
   private async handleInitSegment(chunk: DashjsChunk): Promise<void> {
-    if (!this.deps.supportedMediaTypes.includes(chunk.mediaInfo?.type as MediaType)) return;
+    if (!chunk.mediaInfo?.type || !isMediaType(chunk.mediaInfo.type)) return;
 
     const bytes = toUint8Array(chunk.bytes);
     const result = await this.deps.initProcessor.process(bytes);
@@ -160,7 +191,7 @@ export class SegmentRouter {
     this.deps.eventBus.emit('initProcessed', result);
 
     if (result.success) {
-      this.deps.activeManifest.value =
+      this.deps.manifest.value =
         result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
@@ -168,8 +199,7 @@ export class SegmentRouter {
     }
   }
 
-  private async handleMediaSegment(chunk: DashjsChunk): Promise<void> {
-    const mediaType = chunk.mediaInfo.type as MediaType;
+  private async handleMediaSegment(chunk: DashjsChunk, mediaType: MediaType): Promise<void> {
     const streamKey = buildStreamKey(mediaType, chunk.representationId);
 
     // Copy bytes before queueMicrotask — dash.js transfers the underlying
@@ -231,13 +261,7 @@ export class SegmentRouter {
         this.deps.segmentStore.add(
           buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD),
         );
-        this.deps.eventBus.emit('segmentValidated', {
-          segmentNumber: segmentIndex,
-          status: SegmentStatus.AD,
-          hash: NO_DATA,
-          keyId: NO_DATA,
-          mediaType,
-        });
+        this.emitSegmentValidated(segmentIndex, SegmentStatus.AD, mediaType, NO_DATA, NO_DATA);
       } else {
         this.deps.logger.warn(
           `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
@@ -261,7 +285,12 @@ export class SegmentRouter {
       );
     }
 
-    const record = this.buildVsiSegmentRecord(vsiResult, mediaType, status);
+    const record = buildVsiSegmentRecord(
+      vsiResult,
+      mediaType,
+      status,
+      this.deps.manifest.value,
+    );
     const interval: [number, number] = [chunkStart, chunkEnd];
 
     this.storeAndIndexSegment(
@@ -276,15 +305,15 @@ export class SegmentRouter {
       this.deps.currentQuality[mediaType] = representationId ?? null;
     }
 
-    this.deps.eventBus.emit('segmentValidated', {
-      segmentNumber: vsiResult.sequenceNumber,
+    this.emitSegmentValidated(
+      vsiResult.sequenceNumber,
       status,
-      sequenceReason: vsiResult.sequenceReason ?? undefined,
-      hash: record.hash,
-      keyId: record.keyId,
       mediaType,
-      errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
-    });
+      record.hash,
+      record.keyId,
+      vsiResult.sequenceReason ?? undefined,
+      vsiResult.errorCodes,
+    );
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
@@ -310,13 +339,7 @@ export class SegmentRouter {
     if (result.manifest == null) {
       const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
       this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, status));
-      this.deps.eventBus.emit('segmentValidated', {
-        segmentNumber: segmentIndex,
-        status,
-        hash: NO_DATA,
-        keyId: NO_DATA,
-        mediaType,
-      });
+      this.emitSegmentValidated(segmentIndex, status, mediaType, NO_DATA, NO_DATA);
       return;
     }
 
@@ -343,8 +366,7 @@ export class SegmentRouter {
         timestamp: Date.now(),
         validationResults: {
           overall: result.isValid,
-          // CML returns string[] — cast to the known union of valid codes
-          errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
+          errorCodes: asValidationErrorCodes(result.errorCodes),
         },
         manifest: result.manifest,
         previousManifestId: result.previousManifestId,
@@ -354,37 +376,35 @@ export class SegmentRouter {
       { type: segmentType, manifest: result.manifest, interval, valid: result.isValid },
     );
 
-    this.deps.eventBus.emit('segmentValidated', {
-      segmentNumber: result.sequenceNumber,
+    this.emitSegmentValidated(
+      result.sequenceNumber,
       status,
-      hash,
-      keyId: UNAVAILABLE_HASH,
       mediaType,
-      errorCodes: result.errorCodes as ValidationErrorCode[] | undefined,
-    });
+      hash,
+      UNAVAILABLE_HASH,
+      undefined,
+      result.errorCodes,
+    );
   }
 
-  private buildVsiSegmentRecord(
-    vsiResult: VsiValidationResult,
-    mediaType: MediaType,
+  private emitSegmentValidated(
+    segmentNumber: number,
     status: SegmentStatusValue,
-  ): Omit<SegmentRecord, 'arrivalIndex'> {
-    return {
-      segmentNumber: vsiResult.sequenceNumber,
-      mediaType,
-      sequenceNumber: vsiResult.sequenceNumber,
-      keyId: vsiResult.kidHex ?? UNKNOWN_KEY_ID,
-      hash: vsiResult.bmffHashHex ?? UNAVAILABLE_HASH,
+    mediaType: MediaType,
+    hash: string,
+    keyId: string,
+    sequenceReason?: SequenceAnomalyReasonValue,
+    errorCodes?: readonly string[],
+  ): void {
+    this.deps.eventBus.emit('segmentValidated', {
+      segmentNumber,
       status,
-      sequenceReason: vsiResult.sequenceReason ?? undefined,
-      timestamp: Date.now(),
-      validationResults: {
-        overall: vsiResult.overall,
-        // CML returns string[] — cast to the known union of valid codes
-        errorCodes: vsiResult.errorCodes as ValidationErrorCode[] | undefined,
-      },
-      manifest: this.deps.activeManifest.value,
-    };
+      hash,
+      keyId,
+      mediaType,
+      sequenceReason,
+      errorCodes: asValidationErrorCodes(errorCodes),
+    });
   }
 
   private storeAndIndexSegment(
