@@ -1,5 +1,5 @@
 # Build stage — context is the monorepo root
-FROM node AS build
+FROM node:22-slim AS build
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY tsconfig.base.json ./
 
 # Copy signer package manifest and install dependencies
 COPY packages/signer/package*.json ./packages/signer/
-RUN npm install --workspace=@c2pa-live/signer
+RUN npm ci --workspace=@c2pa-live/signer --no-audit --no-fund
 
 # Copy signer source and compile
 COPY packages/signer/tsconfig.json ./packages/signer/
@@ -17,20 +17,15 @@ COPY packages/signer/src ./packages/signer/src
 RUN npm run build --workspace=@c2pa-live/signer
 
 
-FROM debian:sid AS production
+FROM node:22-slim AS production
 
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y curl gnupg nodejs npm && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 COPY --from=build /app/packages/signer/dist /app/dist
 COPY --from=build /app/packages/signer/package*.json /app/
-RUN npm install --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund
 
 COPY packages/signer/bin/c2patool /usr/local/bin/c2patool
 RUN chmod +x /usr/local/bin/c2patool

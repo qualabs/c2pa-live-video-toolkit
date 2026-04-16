@@ -15,6 +15,10 @@
     "typecheck": {},
     "format": {
       "inputs": ["src/**", "$TURBO_ROOT$/.prettierrc*"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "*.config.*"]
     }
   }
 }

@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 const app = express();
-const PORT = 8081;
+const DEFAULT_PORT = 8081;
+const PORT = parseInt(process.env.PORT ?? String(DEFAULT_PORT), 10);
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const staticFilesRoot =

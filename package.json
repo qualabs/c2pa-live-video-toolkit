@@ -13,7 +13,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "format": "turbo format"
+    "format": "turbo format",
+    "test": "turbo test"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
