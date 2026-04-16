@@ -1,6 +1,7 @@
 {
   "name": "@c2pa-live/signer",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "main": "dist/c2pa-live-worker.js",
   "scripts": {

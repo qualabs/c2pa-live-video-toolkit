@@ -3,6 +3,34 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Video.js UI components for C2PA validation: colored progress bar, content credentials menu, friction modal",
+  "license": "Apache-2.0",
+  "author": "Qualabs",
+  "contributors": [
+    "Nicolás Caballero <8515648+N1Knight@users.noreply.github.com>",
+    "Valentina Giusti <234478367+valentinamgiusti@users.noreply.github.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit.git",
+    "directory": "packages/videojs-ui"
+  },
+  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/videojs-ui",
+  "bugs": {
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit/issues"
+  },
+  "keywords": [
+    "c2pa",
+    "video.js",
+    "videojs",
+    "live-video",
+    "provenance",
+    "content-credentials",
+    "ui",
+    "player"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -25,7 +53,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "format": "prettier --write 'src/**/*.{ts,tsx}'"
+    "format": "prettier --write 'src/**/*.{ts,tsx}'",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "video.js": ">=7.0.0"

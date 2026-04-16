@@ -5,16 +5,27 @@ A collection of open-source tools for embedding and verifying [C2PA](https://c2p
 ## Architecture
 
 ```
+Server Pipeline:
 ┌─────────────┐    ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐
 │   streamer  │───▶│    signer   │───▶│ origin-server│───▶│  attack-proxy    │
 │  (FFmpeg)   │    │  (C2PA TS)  │    │  (static)    │    │  (DASH proxy)    │
-└─────────────┘    └─────────────┘    └──────────────┘    └──────────────────┘
-                                            ▲
-                                   ┌────────────────┐
-                                   │ manifest-server│
-                                   │   (Python)     │
-                                   └────────────────┘
+└─────────────┘    └─────────────┘    └──────────────┘    └────────┬─────────┘
+                                            ▲                      │
+                                   ┌────────────────┐              │
+                                   │ manifest-server│              │
+                                   │   (Python)     │              │
+                                   └────────────────┘              │
+                                                                   ▼
+Client (Browser):                                        ┌─────────────────┐
+┌────────────────────────────────────────────────────────│   DASH Player   │
+│                                                        └─────────────────┘
+│  dashjs-plugin ──validates via──▶ @svta/cml-c2pa ──results──▶ videojs-ui
+│  (intercepts segments)           (C2PA validator)       (timeline, menu,
+│                                                          friction modal)
+└───────────────────────────────────────────────────────────────────────────
 ```
+
+On the player side, [`@c2pa-live-toolkit/dashjs-plugin`](packages/dashjs-plugin) intercepts each downloaded DASH segment and validates its C2PA provenance using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator. The [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui) package then renders the validation results as colored timeline segments, a content credentials menu, and an optional friction modal.
 
 | Service | Package | Port | Description |
 |---|---|---|---|
@@ -29,7 +40,7 @@ DASH players point to `http://localhost:8083/stream_with_ad.mpd`.
 ## Prerequisites
 
 - Docker and Docker Compose v2
-- Node.js 18+ and npm 10+ (for local development only)
+- Node.js 22+ and npm 10+ (for local development only)
 
 ## Quickstart
 
@@ -87,11 +98,11 @@ See [packages/attack-proxy/README.md](packages/attack-proxy/README.md) for the f
 
 ### [`@c2pa-live-toolkit/dashjs-plugin`](packages/dashjs-plugin)
 
-Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded, supporting both ManifestBox (§19.3) and VSI (§19.4) methods.
+Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded, supporting both ManifestBox (§19.3) and VSI (§19.4) methods. Validation is powered by [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator.
 
 ### [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui)
 
-Video.js UI components for C2PA validation: colored progress bar showing segment status, content credentials menu, and friction modal for invalid streams.
+Video.js UI components for C2PA validation: colored progress bar showing segment status, content credentials menu, and friction modal for invalid streams. Consumes validation events from `dashjs-plugin`'s `C2paController` to visualize per-segment status in real time.
 
 ### [`@c2pa-live-toolkit/player-demo`](packages/player-demo)
 
@@ -126,6 +137,10 @@ Copy `.env.example` to `.env` before running. See `.env.example` for all availab
 | `C2PATOOL_PATH` | `/usr/local/bin/c2patool` | Path to c2patool binary |
 | `DEBUG` | `false` | Enable verbose logging |
 
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a pull request.
+
 ## License
 
-[LICENSE](LICENSE)
+This project is licensed under the [Apache License 2.0](LICENSE).

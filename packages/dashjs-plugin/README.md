@@ -1,6 +1,6 @@
 # @c2pa-live-toolkit/dashjs-plugin
 
-Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded using the [Common Media Library](https://github.com/streaming-video-technology-alliance/common-media-library) C2PA validator.
+Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the [SVTA Common Media Library](https://github.com/streaming-video-technology-alliance/common-media-library) C2PA validator.
 
 ## Installation
 
@@ -31,6 +31,10 @@ c2pa.on('segmentValidated', (e) => {
 
 player.initialize(videoElement, 'https://example.com/stream.mpd', true);
 ```
+
+## How It Works
+
+The plugin registers as a dash.js `SegmentResponseModifier`, intercepting every downloaded segment before it reaches the media buffer. Init segments are processed first to extract session keys (for the VSI method). Each subsequent media segment is then validated through `@svta/cml-c2pa`'s validation functions, which verify cryptographic signatures, check sequence continuity, and detect replay or reorder attacks. Results are emitted as typed events that any UI layer can consume.
 
 ## API
 
