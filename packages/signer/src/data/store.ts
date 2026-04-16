@@ -30,8 +30,6 @@ interface SegmentStore {
   manifestQueue: ManifestQueueItem[];
   manifestEnqueued: Set<string>;
   mpdPollingInterval: number;
-  // ManifestBox method: last signed manifest URN per representation (for previousManifestId chain)
-  previousManifestIds: Map<string, string>;
   // c2patool live-video-sign: path to the last signed segment per representation (for --previous-segment)
   previousSignedSegmentPaths: Map<string, string>;
 }
@@ -50,6 +48,5 @@ export const segmentStore: SegmentStore = {
   manifestQueue: [] as ManifestQueueItem[],
   manifestEnqueued: new Set<string>(),
   mpdPollingInterval: DEFAULT_MPD_POLLING_INTERVAL_MS,
-  previousManifestIds: new Map<string, string>(),
   previousSignedSegmentPaths: new Map<string, string>(),
 };

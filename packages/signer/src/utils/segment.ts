@@ -4,6 +4,24 @@ export function resolveInitKey(initPattern: string, representationId: string): s
   return initPattern.replace(REPRESENTATION_ID_PLACEHOLDER, representationId);
 }
 
+/**
+ * Resolves a segment pattern template into a concrete file key by replacing
+ * $RepresentationID$ and $Number%0Nd$ placeholders with actual values.
+ */
+export function resolveSegmentKey(
+  pattern: string,
+  representationId: string,
+  segmentNumber: number,
+): string {
+  return pattern
+    .replace(REPRESENTATION_ID_PLACEHOLDER, representationId)
+    .replace(/\$Number(?:%0(\d+)d)?\$/, (_: string, padding: string) =>
+      padding
+        ? String(segmentNumber).padStart(parseInt(padding, 10), '0')
+        : String(segmentNumber),
+    );
+}
+
 function escapePatternSpecialChars(pattern: string): string {
   return pattern.replace(/\./g, '\\.').replace(/-/g, '\\-').replace(/\//g, '\\/');
 }

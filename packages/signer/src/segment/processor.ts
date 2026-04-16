@@ -4,12 +4,11 @@ import { config } from '../config.js';
 import { createStorage } from '../services/storage/storageFactory.js';
 import { SegmentService } from '../services/segment.js';
 import { StreamStateService } from '../services/StreamStateService.js';
-import { extractSegmentInfo } from '../utils/segment.js';
+import { extractSegmentInfo, resolveInitKey } from '../utils/segment.js';
 import { streamToBuffer } from '../utils/stream.js';
 import { createSigningStrategy } from './signing/signingStrategyFactory.js';
 import type { SigningContext } from './signing/ISigningStrategy.js';
 import { TEMP_DIR } from '../constants.js';
-import { resolveInitKey } from '../utils/segment.js';
 import { logger } from '../utils/logger.js';
 
 const storage = createStorage();
