@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "packageManager": "npm@10.8.2",
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
   "workspaces": ["packages/*"],
   "scripts": {
     "build": "turbo build",

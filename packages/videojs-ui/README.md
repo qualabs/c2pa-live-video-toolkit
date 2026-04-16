@@ -14,17 +14,46 @@ video.js must be installed separately as a peer dependency:
 npm install video.js
 ```
 
+## Prerequisites
+
+This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('playbackStatus', handler)` and `off('playbackStatus', handler)` is compatible.
+
 ## Quick Start
 
 ```ts
 import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
 import '@c2pa-live-toolkit/videojs-ui/styles';
 
-// Assumes `videoPlayer` is a video.js Player and `c2paController` comes from dashjs-c2pa-plugin
+// c2paController comes from @c2pa-live-toolkit/dashjs-plugin
 const ui = C2paPlayerUI(videoPlayer, c2paController);
 
 // Later, when tearing down:
 ui.destroy();
+```
+
+## Full Integration Example
+
+```ts
+import dashjs from 'dashjs';
+import videojs from 'video.js';
+import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
+import '@c2pa-live-toolkit/videojs-ui/styles';
+
+// 1. Create players
+const dashPlayer = dashjs.MediaPlayer().create();
+const vjsPlayer = videojs('my-video');
+
+// 2. Attach C2PA validation (must be before dashPlayer.initialize)
+const c2pa = attachC2pa(dashPlayer);
+
+// 3. Initialize dash.js
+dashPlayer.initialize(document.querySelector('video'), 'stream.mpd', true);
+
+// 4. Wire up the UI
+vjsPlayer.ready(() => {
+  const ui = C2paPlayerUI(vjsPlayer, c2pa);
+});
 ```
 
 ## API

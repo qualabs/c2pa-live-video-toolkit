@@ -3,6 +3,34 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Framework-agnostic dash.js plugin for real-time C2PA segment validation",
+  "license": "Apache-2.0",
+  "author": "Qualabs",
+  "contributors": [
+    "Nicolás Caballero <8515648+N1Knight@users.noreply.github.com>",
+    "Valentina Giusti <234478367+valentinamgiusti@users.noreply.github.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit.git",
+    "directory": "packages/dashjs-plugin"
+  },
+  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/dashjs-plugin",
+  "bugs": {
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit/issues"
+  },
+  "keywords": [
+    "c2pa",
+    "dash",
+    "dashjs",
+    "live-video",
+    "provenance",
+    "content-credentials",
+    "validation",
+    "cml"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -22,7 +50,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write 'src/**/*.ts'",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@flatten-js/interval-tree": "^1.1.3",

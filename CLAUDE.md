@@ -81,7 +81,7 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 
 ## Docker
 
-All Dockerfiles use **monorepo root as build context**. Five services share a `stream-data` volume for segment exchange. The signer runs on `debian:sid` (needs c2patool binary); other Node services use `node:18-alpine`. The attack-proxy mounts Docker socket to restart the streamer container.
+All Dockerfiles use **monorepo root as build context**. Five services share a `stream-data` volume for segment exchange. The signer runs on `debian:sid` (needs c2patool binary); other Node services use `node:22-alpine`. The attack-proxy mounts Docker socket to restart the streamer container.
 
 ## Environment
 

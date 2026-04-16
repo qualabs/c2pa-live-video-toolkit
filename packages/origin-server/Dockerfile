@@ -14,7 +14,7 @@ COPY packages/origin-server/src ./packages/origin-server/src
 RUN npm run build --workspace=@c2pa-live/origin-server
 
 
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 ENV NODE_ENV=production
 
