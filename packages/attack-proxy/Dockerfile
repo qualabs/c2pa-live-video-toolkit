@@ -1,5 +1,5 @@
 # Build stage — context is the monorepo root
-FROM node AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY package*.json ./
 COPY tsconfig.base.json ./
 
 COPY packages/attack-proxy/package*.json ./packages/attack-proxy/
-RUN npm install --workspace=@c2pa-live/attack-proxy
+RUN npm ci --workspace=@c2pa-live/attack-proxy --no-audit --no-fund
 
 COPY packages/attack-proxy/tsconfig.json ./packages/attack-proxy/
 COPY packages/attack-proxy/src ./packages/attack-proxy/src
@@ -24,7 +24,7 @@ RUN apk add --no-cache docker-cli
 
 COPY --from=build /app/packages/attack-proxy/dist ./dist
 COPY --from=build /app/packages/attack-proxy/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund
 
 EXPOSE 8083
 
