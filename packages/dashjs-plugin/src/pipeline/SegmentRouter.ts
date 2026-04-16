@@ -18,6 +18,8 @@ import type {
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
   Logger,
+  MutableRef,
+  C2paManifest,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
@@ -41,7 +43,7 @@ type SegmentRouterDeps = {
   sessionKeyStore: SessionKeyStore;
   segmentStore: SegmentStore;
   timeIndex: TimeIntervalIndex;
-  activeManifest: { value: unknown };
+  manifest: MutableRef<C2paManifest | null>;
   currentQuality: Record<string, string | number | null>;
   supportedMediaTypes: MediaType[];
   logger: Logger;
@@ -129,7 +131,7 @@ function buildVsiSegmentRecord(
   vsiResult: VsiValidationResult,
   mediaType: MediaType,
   status: SegmentStatusValue,
-  activeManifest: unknown,
+  manifest: C2paManifest | null,
 ): Omit<SegmentRecord, 'arrivalIndex'> {
   return {
     segmentNumber: vsiResult.sequenceNumber,
@@ -144,7 +146,7 @@ function buildVsiSegmentRecord(
       overall: vsiResult.overall,
       errorCodes: asValidationErrorCodes(vsiResult.errorCodes),
     },
-    manifest: activeManifest,
+    manifest: manifest,
   };
 }
 
@@ -189,7 +191,7 @@ export class SegmentRouter {
     this.deps.eventBus.emit('initProcessed', result);
 
     if (result.success) {
-      this.deps.activeManifest.value =
+      this.deps.manifest.value =
         result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
@@ -287,7 +289,7 @@ export class SegmentRouter {
       vsiResult,
       mediaType,
       status,
-      this.deps.activeManifest.value,
+      this.deps.manifest.value,
     );
     const interval: [number, number] = [chunkStart, chunkEnd];
 

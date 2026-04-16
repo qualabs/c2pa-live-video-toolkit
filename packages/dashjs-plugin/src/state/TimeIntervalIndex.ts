@@ -1,14 +1,14 @@
 import IntervalTreeDefault from '@flatten-js/interval-tree';
+import type { C2paManifest } from '../types.js';
 
 // @flatten-js/interval-tree ships as CJS; double-cast via unknown for ESM interop
-
 const IntervalTreeConstructor = IntervalTreeDefault as unknown as new () => IntervalTreeApi;
 
 type TimeInterval = [number, number];
 
 type SegmentTimeEntry = {
   type: string;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   interval: TimeInterval;
   valid: boolean;
 };

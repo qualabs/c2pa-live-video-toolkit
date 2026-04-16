@@ -1,4 +1,14 @@
+import type { C2paManifest } from '@svta/cml-c2pa';
+
 export type MediaType = 'video' | 'audio';
+
+export type MutableRef<T> = { value: T };
+
+/**
+ * Re-export the CML manifest type so consumers don't need a direct CML dependency
+ * just to reference the manifest shape.
+ */
+export type { C2paManifest };
 
 // ── Validation error codes ──────────────────────────────────────────
 export const ValidationErrorCode = {
@@ -62,13 +72,13 @@ export type SegmentRecord = {
     overall: boolean;
     errorCodes?: readonly ValidationErrorCode[];
   };
-  manifest?: unknown;
+  manifest?: C2paManifest | null;
   previousManifestId?: string | null;
 };
 
 export type PlaybackStatusDetail = {
   verified: boolean | undefined;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   error: string | null;
 };
 
@@ -81,7 +91,7 @@ export type InitProcessedEvent = {
   success: boolean;
   sessionKeysCount: number;
   manifestId: string | undefined;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   errorCodes?: readonly ValidationErrorCode[];
   error?: string;
 };

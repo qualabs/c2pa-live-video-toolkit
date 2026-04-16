@@ -1,12 +1,12 @@
 import { validateC2paManifestBoxSegment } from '@svta/cml-c2pa';
-import type { ManifestBoxValidationState } from '@svta/cml-c2pa';
+import type { ManifestBoxValidationState, C2paManifest } from '@svta/cml-c2pa';
 import { ValidationErrorCode } from '../types.js';
 
 export type ManifestBoxValidationResult = {
   isValid: boolean;
   sequenceNumber: number;
   bmffHashHex: string | null;
-  manifest: unknown;
+  manifest: C2paManifest | null;
   issuer?: string | null;
   previousManifestId?: string | null;
   errorCodes?: readonly string[];

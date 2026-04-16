@@ -1,13 +1,13 @@
 import type { EventBus } from '../events/EventBus.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import type { MediaType, PlaybackStatus, PlaybackStatusDetail, Logger } from '../types.js';
+import type { MediaType, PlaybackStatus, PlaybackStatusDetail, Logger, MutableRef, C2paManifest } from '../types.js';
 import { PLAYBACK_SEARCH_WINDOW_SECONDS } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type PlaybackTrackerDeps = {
   eventBus: EventBus;
   timeIndex: TimeIntervalIndex;
-  activeManifest: { value: unknown };
+  manifest: MutableRef<C2paManifest | null>;
   currentQuality: Record<string, string | number | null>;
   supportedMediaTypes: MediaType[];
   logger: Logger;
@@ -15,18 +15,19 @@ type PlaybackTrackerDeps = {
 
 type SegmentSearchResult = {
   valid: boolean;
-  manifest: unknown;
+  manifest: C2paManifest | null;
 };
 
 type StoredSegment = { interval: [number, number] };
 
 function resolveDetailFromSegment(
-  segment: SegmentSearchResult,
-  activeManifest: unknown,
+  segmentManifest: C2paManifest | null,
+  manifest: C2paManifest | null,
+  isValid: boolean,
 ): PlaybackStatusDetail {
-  const manifest = segment.manifest ?? activeManifest;
+  const resolved = segmentManifest ?? manifest;
 
-  if (!manifest) {
+  if (!resolved) {
     return {
       verified: undefined,
       manifest: null,
@@ -35,9 +36,9 @@ function resolveDetailFromSegment(
   }
 
   return {
-    verified: segment.valid,
-    manifest,
-    error: segment.valid ? null : 'Manifest validation failed',
+    verified: isValid,
+    manifest: resolved,
+    error: isValid ? null : 'Manifest validation failed',
   };
 }
 
@@ -114,9 +115,11 @@ export class PlaybackTracker {
         continue;
       }
 
+      const segment = found[0] as SegmentSearchResult;
       const detail = resolveDetailFromSegment(
-        found[0] as SegmentSearchResult,
-        this.deps.activeManifest.value,
+        segment.manifest,
+        this.deps.manifest.value,
+        segment.valid,
       );
       details[mediaType] = detail;
       verified = combineVerificationResults(verified, detail.verified);

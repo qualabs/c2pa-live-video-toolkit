@@ -24,12 +24,12 @@ function makeEntry(valid: boolean, interval: [number, number]) {
 function buildTracker(timeIndex: TimeIntervalIndex, quality: string | null = 'rep1') {
   const eventBus = new EventBus();
   const currentQuality: Record<string, string | number | null> = { video: quality };
-  const activeManifest = { value: null as unknown };
+  const manifest = { value: null };
 
   const tracker = new PlaybackTracker({
     eventBus,
     timeIndex,
-    activeManifest,
+    manifest,
     currentQuality,
     supportedMediaTypes: ['video'],
     logger: SILENT_LOGGER,
