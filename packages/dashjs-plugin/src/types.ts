@@ -60,7 +60,6 @@ export type SegmentRecord = {
   sequenceReason?: SequenceAnomalyReasonValue;
   errorCodes?: readonly ValidationErrorCode[];
   timestamp: number;
-  arrivalIndex: number;
   manifest?: C2paManifest | null;
   previousManifestId?: string | null;
 };
@@ -90,7 +89,6 @@ export type C2paEventMap = {
   initProcessed: InitProcessedEvent;
   segmentsMissing: SegmentsMissingEvent;
   error: ErrorEvent;
-  reset: Record<string, never>;
 };
 
 export type C2paEventType = keyof C2paEventMap;
@@ -100,7 +98,6 @@ export const C2paEvent = {
   INIT_PROCESSED: 'initProcessed',
   SEGMENTS_MISSING: 'segmentsMissing',
   ERROR: 'error',
-  RESET: 'reset',
 } as const satisfies Record<string, C2paEventType>;
 
 export type Logger = {

@@ -45,7 +45,6 @@ export class C2paController {
       validator?.reset();
     }
     this.deps.manifest.value = null;
-    this.deps.eventBus.emit('reset', {});
   }
 
   detach(): void {

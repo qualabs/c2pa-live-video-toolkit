@@ -96,7 +96,7 @@ function buildUnverifiedRecord(
   mediaType: MediaType,
   status: SegmentStatusValue,
   sequenceReason?: SequenceAnomalyReasonValue,
-): Omit<SegmentRecord, 'arrivalIndex'> {
+): SegmentRecord {
   return {
     segmentNumber,
     mediaType,
@@ -113,7 +113,7 @@ function buildVsiSegmentRecord(
   mediaType: MediaType,
   status: SegmentStatusValue,
   manifest: C2paManifest | null,
-): Omit<SegmentRecord, 'arrivalIndex'> {
+): SegmentRecord {
   return {
     segmentNumber: vsiResult.sequenceNumber,
     mediaType,
@@ -140,7 +140,6 @@ function resolveSegmentStatus(
 
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
-  private arrivalCounter = 0;
   private readonly adSequenceNumbers = new Map<MediaType, Set<number>>();
   private readonly recordedMissingSequences = new Map<MediaType, Set<number>>();
 
@@ -163,7 +162,6 @@ export class SegmentRouter {
   }
 
   reset(): void {
-    this.arrivalCounter = 0;
     this.adSequenceNumbers.clear();
     this.recordedMissingSequences.clear();
   }
@@ -218,7 +216,7 @@ export class SegmentRouter {
       if (hasMdatContent(segmentBytes)) {
         this.trackAdSequence(mediaType, segmentIndex);
         this.emitSegmentValidated(
-          this.withArrivalIndex(buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD)),
+          (buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD)),
         );
       } else {
         this.deps.logger.warn(
@@ -243,7 +241,7 @@ export class SegmentRouter {
     }
 
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
-    this.emitSegmentValidated(this.withArrivalIndex(record));
+    this.emitSegmentValidated((record));
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
@@ -269,7 +267,7 @@ export class SegmentRouter {
       const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
       if (status === SegmentStatus.AD) this.trackAdSequence(mediaType, segmentIndex);
       this.emitSegmentValidated(
-        this.withArrivalIndex(buildUnverifiedRecord(segmentIndex, mediaType, status)),
+        (buildUnverifiedRecord(segmentIndex, mediaType, status)),
       );
       return;
     }
@@ -284,7 +282,7 @@ export class SegmentRouter {
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
     this.emitSegmentValidated(
-      this.withArrivalIndex({
+      ({
         segmentNumber: result.sequenceNumber,
         mediaType,
         keyId: null,
@@ -298,9 +296,6 @@ export class SegmentRouter {
     );
   }
 
-  private withArrivalIndex(record: Omit<SegmentRecord, 'arrivalIndex'>): SegmentRecord {
-    return { ...record, arrivalIndex: this.arrivalCounter++ };
-  }
 
   private emitSegmentValidated(record: SegmentRecord): void {
     this.deps.eventBus.emit('segmentValidated', record);

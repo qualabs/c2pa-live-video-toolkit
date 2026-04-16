@@ -9,8 +9,6 @@ export type {
 export type {
   C2paManifest,
   C2paOptions,
-  C2paEventMap,
-  C2paEventType,
   SegmentRecord,
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
