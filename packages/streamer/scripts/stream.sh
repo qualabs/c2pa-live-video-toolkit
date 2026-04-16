@@ -6,7 +6,7 @@ mkdir -p "$OUTPUT_DIR"
 
 echo "Starting DASH live stream (loop mode)..."
 
-#-g 96 -keyint_min 96 -sc_threshold 0 is to force keyfrsmes every 4 seconds  FPS is 24 so 2s=48, 4s =96, 6s=144, 8s=192, 10s=240
+# -g 96 -keyint_min 96 -sc_threshold 0 forces keyframes every 4 seconds (FPS=24: 2s=48, 4s=96, 6s=144, 8s=192, 10s=240)
 ffmpeg -loglevel warning -nostats \
   -stream_loop -1 -re -i "$INPUT_VIDEO" \
   -c:v libx264 -c:a aac \

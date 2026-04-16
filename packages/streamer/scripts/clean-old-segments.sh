@@ -2,7 +2,8 @@
 SCRIPT_DIR="$(dirname "$0")"
 . "$SCRIPT_DIR/config.sh"
 
-MAX_AGE=500
+# Maximum age of segment files in seconds before cleanup (default: ~8 minutes)
+MAX_AGE_SECONDS=500
 
 cleanup() {
   echo "Interrupted! Cleaning up and exiting..."
@@ -13,7 +14,7 @@ trap cleanup INT TERM
 
 while true; do
 
-  find "$OUTPUT_DIR" -type f \( -name "*.m4s" -o -name "*.mpd" \) -mmin +$((MAX_AGE / 60)) -exec rm -v {} \;
+  find "$OUTPUT_DIR" -type f \( -name "*.m4s" -o -name "*.mpd" \) -mmin +$((MAX_AGE_SECONDS / 60)) -exec rm -v {} \;
 
   sleep 10
 done
