@@ -31,7 +31,7 @@ function isUnverifiedSegment(segment: SegmentRecord): boolean {
 
 function resolveValidationBadge(segment: SegmentRecord): boolean {
   if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return true;
-  return segment.validationResults?.overall ?? false;
+  return segment.status === SegmentStatus.VALID;
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -126,7 +126,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
               const isValid = resolveValidationBadge(segment);
-              const isContinuityOk = !segment.validationResults?.errorCodes?.includes(
+              const isContinuityOk = !segment.errorCodes?.includes(
                 ValidationErrorCode.CONTINUITY_INVALID,
               );
 

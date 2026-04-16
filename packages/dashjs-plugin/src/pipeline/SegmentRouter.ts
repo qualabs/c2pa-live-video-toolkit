@@ -23,7 +23,6 @@ import type {
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
-type TimeIndexEntry = Parameters<TimeIntervalIndex['insert']>[2];
 
 type DashjsChunk = {
   segmentType: 'InitializationSegment' | 'MediaSegment';
@@ -142,10 +141,7 @@ function buildVsiSegmentRecord(
     status,
     sequenceReason: vsiResult.sequenceReason ?? undefined,
     timestamp: Date.now(),
-    validationResults: {
-      overall: vsiResult.overall,
-      errorCodes: asValidationErrorCodes(vsiResult.errorCodes),
-    },
+    errorCodes: asValidationErrorCodes(vsiResult.errorCodes),
     manifest: manifest,
   };
 }
@@ -258,10 +254,10 @@ export class SegmentRouter {
 
     if (!vsiResult) {
       if (hasMdatContent(segmentBytes)) {
-        this.deps.segmentStore.add(
+        const stored = this.deps.segmentStore.add(
           buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD),
         );
-        this.emitSegmentValidated(segmentIndex, SegmentStatus.AD, mediaType, NO_DATA, NO_DATA);
+        this.emitSegmentValidated(stored);
       } else {
         this.deps.logger.warn(
           `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
@@ -293,27 +289,19 @@ export class SegmentRouter {
     );
     const interval: [number, number] = [chunkStart, chunkEnd];
 
-    this.storeAndIndexSegment(
-      record,
-      streamKey,
+    const stored = this.deps.segmentStore.add(record, forceNewArrival);
+    this.deps.timeIndex.insert(streamKey, interval, {
+      type: segmentType,
+      manifest: null,
       interval,
-      { type: segmentType, manifest: null, interval, valid: vsiResult.overall },
-      forceNewArrival,
-    );
+      valid: vsiResult.overall,
+    });
 
     if (this.deps.currentQuality[mediaType] === null) {
       this.deps.currentQuality[mediaType] = representationId ?? null;
     }
 
-    this.emitSegmentValidated(
-      vsiResult.sequenceNumber,
-      status,
-      mediaType,
-      record.hash,
-      record.keyId,
-      vsiResult.sequenceReason ?? undefined,
-      vsiResult.errorCodes,
-    );
+    this.emitSegmentValidated(stored);
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
@@ -338,8 +326,8 @@ export class SegmentRouter {
 
     if (result.manifest == null) {
       const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
-      this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, status));
-      this.emitSegmentValidated(segmentIndex, status, mediaType, NO_DATA, NO_DATA);
+      const stored = this.deps.segmentStore.add(buildUnverifiedRecord(segmentIndex, mediaType, status));
+      this.emitSegmentValidated(stored);
       return;
     }
 
@@ -355,67 +343,30 @@ export class SegmentRouter {
     const hash = result.bmffHashHex ?? UNAVAILABLE_HASH;
     const interval: [number, number] = [chunkStart, chunkEnd];
 
-    this.storeAndIndexSegment(
-      {
-        segmentNumber: result.sequenceNumber,
-        mediaType,
-        sequenceNumber: result.sequenceNumber,
-        keyId: UNAVAILABLE_HASH,
-        hash,
-        status,
-        timestamp: Date.now(),
-        validationResults: {
-          overall: result.isValid,
-          errorCodes: asValidationErrorCodes(result.errorCodes),
-        },
-        manifest: result.manifest,
-        previousManifestId: result.previousManifestId,
-      },
-      streamKey,
-      interval,
-      { type: segmentType, manifest: result.manifest, interval, valid: result.isValid },
-    );
-
-    this.emitSegmentValidated(
-      result.sequenceNumber,
-      status,
+    const stored = this.deps.segmentStore.add({
+      segmentNumber: result.sequenceNumber,
       mediaType,
+      sequenceNumber: result.sequenceNumber,
+      keyId: UNAVAILABLE_HASH,
       hash,
-      UNAVAILABLE_HASH,
-      undefined,
-      result.errorCodes,
-    );
-  }
-
-  private emitSegmentValidated(
-    segmentNumber: number,
-    status: SegmentStatusValue,
-    mediaType: MediaType,
-    hash: string,
-    keyId: string,
-    sequenceReason?: SequenceAnomalyReasonValue,
-    errorCodes?: readonly string[],
-  ): void {
-    this.deps.eventBus.emit('segmentValidated', {
-      segmentNumber,
       status,
-      hash,
-      keyId,
-      mediaType,
-      sequenceReason,
-      errorCodes: asValidationErrorCodes(errorCodes),
+      timestamp: Date.now(),
+      errorCodes: asValidationErrorCodes(result.errorCodes),
+      manifest: result.manifest,
+      previousManifestId: result.previousManifestId,
     });
+    this.deps.timeIndex.insert(streamKey, interval, {
+      type: segmentType,
+      manifest: result.manifest,
+      interval,
+      valid: result.isValid,
+    });
+
+    this.emitSegmentValidated(stored);
   }
 
-  private storeAndIndexSegment(
-    record: Omit<SegmentRecord, 'arrivalIndex'>,
-    streamKey: string,
-    interval: [number, number],
-    indexEntry: TimeIndexEntry,
-    forceNewArrival = false,
-  ): void {
-    this.deps.segmentStore.add(record, forceNewArrival);
-    this.deps.timeIndex.insert(streamKey, interval, indexEntry);
+  private emitSegmentValidated(record: SegmentRecord): void {
+    this.deps.eventBus.emit('segmentValidated', record);
   }
 
   private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {

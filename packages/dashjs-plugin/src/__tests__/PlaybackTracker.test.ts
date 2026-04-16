@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { PlaybackTracker } from '../playback/PlaybackTracker.js';
 import { EventBus } from '../events/EventBus.js';
 import { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
+import { VerificationStatus } from '../types.js';
 import type { Logger, C2paManifest } from '../types.js';
 
 const SILENT_LOGGER: Logger = {
@@ -58,25 +59,25 @@ describe('PlaybackTracker', () => {
   });
 
   describe('queryStatusAtTime', () => {
-    it('returns verified=true when the segment at the given time is valid', () => {
+    it('returns verified="verified" when the segment at the given time is valid', () => {
       const timeIndex = new TimeIntervalIndex();
       timeIndex.insert('video-rep1', [0, 2], makeEntry(true, [0, 2]));
       const { tracker } = buildTracker(timeIndex);
-      expect(tracker.queryStatusAtTime(1).verified).toBe(true);
+      expect(tracker.queryStatusAtTime(1).verified).toBe(VerificationStatus.VERIFIED);
     });
 
-    it('returns verified=false when the segment at the given time is invalid', () => {
+    it('returns verified="invalid" when the segment at the given time is invalid', () => {
       const timeIndex = new TimeIntervalIndex();
       timeIndex.insert('video-rep1', [0, 2], makeEntry(false, [0, 2]));
       const { tracker } = buildTracker(timeIndex);
-      expect(tracker.queryStatusAtTime(1).verified).toBe(false);
+      expect(tracker.queryStatusAtTime(1).verified).toBe(VerificationStatus.INVALID);
     });
 
-    it('returns verified=undefined when no segment is found at the given time', () => {
+    it('returns verified="inconclusive" when no segment is found at the given time', () => {
       const timeIndex = new TimeIntervalIndex();
       timeIndex.insert('video-rep1', [10, 20], makeEntry(true, [10, 20]));
       const { tracker } = buildTracker(timeIndex);
-      expect(tracker.queryStatusAtTime(1).verified).toBeUndefined();
+      expect(tracker.queryStatusAtTime(1).verified).toBe(VerificationStatus.INCONCLUSIVE);
     });
 
     it('uses the segment manifest when present', () => {
@@ -108,10 +109,10 @@ describe('PlaybackTracker', () => {
 
       const status = tracker.queryStatusAtTime(1);
       expect(status.details.video?.manifest).toBe(streamManifest);
-      expect(status.details.video?.verified).toBe(true);
+      expect(status.details.video?.verified).toBe(VerificationStatus.VERIFIED);
     });
 
-    it('returns verified=undefined when neither segment nor stream has a manifest', () => {
+    it('returns verified="inconclusive" when neither segment nor stream has a manifest', () => {
       const timeIndex = new TimeIntervalIndex();
       timeIndex.insert('video-rep1', [0, 2], {
         type: 'MediaSegment',
@@ -123,7 +124,7 @@ describe('PlaybackTracker', () => {
 
       const status = tracker.queryStatusAtTime(1);
       expect(status.details.video?.manifest).toBeNull();
-      expect(status.details.video?.verified).toBeUndefined();
+      expect(status.details.video?.verified).toBe(VerificationStatus.INCONCLUSIVE);
     });
 
     it('skips a media type when its quality is null', () => {
@@ -131,7 +132,7 @@ describe('PlaybackTracker', () => {
       const { tracker } = buildTracker(timeIndex, null);
       // With quality=null the tracker skips the stream; no lookup occurs
       const status = tracker.queryStatusAtTime(1);
-      expect(status.verified).toBeUndefined();
+      expect(status.verified).toBe(VerificationStatus.INCONCLUSIVE);
       expect(status.details).toEqual({});
     });
   });

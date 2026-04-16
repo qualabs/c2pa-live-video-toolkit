@@ -20,12 +20,12 @@ npm install dashjs
 
 ```ts
 import dashjs from 'dashjs';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 
 const player = dashjs.MediaPlayer().create();
 const c2pa = attachC2pa(player);
 
-c2pa.on('segmentValidated', (e) => {
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => {
   console.log(`Segment ${e.segmentNumber}: ${e.status}`);
 });
 
@@ -65,17 +65,13 @@ type C2paOptions = {
 #### Event methods
 
 ```ts
-c2pa.on('segmentValidated', (e) => { ... });
-c2pa.once('initProcessed', (e) => { ... });
-c2pa.off('segmentValidated', handler);
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => { ... });
+c2pa.once(C2paEvent.INIT_PROCESSED, (e) => { ... });
+c2pa.off(C2paEvent.SEGMENT_VALIDATED, handler);
 ```
 
 #### Query methods
 
-```ts
-const segments = c2pa.getSegments();         // All validated SegmentRecord[]
-const unsubscribe = c2pa.subscribeToSegments((segments) => { ... });
-```
 
 #### Lifecycle methods
 
@@ -91,14 +87,19 @@ c2pa.detach();   // Full cleanup — removes all listeners and disables validati
 Fired after each media segment is validated.
 
 ```ts
-type SegmentValidatedEvent = {
+type SegmentRecord = {
   segmentNumber: number;
-  status: 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
-  sequenceReason?: 'duplicate' | 'out_of_order' | 'gap_detected' | 'sequence_number_below_minimum';
-  hash: string;
+  mediaType: MediaType;
+  sequenceNumber: number;
   keyId: string;
-  mediaType: 'video' | 'audio';
-  errorCodes?: readonly string[];
+  hash: string;
+  status: SegmentStatusValue;
+  sequenceReason?: SequenceAnomalyReasonValue;
+  timestamp: number;
+  arrivalIndex: number;
+  errorCodes?: readonly ValidationErrorCode[];
+  manifest?: C2paManifest | null;
+  previousManifestId?: string | null;
 };
 ```
 
@@ -122,11 +123,14 @@ Fired on each `PLAYBACK_TIME_UPDATED` event from dash.js.
 
 ```ts
 type PlaybackStatus = {
-  verified: boolean | undefined;  // undefined means inconclusive
-  details: {
-    video?: { verified: boolean | undefined; manifest: unknown; error: string | null };
-    audio?: { verified: boolean | undefined; manifest: unknown; error: string | null };
-  };
+  verified: VerificationStatus;
+  details: Partial<Record<MediaType, PlaybackStatusDetail>>;
+};
+
+type PlaybackStatusDetail = {
+  verified: VerificationStatus;
+  manifest: C2paManifest | null;
+  error: PlaybackDiagnosticValue | null;
 };
 ```
 
@@ -170,9 +174,9 @@ const c2paPlayer2 = attachC2pa(player2);
 ## Error Codes
 
 ```ts
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 
-c2pa.on('segmentValidated', (e) => {
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => {
   for (const code of e.errorCodes ?? []) {
     console.error(ERROR_CODE_MESSAGES[code] ?? code);
   }

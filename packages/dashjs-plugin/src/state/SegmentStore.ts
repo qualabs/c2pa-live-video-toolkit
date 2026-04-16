@@ -1,9 +1,6 @@
 import { SegmentStatus } from '../types.js';
 import type { SegmentRecord, SegmentStatusValue } from '../types.js';
 
-type Unsubscribe = () => void;
-type StoreListener = (segments: SegmentRecord[]) => void;
-
 const SEQUENCE_ANOMALY_STATUSES: SegmentStatusValue[] = [
   SegmentStatus.REPLAYED,
   SegmentStatus.REORDERED,
@@ -28,7 +25,6 @@ function isSameSegment(existing: SegmentRecord, incoming: SegmentRecord): boolea
 
 export class SegmentStore {
   private segments: SegmentRecord[] = [];
-  private listeners: StoreListener[] = [];
   private arrivalCounter = 0;
   private readonly maxStoredSegments: number;
 
@@ -36,29 +32,33 @@ export class SegmentStore {
     this.maxStoredSegments = maxStoredSegments;
   }
 
-  add(segment: Omit<SegmentRecord, 'arrivalIndex'>, forceNewArrival = false): void {
+  add(segment: Omit<SegmentRecord, 'arrivalIndex'>, forceNewArrival = false): SegmentRecord {
     const existingIndex = this.segments.findIndex((s) =>
       isSameSegment(s, segment as SegmentRecord),
     );
 
+    let stored: SegmentRecord;
     if (existingIndex !== -1 && forceNewArrival) {
-      this.segments.push({ ...segment, arrivalIndex: this.arrivalCounter++ });
+      stored = { ...segment, arrivalIndex: this.arrivalCounter++ };
+      this.segments.push(stored);
     } else if (existingIndex !== -1) {
       const existing = this.segments[existingIndex];
       const preserveStatus = isSequenceAnomaly(existing.status);
-      this.segments[existingIndex] = {
+      stored = {
         ...existing,
         ...segment,
         arrivalIndex: existing.arrivalIndex,
         status: preserveStatus ? existing.status : segment.status,
         sequenceReason: existing.sequenceReason ?? segment.sequenceReason,
       };
+      this.segments[existingIndex] = stored;
     } else {
-      this.segments.push({ ...segment, arrivalIndex: this.arrivalCounter++ });
+      stored = { ...segment, arrivalIndex: this.arrivalCounter++ };
+      this.segments.push(stored);
     }
 
     this.pruneIfNeeded();
-    this.notify();
+    return stored;
   }
 
   getAll(): SegmentRecord[] {
@@ -69,28 +69,14 @@ export class SegmentStore {
     return this.segments.at(-1);
   }
 
-  subscribe(listener: StoreListener): Unsubscribe {
-    this.listeners.push(listener);
-    listener([...this.segments]);
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
-    };
-  }
-
   clear(): void {
     this.segments = [];
     this.arrivalCounter = 0;
-    this.notify();
   }
 
   private pruneIfNeeded(): void {
     if (this.segments.length > this.maxStoredSegments) {
       this.segments = this.segments.slice(-this.maxStoredSegments);
     }
-  }
-
-  private notify(): void {
-    const snapshot = [...this.segments];
-    this.listeners.forEach((listener) => listener(snapshot));
   }
 }

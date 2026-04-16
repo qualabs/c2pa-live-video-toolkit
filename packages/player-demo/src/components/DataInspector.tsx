@@ -137,7 +137,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
     );
   }
 
-  const errorCodes = (segment.validationResults?.errorCodes ?? []) as string[];
+  const errorCodes = (segment.errorCodes ?? []) as string[];
   const info = buildStatusInfo(segment.status, errorCodes, segment);
   const displayData = convertBuffersToHex({
     segmentNumber: segment.segmentNumber,
@@ -147,7 +147,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
     hash: segment.hash,
     status: segment.status,
     sequenceReason: segment.sequenceReason,
-    validationResults: segment.validationResults,
+    errorCodes: segment.errorCodes,
   });
 
   return (

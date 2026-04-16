@@ -5,7 +5,7 @@ import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
 import type { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
 import type { PlaybackTracker } from './playback/PlaybackTracker.js';
-import type { C2paEventMap, C2paEventType, SegmentRecord, PlaybackStatus, MutableRef, C2paManifest } from './types.js';
+import type { C2paEventMap, C2paEventType, PlaybackStatus, MutableRef, C2paManifest } from './types.js';
 
 type C2paControllerDeps = {
   eventBus: EventBus;
@@ -40,14 +40,6 @@ export class C2paController {
   off<T extends C2paEventType>(event: T, listener: (payload: C2paEventMap[T]) => void): this {
     this.deps.eventBus.off(event, listener);
     return this;
-  }
-
-  getSegments(): SegmentRecord[] {
-    return this.deps.segmentStore.getAll();
-  }
-
-  subscribeToSegments(listener: (segments: SegmentRecord[]) => void): () => void {
-    return this.deps.segmentStore.subscribe(listener);
   }
 
   getStatusAtTime(time: number): PlaybackStatus {

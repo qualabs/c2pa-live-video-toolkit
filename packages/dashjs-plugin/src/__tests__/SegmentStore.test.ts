@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { SegmentStore } from '../state/SegmentStore.js';
 import { SequenceAnomalyReason } from '../types.js';
 import type { SegmentRecord } from '../types.js';
@@ -101,36 +101,6 @@ describe('SegmentStore', () => {
     });
   });
 
-  describe('subscribe', () => {
-    it('fires immediately with the current snapshot on subscription', () => {
-      const store = new SegmentStore(100);
-      store.add(makeSegment({ segmentNumber: 1 }));
-      const listener = vi.fn();
-      store.subscribe(listener);
-      expect(listener).toHaveBeenCalledOnce();
-      expect(listener.mock.calls[0][0]).toHaveLength(1);
-    });
-
-    it('fires on every subsequent add', () => {
-      const store = new SegmentStore(100);
-      const listener = vi.fn();
-      store.subscribe(listener);
-      store.add(makeSegment({ segmentNumber: 1 }));
-      store.add(makeSegment({ segmentNumber: 2, hash: 'h2' }));
-      // 1 initial + 2 adds = 3 total calls
-      expect(listener).toHaveBeenCalledTimes(3);
-    });
-
-    it('stops firing after the returned unsubscribe function is called', () => {
-      const store = new SegmentStore(100);
-      const listener = vi.fn();
-      const unsubscribe = store.subscribe(listener);
-      unsubscribe();
-      store.add(makeSegment());
-      expect(listener).toHaveBeenCalledOnce(); // only the initial call
-    });
-  });
-
   describe('clear', () => {
     it('empties the store and resets the arrivalIndex counter', () => {
       const store = new SegmentStore(100);
@@ -141,12 +111,5 @@ describe('SegmentStore', () => {
       expect(store.getAll()[0].arrivalIndex).toBe(0);
     });
 
-    it('notifies subscribers when cleared', () => {
-      const store = new SegmentStore(100);
-      const listener = vi.fn();
-      store.subscribe(listener);
-      store.clear();
-      expect(listener).toHaveBeenCalledTimes(2); // initial + clear
-    });
   });
 });

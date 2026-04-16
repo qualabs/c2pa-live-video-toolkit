@@ -1,6 +1,6 @@
 export { attachC2pa } from './attachC2pa.js';
 export { C2paController } from './C2paController.js';
-export { ValidationErrorCode, ERROR_CODE_MESSAGES, SegmentStatus, SequenceAnomalyReason } from './types.js';
+export { ValidationErrorCode, ERROR_CODE_MESSAGES, SegmentStatus, SequenceAnomalyReason, C2paEvent, PlaybackDiagnostic, VerificationStatus } from './types.js';
 
 export type {
   DashjsPlayer,
@@ -19,8 +19,9 @@ export type {
   MutableRef,
   PlaybackStatus,
   PlaybackStatusDetail,
+  PlaybackDiagnosticValue,
+  VerificationStatusValue,
   InitProcessedEvent,
-  SegmentValidatedEvent,
   SegmentsMissingEvent,
   ErrorEvent,
   Logger,

@@ -1,7 +1,7 @@
 import type { EventBus } from '../events/EventBus.js';
 import type { TimeIntervalIndex } from '../state/TimeIntervalIndex.js';
-import type { MediaType, PlaybackStatus, PlaybackStatusDetail, Logger, MutableRef, C2paManifest } from '../types.js';
-import { PLAYBACK_SEARCH_WINDOW_SECONDS } from '../types.js';
+import type { MediaType, PlaybackStatus, PlaybackStatusDetail, VerificationStatusValue, Logger, MutableRef, C2paManifest } from '../types.js';
+import { PLAYBACK_SEARCH_WINDOW_SECONDS, PlaybackDiagnostic, VerificationStatus } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
 type PlaybackTrackerDeps = {
@@ -28,17 +28,13 @@ function resolveDetailFromSegment(
   const resolved = segmentManifest ?? manifest;
 
   if (!resolved) {
-    return {
-      verified: undefined,
-      manifest: null,
-      error: 'No manifest available',
-    };
+    return { verified: VerificationStatus.INCONCLUSIVE, manifest: null, error: PlaybackDiagnostic.NO_MANIFEST };
   }
 
   return {
-    verified: isValid,
+    verified: isValid ? VerificationStatus.VERIFIED : VerificationStatus.INVALID,
     manifest: resolved,
-    error: isValid ? null : 'Manifest validation failed',
+    error: isValid ? null : PlaybackDiagnostic.VALIDATION_FAILED,
   };
 }
 
@@ -49,12 +45,12 @@ function resolveDetailFromSegment(
  * - undefined propagates only when nothing definitive is known yet
  */
 function combineVerificationResults(
-  current: boolean | undefined,
-  incoming: boolean | undefined,
-): boolean | undefined {
-  if (incoming === false) return false;
-  if (incoming === true && current !== false) return true;
-  return current === false ? false : undefined;
+  current: VerificationStatusValue,
+  incoming: VerificationStatusValue,
+): VerificationStatusValue {
+  if (incoming === VerificationStatus.INVALID) return VerificationStatus.INVALID;
+  if (incoming === VerificationStatus.VERIFIED && current !== VerificationStatus.INVALID) return VerificationStatus.VERIFIED;
+  return current === VerificationStatus.INVALID ? VerificationStatus.INVALID : VerificationStatus.INCONCLUSIVE;
 }
 
 export class PlaybackTracker {
@@ -79,7 +75,7 @@ export class PlaybackTracker {
       currentTime + PLAYBACK_SEARCH_WINDOW_SECONDS,
     ];
 
-    let verified: boolean | undefined = undefined;
+    let verified: VerificationStatusValue = VerificationStatus.INCONCLUSIVE;
     const details: Partial<Record<MediaType, PlaybackStatusDetail>> = {};
     let isInconclusive = false;
 
@@ -96,21 +92,13 @@ export class PlaybackTracker {
       const found = this.deps.timeIndex.search(streamKey, searchInterval);
 
       if (found.length === 0) {
-        details[mediaType] = {
-          verified: undefined,
-          manifest: null,
-          error: `No segment found for media type ${mediaType}`,
-        };
+        details[mediaType] = { verified: VerificationStatus.INCONCLUSIVE, manifest: null, error: PlaybackDiagnostic.NO_SEGMENT_FOUND };
         isInconclusive = true;
         continue;
       }
 
       if (this.hasOverlappingIntervals(found)) {
-        details[mediaType] = {
-          verified: undefined,
-          manifest: null,
-          error: `Ambiguous: ${found.length} overlapping segments for ${mediaType}`,
-        };
+        details[mediaType] = { verified: VerificationStatus.INCONCLUSIVE, manifest: null, error: PlaybackDiagnostic.AMBIGUOUS_SEGMENTS };
         isInconclusive = true;
         continue;
       }
@@ -125,10 +113,7 @@ export class PlaybackTracker {
       verified = combineVerificationResults(verified, detail.verified);
     }
 
-    return {
-      verified: isInconclusive ? undefined : verified,
-      details,
-    };
+    return { verified: isInconclusive ? VerificationStatus.INCONCLUSIVE : verified, details };
   }
 
   private hasOverlappingIntervals(segments: StoredSegment[]): boolean {
