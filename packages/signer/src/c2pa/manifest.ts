@@ -5,32 +5,32 @@ import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { getPrivateKeyPath, getCertPath } from '../credentials.js';
 
-interface C2paAction {
+export interface C2paAction {
   action?: string;
   parameters?: Record<string, unknown>;
 }
 
-interface C2paAssertionData {
+export interface C2paAssertionData {
   actions?: C2paAction[];
   [key: string]: unknown;
 }
 
-interface C2paAssertion {
+export interface C2paAssertion {
   label?: string;
   data?: C2paAssertionData;
 }
 
-interface C2paManifest {
+export interface C2paManifest {
   assertions?: C2paAssertion[];
   private_key?: string;
   sign_cert?: string;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function parseManifest(text: string): C2paManifest {
+export function parseManifest(text: string): C2paManifest {
   const parsed = JSON.parse(text) as unknown;
   if (!isObject(parsed)) {
     throw new Error('Manifest must be a JSON object');
@@ -44,7 +44,7 @@ function parseManifest(text: string): C2paManifest {
   return manifest;
 }
 
-function injectStreamId(manifest: C2paManifest, streamId: string): void {
+export function injectStreamId(manifest: C2paManifest, streamId: string): void {
   const segment = manifest.assertions?.find((a) => a?.label === 'c2pa.livevideo.segment');
   if (segment?.data && isObject(segment.data)) {
     segment.data['streamId'] = streamId;
