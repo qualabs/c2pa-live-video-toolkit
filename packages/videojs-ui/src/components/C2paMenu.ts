@@ -6,9 +6,8 @@ import type {
   VjsMenuButtonPrototype,
   PlaybackStatus,
 } from '../types.js';
-import { extractActiveManifest } from '../ManifestNormalizer.js';
-import { CREATIVE_WORK_ASSERTION_LABEL, VALIDATION_STATUS_VALUES } from '../types.js';
-import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
+import { VALIDATION_STATUS_VALUES } from '../types.js';
+import { extractMenuValue, renderMenuItemHtml, MenuItemKey } from './MenuValueExtractor.js';
 
 /**
  * video.js MenuButton internals not exposed in public typings.
@@ -34,19 +33,6 @@ interface MenuItemInternals extends VjsComponent {
 const MENU_BUTTON_COMPONENT_NAME = 'C2PAMenuButton';
 const CONTROL_TEXT = 'Content Credentials';
 const TWENTY_MINUTES_IN_SECONDS = 20 * 60;
-// Values longer than this are truncated in the menu to prevent layout overflow
-const LONG_VALUE_CHARACTER_THRESHOLD = 23;
-
-type MenuItemKey =
-  | 'SIG_ISSUER'
-  | 'DATE'
-  | 'CLAIM_GENERATOR'
-  | 'NAME'
-  | 'LOCATION'
-  | 'WEBSITE'
-  | 'SOCIAL'
-  | 'VALIDATION_STATUS'
-  | 'ALERT';
 
 const MENU_ITEM_LABELS: Record<MenuItemKey, string> = {
   SIG_ISSUER: 'Issued by',
@@ -175,7 +161,7 @@ export function updateMenuItems(
   const compromisedRegions = filterRecentCompromisedRegions(
     getCompromisedRegions(),
     isMonolithic,
-    videoPlayer,
+    videoPlayer.currentTime(),
   );
 
   for (const item of items) {
@@ -200,14 +186,13 @@ export function updateMenuItems(
 
 // --- Private helpers ---
 
-function filterRecentCompromisedRegions(
+export function filterRecentCompromisedRegions(
   allRegions: string[],
   isMonolithic: boolean,
-  videoPlayer: VideoJsPlayer,
+  currentTime: number,
 ): string[] {
   if (isMonolithic) return allRegions;
 
-  const currentTime = videoPlayer.currentTime();
   const cutoffTime = Math.max(0, currentTime - TWENTY_MINUTES_IN_SECONDS);
 
   return allRegions.filter((region) => {
@@ -215,88 +200,4 @@ function filterRecentCompromisedRegions(
     const [minutes, seconds] = startStr.split(':').map(Number);
     return minutes * 60 + seconds >= cutoffTime;
   });
-}
-
-function extractMenuValue(
-  key: MenuItemKey,
-  status: PlaybackStatus,
-  compromisedRegions: string[],
-): string | string[] | null {
-  const activeManifest = extractActiveManifest(status);
-  const sigInfo = activeManifest?.signatureInfo;
-
-  switch (key) {
-    case 'SIG_ISSUER':
-      return sigInfo?.issuer ?? null;
-
-    case 'DATE': {
-      const timeValue = sigInfo?.time ?? sigInfo?.certNotBefore;
-      if (!timeValue) return null;
-      return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-      }).format(new Date(timeValue));
-    }
-
-    case 'CLAIM_GENERATOR':
-      return activeManifest?.claimGenerator ?? null;
-
-    case 'NAME': {
-      const cw = activeManifest?.assertions?.find(
-        (a) => a.label === CREATIVE_WORK_ASSERTION_LABEL,
-      );
-      const authors = cw?.data?.author as Array<{ name?: string }> | undefined;
-      return authors?.[0]?.name ?? null;
-    }
-
-    case 'VALIDATION_STATUS':
-      return resolveValidationStatusLabel(status.verified);
-
-    case 'ALERT':
-      return buildAlertMessage(compromisedRegions);
-
-    default:
-      return null;
-  }
-}
-
-function resolveValidationStatusLabel(verified: boolean | undefined): string {
-  if (verified === true) return VALIDATION_STATUS_VALUES.PASSED;
-  if (verified === false) return VALIDATION_STATUS_VALUES.FAILED;
-  return VALIDATION_STATUS_VALUES.UNKNOWN;
-}
-
-function buildAlertMessage(compromisedRegions: string[]): string | null {
-  if (compromisedRegions.length === 0) return null;
-  return `The segment between ${compromisedRegions.join(', ')} may have been tampered with`;
-}
-
-function renderMenuItemHtml(key: MenuItemKey, label: string, value: string | string[]): string {
-  if (key === 'SOCIAL' && Array.isArray(value)) {
-    const links = value.map((url) => {
-      const name = providerInfoFromSocialUrl(url).name;
-      return `<span><a class="url" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></span>`;
-    });
-    return `<span class="itemName">${label}</span> ${links.join('\n')}`;
-  }
-
-  if (key === 'WEBSITE' && typeof value === 'string') {
-    return `<div class="itemName">${label}</div><a class="url" href="${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
-  }
-
-  if (key === 'ALERT' && typeof value === 'string') {
-    return `<div class="alert-div"><img class="alert-icon" alt="alert"><div class="alert-content-scrollable">${value}</div></div>`;
-  }
-
-  if (key === 'VALIDATION_STATUS' && value === VALIDATION_STATUS_VALUES.FAILED) {
-    return `<span class="itemName nextLine">${label}</span>`;
-  }
-
-  const displayValue = Array.isArray(value) ? value.join(', ') : value;
-  if (displayValue.length >= LONG_VALUE_CHARACTER_THRESHOLD) {
-    return `<div class="itemName">${label}</div>${displayValue}`;
-  }
-
-  return `<span class="itemName">${label}</span> ${displayValue}`;
 }
