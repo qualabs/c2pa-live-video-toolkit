@@ -67,29 +67,6 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
-const BOX_HEADER_SIZE = 8;
-
-/** Returns true if the segment contains an mdat box with at least 1 byte of payload. */
-function hasMdatContent(bytes: Uint8Array): boolean {
-  let offset = 0;
-  while (offset + BOX_HEADER_SIZE <= bytes.length) {
-    const size =
-      (bytes[offset] << 24) |
-      (bytes[offset + 1] << 16) |
-      (bytes[offset + 2] << 8) |
-      bytes[offset + 3];
-    const type = String.fromCharCode(
-      bytes[offset + 4],
-      bytes[offset + 5],
-      bytes[offset + 6],
-      bytes[offset + 7],
-    );
-    if (size < BOX_HEADER_SIZE) break;
-    if (type === 'mdat') return size > BOX_HEADER_SIZE;
-    offset += size;
-  }
-  return false;
-}
 
 function buildUnverifiedRecord(
   segmentNumber: number,
@@ -140,7 +117,6 @@ function resolveSegmentStatus(
 
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
-  private readonly adSequenceNumbers = new Map<MediaType, Set<number>>();
   private readonly recordedMissingSequences = new Map<MediaType, Set<number>>();
 
   constructor(deps: SegmentRouterDeps) {
@@ -162,7 +138,6 @@ export class SegmentRouter {
   }
 
   reset(): void {
-    this.adSequenceNumbers.clear();
     this.recordedMissingSequences.clear();
   }
 
@@ -213,16 +188,9 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      if (hasMdatContent(segmentBytes)) {
-        this.trackAdSequence(mediaType, segmentIndex);
-        this.emitSegmentValidated(
-          (buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.AD)),
-        );
-      } else {
-        this.deps.logger.warn(
-          `[SegmentRouter] No C2PA EMSG box in segment at index ${segmentIndex}`,
-        );
-      }
+      this.emitSegmentValidated(
+        buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.UNVERIFIED),
+      );
       return;
     }
 
@@ -264,10 +232,8 @@ export class SegmentRouter {
     }
 
     if (result.manifest == null) {
-      const status = hasMdatContent(segmentBytes) ? SegmentStatus.AD : SegmentStatus.MISSING;
-      if (status === SegmentStatus.AD) this.trackAdSequence(mediaType, segmentIndex);
       this.emitSegmentValidated(
-        (buildUnverifiedRecord(segmentIndex, mediaType, status)),
+        buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.UNVERIFIED),
       );
       return;
     }
@@ -301,19 +267,7 @@ export class SegmentRouter {
     this.deps.eventBus.emit('segmentValidated', record);
   }
 
-  private trackAdSequence(mediaType: MediaType, sequenceNumber: number): void {
-    const set = this.adSequenceNumbers.get(mediaType) ?? new Set<number>();
-    set.add(sequenceNumber);
-    this.adSequenceNumbers.set(mediaType, set);
-  }
-
   private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
-    const adNumbers = this.adSequenceNumbers.get(mediaType) ?? new Set<number>();
-    const isAdGap = Array.from({ length: to - from + 1 }, (_, i) => from + i).some((n) =>
-      adNumbers.has(n),
-    );
-    if (isAdGap) return;
-
     const recorded = this.recordedMissingSequences.get(mediaType) ?? new Set<number>();
     let missingCount = 0;
     for (let n = from; n <= to; n++) {

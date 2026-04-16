@@ -36,7 +36,7 @@ export const SegmentStatus = {
   REORDERED: 'reordered',
   MISSING: 'missing',
   WARNING: 'warning',
-  AD: 'ad',
+  UNVERIFIED: 'unverified',
 } as const;
 
 export type SegmentStatusValue = (typeof SegmentStatus)[keyof typeof SegmentStatus];

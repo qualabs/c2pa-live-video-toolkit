@@ -15,8 +15,8 @@ export function statusIcon(status: SegmentStatusValue): string {
       return '✗';
     case SegmentStatus.WARNING:
       return '⚠';
-    case SegmentStatus.AD:
-      return '▶';
+    case SegmentStatus.UNVERIFIED:
+      return '—';
   }
 }
 
@@ -34,12 +34,12 @@ export function statusText(status: SegmentStatusValue): string {
       return 'NOK';
     case SegmentStatus.WARNING:
       return 'Warning';
-    case SegmentStatus.AD:
+    case SegmentStatus.UNVERIFIED:
       return 'No C2PA';
   }
 }
 
-export function statusCategory(status: SegmentStatusValue): 'valid' | 'failed' | 'warning' | 'ad' {
+export function statusCategory(status: SegmentStatusValue): 'valid' | 'failed' | 'warning' | 'unverified' {
   switch (status) {
     case SegmentStatus.VALID:
       return 'valid';
@@ -50,7 +50,7 @@ export function statusCategory(status: SegmentStatusValue): 'valid' | 'failed' |
     case SegmentStatus.MISSING:
     case SegmentStatus.WARNING:
       return 'warning';
-    case SegmentStatus.AD:
-      return 'ad';
+    case SegmentStatus.UNVERIFIED:
+      return 'unverified';
   }
 }
