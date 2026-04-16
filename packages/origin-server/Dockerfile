@@ -7,7 +7,7 @@ COPY package*.json ./
 COPY tsconfig.base.json ./
 
 COPY packages/origin-server/package*.json ./packages/origin-server/
-RUN npm install --workspace=@c2pa-live/origin-server --no-audit --no-fund
+RUN npm ci --workspace=@c2pa-live/origin-server --no-audit --no-fund
 
 COPY packages/origin-server/tsconfig.json ./packages/origin-server/
 COPY packages/origin-server/src ./packages/origin-server/src
