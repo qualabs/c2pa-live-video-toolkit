@@ -153,3 +153,17 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];
 export const DEFAULT_MAX_STORED_SEGMENTS = 1000;
 export const PLAYBACK_SEARCH_WINDOW_SECONDS = 0.01;
+
+export function isMediaType(type: string): type is MediaType {
+  return type === 'video' || type === 'audio';
+}
+
+/**
+ * Narrows CML's `string[]` error codes to the known `ValidationErrorCode` union.
+ * CML returns string[] — this single cast point avoids `as` scattered across call sites.
+ */
+export function asValidationErrorCodes(
+  codes?: readonly string[],
+): ValidationErrorCode[] | undefined {
+  return codes as ValidationErrorCode[] | undefined;
+}
