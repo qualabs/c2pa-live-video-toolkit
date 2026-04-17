@@ -35,10 +35,15 @@ export class StreamStateService {
    * are processed and signed.
    */
   resetRepresentationState(repId: string, startNumber: number): void {
+    this.repository.incrementGeneration(repId);
     this.repository.setLastProcessed(repId, startNumber - 1);
     this.repository.clearReadyList(repId);
     this.repository.clearWaitingSet(repId);
     this.repository.clearPreviousSignedSegmentPath(repId);
+  }
+
+  getGeneration(repId: string): number {
+    return this.repository.getGeneration(repId);
   }
 
   /**

@@ -87,4 +87,29 @@ describe('StreamStateRepository', () => {
       expect(repo.getPreviousSignedSegmentPath('v0')).toBeUndefined();
     });
   });
+
+  describe('stream generation', () => {
+    it('returns 0 for an unknown repId', () => {
+      expect(repo.getGeneration('v0')).toBe(0);
+    });
+
+    it('increments from 0 to 1 on first call', () => {
+      repo.incrementGeneration('v0');
+      expect(repo.getGeneration('v0')).toBe(1);
+    });
+
+    it('increments independently per repId', () => {
+      repo.incrementGeneration('v0');
+      repo.incrementGeneration('v0');
+      repo.incrementGeneration('a0');
+      expect(repo.getGeneration('v0')).toBe(2);
+      expect(repo.getGeneration('a0')).toBe(1);
+    });
+
+    it('resets to 0 after resetStore', () => {
+      repo.incrementGeneration('v0');
+      resetStore();
+      expect(repo.getGeneration('v0')).toBe(0);
+    });
+  });
 });

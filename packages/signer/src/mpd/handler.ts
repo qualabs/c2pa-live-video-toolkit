@@ -21,6 +21,7 @@ const mpdParser = new MpdParser();
 const mpdFetcher = new MpdFetcher(storage);
 const initSegmentPreparer = new InitSegmentPreparer(storage);
 
+
 function toArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : [value];
 }
@@ -138,6 +139,7 @@ function logRepresentationDebugInfo(
   streamStateService: StreamStateService,
   repId: string,
   segmentCountInWindow: number,
+  maxSegmentNumber: number,
   startNumber: number,
 ): void {
   const lastProcessedIndex = streamStateService.getLastProcessedOrDefault(repId, startNumber - 1);
@@ -145,7 +147,7 @@ function logRepresentationDebugInfo(
   const pendingCount = readyList.length;
 
   logger.debug(
-    `[Manifest] Rep [${repId}]: Requires up to #${segmentCountInWindow}. Last processed is #${lastProcessedIndex}.`,
+    `[Manifest] Rep [${repId}]: window=${segmentCountInWindow} segs, requires up to #${maxSegmentNumber}. Last processed is #${lastProcessedIndex}.`,
   );
 
   if (pendingCount > 0) {
@@ -199,13 +201,16 @@ async function processRepresentation(
 
   if (timeline?.S) {
     const segmentCountInWindow = countSegmentsInTimeline(timeline);
-    requirements[repId] = segmentCountInWindow;
+    // Use maxSegmentInTimeline (not count) so the manifest is only published
+    // after the last segment in the window is signed and uploaded.
+    requirements[repId] = maxSegmentInTimeline;
 
     logRepresentationDebugInfo(
       segmentService,
       streamStateService,
       repId,
       segmentCountInWindow,
+      maxSegmentInTimeline,
       startNumber,
     );
   }
@@ -410,10 +415,16 @@ async function publishReadyManifest(
       logMessage += ` (took ${Date.now() - receivedTimestamp} ms from notification to publish)`;
     }
     logger.info(logMessage);
+    const publishedMpd = config.presentationDelay
+      ? mpdXml.replace(
+          /suggestedPresentationDelay="[^"]*"/,
+          `suggestedPresentationDelay="${config.presentationDelay}"`,
+        )
+      : mpdXml;
     await storage.saveObject(
       config.outputBucket,
       `processed/${config.mpdKey}`,
-      Buffer.from(mpdXml),
+      Buffer.from(publishedMpd),
     );
   } else {
     logger.debug(

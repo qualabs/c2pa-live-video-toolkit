@@ -12,7 +12,7 @@ import {
   setBaseMediaDecodeTimeInMoof,
   getBaseMediaDecodeTimeFromMoof,
 } from '../mp4/moof-utils.js';
-import { logger } from '../utils/logger.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 export function applyOutOfOrderAttack(
@@ -74,10 +74,20 @@ export async function proxyReorderAttack(
   let segBMoofMdat: ReturnType<typeof extractMoofMdat>;
 
   if (isFirst) {
-    const [bBytes, aBytes] = await Promise.all([
-      fetchSegment(asSlot, info),
-      fetchSegment(serveContentOf, info),
-    ]);
+    let bBytes: Buffer;
+    let aBytes: Buffer;
+    try {
+      [bBytes, aBytes] = await Promise.all([
+        fetchSegment(asSlot, info),
+        fetchSegment(serveContentOf, info),
+      ]);
+    } catch (err) {
+      logger.warn(`[REORDER] Segment not available, cancelling attack: ${errorMessage(err)}`);
+      state.attackConfig.reorderSeg1 = null;
+      state.attackConfig.reorderSeg2 = null;
+      state.attackConfig.enabled = false;
+      return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+    }
     cacheContent(asSlot, bBytes);
     cacheContent(serveContentOf, aBytes);
     segBMoofMdat = extractMoofMdat(bBytes);
