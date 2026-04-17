@@ -51,17 +51,22 @@ const InitBadgeStatus = {
 
 type InitBadgeStatusValue = (typeof InitBadgeStatus)[keyof typeof InitBadgeStatus];
 
-function isUnverifiedSegment(segment: SegmentRecord): boolean {
-  return segment.status === SegmentStatus.MISSING;
+function lacksC2paData(segment: SegmentRecord): boolean {
+  return segment.status === SegmentStatus.MISSING || segment.status === SegmentStatus.UNVERIFIED;
 }
 
-function hasMissingSegmentIndicator(segment: SegmentRecord): boolean {
-  if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return true;
+function isManifestBoxContinuityBreak(segment: SegmentRecord): boolean {
+  // VSI gaps are surfaced as synthetic MISSING rows, so here we only need to
+  // flag the ManifestBox path, which reports the gap through a CONTINUITY_INVALID
+  // error on the next segment without emitting segmentsMissing.
+  if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return false;
   return segment.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID) ?? false;
 }
 
 function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
-  if (hasMissingSegmentIndicator(segment)) return ValidationBadgeKind.MISSING;
+  if (segment.status === SegmentStatus.MISSING) return ValidationBadgeKind.MISSING;
+  if (segment.status === SegmentStatus.UNVERIFIED) return ValidationBadgeKind.EMPTY;
+  if (isManifestBoxContinuityBreak(segment)) return ValidationBadgeKind.MISSING;
   return segment.status === SegmentStatus.VALID
     ? ValidationBadgeKind.VALID
     : ValidationBadgeKind.FAILED;
@@ -156,10 +161,8 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
 
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
-              const isUnverified = isUnverifiedSegment(segment);
-              const validationKind: ValidationBadgeKindValue = isUnverified
-                ? ValidationBadgeKind.EMPTY
-                : resolveValidationBadge(segment);
+              const hasNoC2paData = lacksC2paData(segment);
+              const validationKind = resolveValidationBadge(segment);
               const isContinuityOk = !segment.errorCodes?.includes(
                 ValidationErrorCode.CONTINUITY_INVALID,
               );
@@ -176,7 +179,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td>{segment.segmentNumber}</Td>
                   {isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
-                      {isUnverified || segment.previousManifestId == null ? (
+                      {hasNoC2paData || segment.previousManifestId == null ? (
                         '—'
                       ) : (
                         <ContinuityBadge $ok={isContinuityOk}>
@@ -185,10 +188,10 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       )}
                     </Td>
                   ) : (
-                    <Td title={segment.keyId}>{isUnverified ? '—' : truncate(segment.keyId)}</Td>
+                    <Td title={segment.keyId}>{hasNoC2paData ? '—' : truncate(segment.keyId)}</Td>
                   )}
                   <Td title={segment.hash}>
-                    {isUnverified || !segment.hash ? '—' : truncate(segment.hash)}
+                    {hasNoC2paData || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
                   <Td>
                     <ValidBadge $status={validationKind}>

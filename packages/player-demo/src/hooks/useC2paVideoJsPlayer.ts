@@ -8,7 +8,11 @@ import type { C2paPlayerInstance, VideoJsPlayer } from '@c2pa-live-toolkit/video
 import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
-import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
+import {
+  buildMissingSegmentRecords,
+  resolveStreamUrl,
+  SEEK_BACK_OFFSET_SECONDS,
+} from './playerUtils.js';
 
 const VIDEO_JS_OPTIONS = {
   autoplay: true,
@@ -80,7 +84,10 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       setC2paController(controller);
 
       controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
-        setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
+        setState((prev) => {
+          const missingRecords = buildMissingSegmentRecords(record, prev.segments);
+          return { ...prev, segments: [...prev.segments, record, ...missingRecords] };
+        });
       });
 
       controller.on(C2paEvent.INIT_PROCESSED, (event) => {

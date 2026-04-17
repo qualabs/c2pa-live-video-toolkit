@@ -187,7 +187,7 @@ describe('SegmentRouter', () => {
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
 
-    it('emits segmentsMissing with correct range on gap_detected', async () => {
+    it('exposes the missing sequence range on the validated record when gap_detected', async () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
 
@@ -215,12 +215,19 @@ describe('SegmentRouter', () => {
         logger: SILENT_LOGGER,
       });
 
-      const missingListener = vi.fn();
-      eventBus.on('segmentsMissing', missingListener);
+      const validatedListener = vi.fn();
+      eventBus.on('segmentValidated', validatedListener);
 
       await router.route(makeChunk({ index: 4 }));
 
-      expect(missingListener).toHaveBeenCalledWith({ from: 2, to: 4, count: 3 });
+      expect(validatedListener).toHaveBeenCalledOnce();
+      expect(validatedListener.mock.calls[0][0]).toMatchObject({
+        segmentNumber: 5,
+        mediaType: 'video',
+        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+        sequenceMissingFrom: 2,
+        sequenceMissingTo: 4,
+      });
     });
   });
 });
