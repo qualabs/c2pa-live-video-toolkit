@@ -44,6 +44,10 @@ export class C2paController {
     this.deps.manifest.value = null;
   }
 
+  resetSequence(): void {
+    this.deps.sequenceTracker.clearAll();
+  }
+
   detach(): void {
     this.reset();
     this.deps.eventBus.removeAllListeners();
