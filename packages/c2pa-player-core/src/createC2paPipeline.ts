@@ -97,13 +97,10 @@ export function createC2paPipeline(options: CreateC2paPipelineOptions = {}): C2p
     manifestBoxValidators,
     sessionKeyStore,
     manifest,
-    supportedMediaTypes,
-    logger,
   });
 
   const controller = new C2paController({
     eventBus,
-    segmentRouter,
     sessionKeyStore,
     sequenceTracker,
     manifestBoxValidators,

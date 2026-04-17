@@ -1,5 +1,4 @@
 import type { EventBus } from './events/EventBus.js';
-import type { SegmentRouter } from './pipeline/SegmentRouter.js';
 import type { SessionKeyStore } from './state/SessionKeyStore.js';
 import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
@@ -7,7 +6,6 @@ import type { C2paEventMap, C2paEventType, MutableRef, C2paManifest } from './ty
 
 type C2paControllerDeps = {
   eventBus: EventBus;
-  segmentRouter: SegmentRouter;
   sessionKeyStore: SessionKeyStore;
   sequenceTracker: SequenceTracker;
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;

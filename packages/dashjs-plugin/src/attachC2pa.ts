@@ -13,8 +13,7 @@ import {
  * checking, making dashjs.MediaPlayerClass directly assignable without casts.
  */
 export interface DashjsPlayer {
-  extend(name: string, factoryOrChild: object, override?: boolean): void;
-  on(event: string, handler: (e: unknown) => void, scope?: object): void;
+  extend(name: string, factoryOrChild: object): void;
 }
 
 /**
@@ -28,10 +27,6 @@ type DashjsChunk = {
   index: number;
   representationId?: string | number;
 };
-
-function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
-  return data instanceof Uint8Array ? data : new Uint8Array(data);
-}
 
 /**
  * Translate a dash.js chunk into the player-agnostic {@link MediaSegmentInput}
@@ -51,10 +46,11 @@ function adaptDashjsChunk(chunk: DashjsChunk): MediaSegmentInput | null {
         : null;
   if (!kind) return null;
 
+  const source = chunk.bytes instanceof Uint8Array ? chunk.bytes : new Uint8Array(chunk.bytes);
   return {
     kind,
     mediaType: chunk.mediaInfo.type as MediaType,
-    bytes: new Uint8Array(toUint8Array(chunk.bytes)),
+    bytes: new Uint8Array(source),
     segmentIndex: chunk.index + 1,
     streamId: chunk.representationId,
   };

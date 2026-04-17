@@ -16,7 +16,6 @@ import type {
   SegmentRecord,
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
-  Logger,
   MutableRef,
   C2paManifest,
 } from '../types.js';
@@ -29,8 +28,6 @@ type SegmentRouterDeps = {
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   sessionKeyStore: SessionKeyStore;
   manifest: MutableRef<C2paManifest | null>;
-  supportedMediaTypes: MediaType[];
-  logger: Logger;
 };
 
 const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, SegmentStatusValue>> = {
@@ -57,7 +54,6 @@ function buildUnverifiedRecord(
   segmentNumber: number,
   mediaType: MediaType,
   status: SegmentStatusValue,
-  sequenceReason?: SequenceAnomalyReasonValue,
 ): SegmentRecord {
   return {
     segmentNumber,
@@ -65,7 +61,6 @@ function buildUnverifiedRecord(
     keyId: null,
     hash: null,
     status,
-    sequenceReason,
     timestamp: Date.now(),
   };
 }

@@ -7,13 +7,7 @@ import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 import { SequenceAnomalyReason } from '../types.js';
-import type { Logger, MediaSegmentInput, MediaType } from '../types.js';
-
-const SILENT_LOGGER: Logger = {
-  log: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-};
+import type { MediaSegmentInput, MediaType } from '../types.js';
 
 function makeInput(overrides: Partial<MediaSegmentInput> = {}): MediaSegmentInput {
   return {
@@ -32,8 +26,6 @@ function makeValidVsiResult() {
     bmffHashHex: 'hash-abc',
     kidHex: 'kid-1',
     sequenceReason: null,
-    sequenceMissingFrom: undefined,
-    sequenceMissingTo: undefined,
     errorCodes: [],
   };
 }
@@ -87,8 +79,6 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     },
     sessionKeyStore,
     manifest: { value: null },
-    supportedMediaTypes: ['video', 'audio'],
-    logger: SILENT_LOGGER,
   });
 
   return { router, eventBus, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
@@ -191,8 +181,6 @@ describe('SegmentRouter', () => {
         },
         sessionKeyStore,
         manifest: { value: null },
-        supportedMediaTypes: ['video', 'audio'],
-        logger: SILENT_LOGGER,
       });
 
       const validatedListener = vi.fn();

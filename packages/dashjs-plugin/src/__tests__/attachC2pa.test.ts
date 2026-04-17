@@ -24,7 +24,6 @@ function makeMockPlayer(): { player: DashjsPlayer; captured: CapturedExtension }
     extend: vi.fn((_name: string, factory: object) => {
       captured.factory = factory as CapturedExtension['factory'];
     }),
-    on: vi.fn(),
   };
   return { player, captured };
 }
