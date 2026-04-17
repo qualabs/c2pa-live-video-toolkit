@@ -85,6 +85,7 @@ export type SegmentRecord = {
   timestamp: number;
   manifest?: C2paManifest | null;
   previousManifestId?: string | null;
+  quality?: string;
 };
 
 export type InitProcessedEvent = {

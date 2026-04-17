@@ -102,6 +102,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Th>SEG #</Th>
               <Th>TYPE</Th>
               <Th>SEQ</Th>
+              <Th>QUALITY</Th>
               <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>
               <Th>HASH</Th>
               <Th>VALIDATION</Th>
@@ -113,6 +114,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             <InitRow>
               <Td>INIT</Td>
               <Td>init</Td>
+              <Td>—</Td>
               <Td>—</Td>
               <Td
                 title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
@@ -143,7 +145,6 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <span>Init</span>
                 </StatusBadge>
               </Td>
-              {isManifestBox && <Td>—</Td>}
             </InitRow>
 
             {sortedSegments.map((segment) => {
@@ -164,6 +165,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td>{segment.segmentNumber}</Td>
                   <Td>{segment.mediaType}</Td>
                   <Td>{segment.segmentNumber}</Td>
+                  <Td>{segment.quality ?? '—'}</Td>
                   {isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
                       {hasNoC2paData || segment.previousManifestId == null ? (
@@ -264,31 +266,35 @@ const Table = styled.table`
 
   th:nth-child(1),
   td:nth-child(1) {
-    width: 8%;
+    width: 7%;
   }
   th:nth-child(2),
   td:nth-child(2) {
-    width: 10%;
+    width: 8%;
   }
   th:nth-child(3),
   td:nth-child(3) {
-    width: 8%;
+    width: 7%;
   }
   th:nth-child(4),
   td:nth-child(4) {
-    width: 18%;
+    width: 10%;
   }
   th:nth-child(5),
   td:nth-child(5) {
-    width: 14%;
+    width: 16%;
   }
   th:nth-child(6),
   td:nth-child(6) {
-    width: 16%;
+    width: 12%;
   }
   th:nth-child(7),
   td:nth-child(7) {
-    width: 26%;
+    width: 14%;
+  }
+  th:nth-child(8),
+  td:nth-child(8) {
+    width: 22%;
   }
 `;
 
