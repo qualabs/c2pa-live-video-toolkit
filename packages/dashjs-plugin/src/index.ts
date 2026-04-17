@@ -1,23 +1,7 @@
+// Dash.js-specific adapter.
 export { attachC2pa } from './attachC2pa.js';
-export { C2paController } from './C2paController.js';
-export {
-  ValidationErrorCode,
-  ERROR_CODE_MESSAGES,
-  SegmentStatus,
-  SequenceAnomalyReason,
-  C2paEvent,
-} from './types.js';
-
 export type { DashjsPlayer } from './attachC2pa.js';
 
-export type {
-  C2paManifest,
-  C2paOptions,
-  SegmentRecord,
-  SegmentStatusValue,
-  SequenceAnomalyReasonValue,
-  MediaType,
-  InitProcessedEvent,
-  ErrorEvent,
-  Logger,
-} from './types.js';
+// Re-export the entire core public API so consumers don't need to import
+// from two packages.
+export * from '@c2pa-live-toolkit/c2pa-player-core';

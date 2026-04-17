@@ -175,9 +175,11 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       )}
                     </Td>
                   ) : (
-                    <Td title={segment.keyId}>{hasNoC2paData ? '—' : truncate(segment.keyId)}</Td>
+                    <Td title={segment.keyId ?? undefined}>
+                      {hasNoC2paData ? '—' : truncate(segment.keyId)}
+                    </Td>
                   )}
-                  <Td title={segment.hash}>
+                  <Td title={segment.hash ?? undefined}>
                     {hasNoC2paData || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
                   <Td>

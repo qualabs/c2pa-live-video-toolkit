@@ -1,8 +1,9 @@
 {
-  "name": "@c2pa-live-toolkit/dashjs-plugin",
+  "name": "@c2pa-live-toolkit/c2pa-player-core",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "description": "Framework-agnostic dash.js plugin for real-time C2PA segment validation",
+  "description": "Internal player-agnostic C2PA validation core. Bundled into each player plugin at build time — not published to npm.",
   "license": "Apache-2.0",
   "author": "Qualabs",
   "contributors": [
@@ -12,16 +13,14 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/qualabs/c2pa-live-video-toolkit.git",
-    "directory": "packages/dashjs-plugin"
+    "directory": "packages/c2pa-player-core"
   },
-  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/dashjs-plugin",
+  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/c2pa-player-core",
   "bugs": {
     "url": "https://github.com/qualabs/c2pa-live-video-toolkit/issues"
   },
   "keywords": [
     "c2pa",
-    "dash",
-    "dashjs",
     "live-video",
     "provenance",
     "content-credentials",
@@ -56,12 +55,7 @@
   "dependencies": {
     "@svta/cml-c2pa": "^1.0.0"
   },
-  "peerDependencies": {
-    "dashjs": ">=4.0.0"
-  },
   "devDependencies": {
-    "@c2pa-live-toolkit/c2pa-player-core": "*",
-    "dashjs": "^4.7.4",
     "tsup": "^8.5.1",
     "typescript": "^5.8.3",
     "vitest": "^3.0.0"

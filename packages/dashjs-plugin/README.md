@@ -36,6 +36,8 @@ player.initialize(videoElement, 'https://example.com/stream.mpd', true);
 
 The plugin registers as a dash.js `SegmentResponseModifier`, intercepting every downloaded segment before it reaches the media buffer. Init segments are processed first to extract session keys (for the VSI method). Each subsequent media segment is then validated through `@svta/cml-c2pa`'s validation functions, which verify cryptographic signatures, check sequence continuity, and detect replay or reorder attacks. Results are emitted as typed events that any UI layer can consume.
 
+Internally the plugin is a thin adapter on top of an internal, player-agnostic validation engine (`@c2pa-live-toolkit/c2pa-player-core`, bundled into this package's published output — you never install it separately). The adapter's only job is to translate dash.js chunks into the engine's generic `MediaSegmentInput` shape. The same engine will back future hls.js and Shaka plugins.
+
 ## API
 
 ### `attachC2pa(player, options?): C2paController`

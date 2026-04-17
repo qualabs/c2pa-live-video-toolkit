@@ -78,7 +78,7 @@ describe('VsiValidator', () => {
     expect(result!.sequenceReason).toBe('duplicate');
   });
 
-  it('extracts missingFrom/missingTo on gap_detected', async () => {
+  it('surfaces the gap_detected sequence reason on the result', async () => {
     mockValidate.mockResolvedValue(
       makeCmlResult({
         sequenceResult: {
@@ -93,8 +93,7 @@ describe('VsiValidator', () => {
     const result = await validator.validate(new Uint8Array([0x00]), 'video-rep1');
 
     expect(result!.sequenceReason).toBe('gap_detected');
-    expect(result!.sequenceMissingFrom).toBe(2);
-    expect(result!.sequenceMissingTo).toBe(4);
+    expect(result!.isValid).toBe(false);
   });
 
   it('updates the sequence tracker state after validation', async () => {

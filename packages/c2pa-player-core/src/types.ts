@@ -5,6 +5,30 @@ export type MediaType = 'video' | 'audio';
 export type MutableRef<T> = { value: T };
 
 /**
+ * Player-agnostic input to the C2PA validation pipeline. Each streaming-library
+ * adapter (dash.js, hls.js, shaka, etc.) is responsible for converting its own
+ * chunk/fragment shape into this shape before calling {@link SegmentRouter.route}.
+ *
+ * - `kind`: whether this is an initialization segment or a media segment.
+ * - `mediaType`: 'video' or 'audio'. Segments of other types should not be routed.
+ * - `bytes`: raw segment bytes. The adapter must copy the buffer before any
+ *   async work if the underlying player detaches the ArrayBuffer (dash.js does
+ *   this when transferring to MSE).
+ * - `streamId`: identifier for the specific quality variant / representation.
+ *   Used to isolate sequence tracking per stream. Examples: DASH representationId,
+ *   HLS level, Shaka streamInfo.id. Optional — falls back to a default bucket.
+ * - `segmentIndex`: adapter-provided incrementing index. Shown in error logs and
+ *   used as the `segmentNumber` field of unverified segment records.
+ */
+export type MediaSegmentInput = {
+  kind: 'init' | 'media';
+  mediaType: MediaType;
+  bytes: Uint8Array;
+  streamId?: string | number;
+  segmentIndex: number;
+};
+
+/**
  * Re-export the CML manifest type so consumers don't need a direct CML dependency
  * just to reference the manifest shape.
  */

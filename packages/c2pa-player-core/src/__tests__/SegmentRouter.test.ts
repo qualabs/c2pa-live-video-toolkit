@@ -7,34 +7,14 @@ import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
 import { SequenceAnomalyReason } from '../types.js';
-import type { Logger } from '../types.js';
+import type { MediaSegmentInput, MediaType } from '../types.js';
 
-const SILENT_LOGGER: Logger = {
-  log: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-};
-
-const EMPTY_BUFFER = new Uint8Array([0x00, 0x01]).buffer;
-
-type DashjsChunk = {
-  segmentType: 'InitializationSegment' | 'MediaSegment';
-  mediaInfo: { type: string };
-  bytes: ArrayBuffer;
-  start: number;
-  end: number;
-  index: number;
-  representationId?: string | number;
-};
-
-function makeChunk(overrides: Partial<DashjsChunk> = {}): DashjsChunk {
+function makeInput(overrides: Partial<MediaSegmentInput> = {}): MediaSegmentInput {
   return {
-    segmentType: 'MediaSegment',
-    mediaInfo: { type: 'video' },
-    bytes: EMPTY_BUFFER,
-    start: 0,
-    end: 2,
-    index: 0,
+    kind: 'media',
+    mediaType: 'video',
+    bytes: new Uint8Array([0x00, 0x01]),
+    segmentIndex: 1,
     ...overrides,
   };
 }
@@ -46,8 +26,6 @@ function makeValidVsiResult() {
     bmffHashHex: 'hash-abc',
     kidHex: 'kid-1',
     sequenceReason: null,
-    sequenceMissingFrom: undefined,
-    sequenceMissingTo: undefined,
     errorCodes: [],
   };
 }
@@ -102,35 +80,30 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     sessionKeyStore,
     manifest: { value: null },
     supportedMediaTypes: ['video', 'audio'],
-    logger: SILENT_LOGGER,
   });
 
   return { router, eventBus, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
 }
 
 describe('SegmentRouter', () => {
-  describe('InitializationSegment routing', () => {
-    it('calls initProcessor for a video InitializationSegment', async () => {
+  describe('init segment routing', () => {
+    it('calls initProcessor for a video init segment', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(
-        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'video' } }),
-      );
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
       expect(initProcessor.process).toHaveBeenCalledOnce();
     });
 
-    it('ignores InitializationSegment for unsupported media types', async () => {
+    it('ignores init segment for unsupported media types', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(
-        makeChunk({ segmentType: 'InitializationSegment', mediaInfo: { type: 'text' } }),
-      );
+      await router.route(makeInput({ kind: 'init', mediaType: 'text' as unknown as MediaType }));
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
   });
 
-  describe('MediaSegment routing', () => {
+  describe('media segment routing', () => {
     it('routes to ManifestBoxValidator when no session keys are present', async () => {
       const { router, manifestBoxValidator, vsiValidator } = buildDeps();
-      await router.route(makeChunk());
+      await router.route(makeInput());
       expect(manifestBoxValidator.validate).toHaveBeenCalledOnce();
       expect(vsiValidator.validate).not.toHaveBeenCalled();
     });
@@ -139,15 +112,45 @@ describe('SegmentRouter', () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
       const { router, vsiValidator, manifestBoxValidator } = buildDeps(sessionKeyStore);
-      await router.route(makeChunk());
+      await router.route(makeInput());
       expect(vsiValidator.validate).toHaveBeenCalledOnce();
       expect(manifestBoxValidator.validate).not.toHaveBeenCalled();
     });
 
-    it('ignores MediaSegment with an unsupported media type', async () => {
+    it('ignores media segment with an unsupported media type', async () => {
       const { router, manifestBoxValidator } = buildDeps();
-      await router.route(makeChunk({ mediaInfo: { type: 'text' } }));
+      await router.route(makeInput({ mediaType: 'text' as unknown as MediaType }));
       expect(manifestBoxValidator.validate).not.toHaveBeenCalled();
+    });
+
+    it('silently skips a media type outside the consumer-provided supportedMediaTypes', async () => {
+      const eventBus = new EventBus();
+      const manifestBoxValidator = {
+        validate: vi.fn(),
+        reset: vi.fn(),
+      };
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
+        vsiValidator: { validate: vi.fn() } as unknown as VsiValidator,
+        manifestBoxValidators: {
+          video: manifestBoxValidator as unknown as ManifestBoxValidator,
+        },
+        sessionKeyStore: new SessionKeyStore(),
+        manifest: { value: null },
+        supportedMediaTypes: ['video'],
+      });
+
+      const errorListener = vi.fn();
+      const validatedListener = vi.fn();
+      eventBus.on('error', errorListener);
+      eventBus.on('segmentValidated', validatedListener);
+
+      await router.route(makeInput({ mediaType: 'audio' }));
+
+      expect(manifestBoxValidator.validate).not.toHaveBeenCalled();
+      expect(errorListener).not.toHaveBeenCalled();
+      expect(validatedListener).not.toHaveBeenCalled();
     });
   });
 
@@ -156,7 +159,7 @@ describe('SegmentRouter', () => {
       const { router, eventBus } = buildDeps();
       const listener = vi.fn();
       eventBus.on('segmentValidated', listener);
-      await router.route(makeChunk());
+      await router.route(makeInput());
       expect(listener).toHaveBeenCalledOnce();
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid' });
     });
@@ -170,7 +173,7 @@ describe('SegmentRouter', () => {
       });
       const listener = vi.fn();
       eventBus.on('segmentValidated', listener);
-      await router.route(makeChunk());
+      await router.route(makeInput());
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'invalid' });
     });
   });
@@ -182,7 +185,7 @@ describe('SegmentRouter', () => {
       const { router, eventBus } = buildDeps(sessionKeyStore);
       const listener = vi.fn();
       eventBus.on('segmentValidated', listener);
-      await router.route(makeChunk());
+      await router.route(makeInput());
       expect(listener).toHaveBeenCalledOnce();
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
@@ -210,13 +213,12 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
-        logger: SILENT_LOGGER,
       });
 
       const validatedListener = vi.fn();
       eventBus.on('segmentValidated', validatedListener);
 
-      await router.route(makeChunk({ index: 4 }));
+      await router.route(makeInput({ segmentIndex: 5 }));
 
       expect(validatedListener).toHaveBeenCalledOnce();
       expect(validatedListener.mock.calls[0][0]).toMatchObject({
