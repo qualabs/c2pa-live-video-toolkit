@@ -25,13 +25,51 @@ function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LEN
   return value.substring(0, length) + '...';
 }
 
+const ValidationBadgeKind = {
+  VALID: 'valid',
+  FAILED: 'failed',
+  MISSING: 'missing',
+  EMPTY: 'empty',
+  PENDING: 'pending',
+} as const;
+
+type ValidationBadgeKindValue = (typeof ValidationBadgeKind)[keyof typeof ValidationBadgeKind];
+
+const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
+  [ValidationBadgeKind.VALID]: 'VALID',
+  [ValidationBadgeKind.FAILED]: 'NOT VALID',
+  [ValidationBadgeKind.MISSING]: 'MISSING SEGMENT',
+  [ValidationBadgeKind.EMPTY]: '—',
+  [ValidationBadgeKind.PENDING]: 'PENDING',
+};
+
+const InitBadgeStatus = {
+  VALID: ValidationBadgeKind.VALID,
+  FAILED: ValidationBadgeKind.FAILED,
+  PENDING: ValidationBadgeKind.PENDING,
+} as const;
+
+type InitBadgeStatusValue = (typeof InitBadgeStatus)[keyof typeof InitBadgeStatus];
+
 function isUnverifiedSegment(segment: SegmentRecord): boolean {
   return segment.status === SegmentStatus.MISSING;
 }
 
-function resolveValidationBadge(segment: SegmentRecord): boolean {
+function hasMissingSegmentIndicator(segment: SegmentRecord): boolean {
   if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return true;
-  return segment.status === SegmentStatus.VALID;
+  return segment.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID) ?? false;
+}
+
+function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
+  if (hasMissingSegmentIndicator(segment)) return ValidationBadgeKind.MISSING;
+  return segment.status === SegmentStatus.VALID
+    ? ValidationBadgeKind.VALID
+    : ValidationBadgeKind.FAILED;
+}
+
+function resolveInitBadgeStatus(initData: InitProcessedEvent | null): InitBadgeStatusValue {
+  if (initData == null) return InitBadgeStatus.PENDING;
+  return initData.success ? InitBadgeStatus.VALID : InitBadgeStatus.FAILED;
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -41,7 +79,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   onSegmentSelect,
 }) => {
   const sortedSegments = React.useMemo(
-    () => [...segments].sort((a, b) => b.arrivalIndex - a.arrivalIndex),
+    () => [...segments].sort((a, b) => b.timestamp - a.timestamp),
     [segments],
   );
 
@@ -49,7 +87,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   const failedCount = segments.filter((s) => statusCategory(s.status) === 'failed').length;
   const warningCount = segments.filter((s) => statusCategory(s.status) === 'warning').length;
 
-  const initStatus = initData == null ? 'pending' : initData.success ? 'valid' : 'failed';
+  const initStatus = resolveInitBadgeStatus(initData);
   const isManifestBox = !initData?.sessionKeysCount;
 
   return (
@@ -97,20 +135,14 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                 {initData?.sessionKeysCount ? 'Session Keys' : 'Manifest'}
               </Td>
               <Td>
-                <ValidBadge $status={initStatus}>
-                  {initStatus === 'pending'
-                    ? 'PENDING'
-                    : initStatus === 'valid'
-                      ? 'VALID'
-                      : 'NOT VALID'}
-                </ValidBadge>
+                <ValidBadge $status={initStatus}>{VALIDATION_BADGE_LABEL[initStatus]}</ValidBadge>
               </Td>
               <Td>
                 <StatusBadge
                   $category={
-                    initStatus === 'valid'
+                    initStatus === InitBadgeStatus.VALID
                       ? 'valid'
-                      : initStatus === 'failed'
+                      : initStatus === InitBadgeStatus.FAILED
                         ? 'failed'
                         : 'warning'
                   }
@@ -125,15 +157,17 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             {sortedSegments.map((segment) => {
               const category = statusCategory(segment.status);
               const isUnverified = isUnverifiedSegment(segment);
-              const isValid = resolveValidationBadge(segment);
+              const validationKind: ValidationBadgeKindValue = isUnverified
+                ? ValidationBadgeKind.EMPTY
+                : resolveValidationBadge(segment);
               const isContinuityOk = !segment.errorCodes?.includes(
                 ValidationErrorCode.CONTINUITY_INVALID,
               );
 
               return (
                 <Row
-                  key={`${segment.segmentNumber}-${segment.mediaType}-${segment.arrivalIndex}`}
-                  $selected={selectedSegment?.arrivalIndex === segment.arrivalIndex}
+                  key={`${segment.segmentNumber}-${segment.mediaType}-${segment.timestamp}`}
+                  $selected={selectedSegment === segment}
                   $category={category}
                   onClick={() => onSegmentSelect(segment)}
                 >
@@ -157,13 +191,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                     {isUnverified || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
                   <Td>
-                    {isUnverified ? (
-                      <ValidBadge $status="empty">—</ValidBadge>
-                    ) : (
-                      <ValidBadge $status={isValid ? 'valid' : 'failed'}>
-                        {isValid ? 'VALID' : 'NOT VALID'}
-                      </ValidBadge>
-                    )}
+                    <ValidBadge $status={validationKind}>
+                      {VALIDATION_BADGE_LABEL[validationKind]}
+                    </ValidBadge>
                   </Td>
                   <Td>
                     <StatusBadge $category={category}>
@@ -298,7 +328,10 @@ const InitRow = styled.tr`
   }
 `;
 
-const Row = styled.tr<{ $selected: boolean; $category: 'valid' | 'failed' | 'warning' | 'unverified' }>`
+const Row = styled.tr<{
+  $selected: boolean;
+  $category: 'valid' | 'failed' | 'warning' | 'unverified';
+}>`
   cursor: pointer;
   background: ${(p) => (p.$selected ? '#2a2a2a' : 'transparent')};
   box-shadow: ${(p) => {
@@ -332,25 +365,27 @@ const Td = styled.td`
   max-width: 120px;
 `;
 
-const ValidBadge = styled.span<{ $status: 'valid' | 'failed' | 'pending' | 'empty' }>`
+const VALIDATION_BADGE_BACKGROUND: Record<ValidationBadgeKindValue, string> = {
+  [ValidationBadgeKind.VALID]: '#22c55e',
+  [ValidationBadgeKind.FAILED]: '#ef4444',
+  [ValidationBadgeKind.MISSING]: '#eab308',
+  [ValidationBadgeKind.PENDING]: 'rgba(251, 191, 36, 0.2)',
+  [ValidationBadgeKind.EMPTY]: 'transparent',
+};
+
+const MUTED_BADGE_KINDS: ReadonlySet<ValidationBadgeKindValue> = new Set([
+  ValidationBadgeKind.EMPTY,
+  ValidationBadgeKind.PENDING,
+]);
+
+const ValidBadge = styled.span<{ $status: ValidationBadgeKindValue }>`
   display: inline-block;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: ${(p) => (p.$status === 'empty' || p.$status === 'pending' ? '#888' : '#fff')};
-  background: ${(p) => {
-    switch (p.$status) {
-      case 'valid':
-        return '#22c55e';
-      case 'failed':
-        return '#ef4444';
-      case 'pending':
-        return 'rgba(251, 191, 36, 0.2)';
-      default:
-        return 'transparent';
-    }
-  }};
+  color: ${(p) => (MUTED_BADGE_KINDS.has(p.$status) ? '#888' : '#fff')};
+  background: ${(p) => VALIDATION_BADGE_BACKGROUND[p.$status]};
 `;
 
 const StatusBadge = styled.div<{ $category: 'valid' | 'failed' | 'warning' | 'unverified' }>`
