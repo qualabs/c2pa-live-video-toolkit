@@ -52,7 +52,6 @@ export const ValidationErrorCode = {
 
 export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
 
-
 export const SegmentStatus = {
   VALID: 'valid',
   INVALID: 'invalid',
@@ -97,12 +96,6 @@ export type InitProcessedEvent = {
   error?: string;
 };
 
-export type SegmentsMissingEvent = {
-  from: number;
-  to: number;
-  count: number;
-};
-
 export type ErrorEvent = {
   source: string;
   error: unknown;
@@ -111,7 +104,6 @@ export type ErrorEvent = {
 export type C2paEventMap = {
   segmentValidated: SegmentRecord;
   initProcessed: InitProcessedEvent;
-  segmentsMissing: SegmentsMissingEvent;
   error: ErrorEvent;
 };
 
@@ -120,7 +112,6 @@ export type C2paEventType = keyof C2paEventMap;
 export const C2paEvent = {
   SEGMENT_VALIDATED: 'segmentValidated',
   INIT_PROCESSED: 'initProcessed',
-  SEGMENTS_MISSING: 'segmentsMissing',
   ERROR: 'error',
 } as const satisfies Record<string, C2paEventType>;
 

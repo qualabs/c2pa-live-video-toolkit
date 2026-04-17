@@ -19,7 +19,6 @@ export type {
   SequenceAnomalyReasonValue,
   MediaType,
   InitProcessedEvent,
-  SegmentsMissingEvent,
   ErrorEvent,
   Logger,
 } from './types.js';

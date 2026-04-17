@@ -38,7 +38,6 @@ export class C2paController {
   }
 
   reset(): void {
-    this.deps.segmentRouter.reset();
     this.deps.sessionKeyStore.clear();
     this.deps.sequenceTracker.clearAll();
     for (const validator of Object.values(this.deps.manifestBoxValidators)) {

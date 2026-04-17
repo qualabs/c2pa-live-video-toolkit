@@ -104,9 +104,7 @@ describe('SegmentRouter', () => {
 
     it('ignores init segment for unsupported media types', async () => {
       const { router, initProcessor } = buildDeps();
-      await router.route(
-        makeInput({ kind: 'init', mediaType: 'text' as unknown as MediaType }),
-      );
+      await router.route(makeInput({ kind: 'init', mediaType: 'text' as unknown as MediaType }));
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
   });
@@ -171,7 +169,7 @@ describe('SegmentRouter', () => {
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
 
-    it('emits segmentsMissing with correct range on gap_detected', async () => {
+    it('emits a warning-status record when the validator reports gap_detected', async () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
 
@@ -179,8 +177,6 @@ describe('SegmentRouter', () => {
         ...makeValidVsiResult(),
         sequenceNumber: 5,
         sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
-        sequenceMissingFrom: 2,
-        sequenceMissingTo: 4,
       };
 
       const eventBus = new EventBus();
@@ -199,12 +195,18 @@ describe('SegmentRouter', () => {
         logger: SILENT_LOGGER,
       });
 
-      const missingListener = vi.fn();
-      eventBus.on('segmentsMissing', missingListener);
+      const validatedListener = vi.fn();
+      eventBus.on('segmentValidated', validatedListener);
 
       await router.route(makeInput({ segmentIndex: 5 }));
 
-      expect(missingListener).toHaveBeenCalledWith({ from: 2, to: 4, count: 3 });
+      expect(validatedListener).toHaveBeenCalledOnce();
+      expect(validatedListener.mock.calls[0][0]).toMatchObject({
+        segmentNumber: 5,
+        mediaType: 'video',
+        status: 'warning',
+        sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+      });
     });
   });
 });

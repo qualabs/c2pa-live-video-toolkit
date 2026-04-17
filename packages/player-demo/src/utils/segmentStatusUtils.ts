@@ -39,7 +39,9 @@ export function statusText(status: SegmentStatusValue): string {
   }
 }
 
-export function statusCategory(status: SegmentStatusValue): 'valid' | 'failed' | 'warning' | 'unverified' {
+export function statusCategory(
+  status: SegmentStatusValue,
+): 'valid' | 'failed' | 'warning' | 'unverified' {
   switch (status) {
     case SegmentStatus.VALID:
       return 'valid';

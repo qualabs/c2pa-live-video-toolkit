@@ -40,7 +40,6 @@ const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, Segm
   [SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM]: SegmentStatus.INVALID,
 };
 
-
 type VsiSegmentParams = {
   segmentBytes: Uint8Array;
   streamKey: string;
@@ -103,7 +102,6 @@ function resolveSegmentStatus(
 
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
-  private readonly recordedMissingSequences = new Map<MediaType, Set<number>>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -128,18 +126,13 @@ export class SegmentRouter {
     await this.handleMediaSegment(input);
   }
 
-  reset(): void {
-    this.recordedMissingSequences.clear();
-  }
-
   private async handleInitSegment(input: MediaSegmentInput): Promise<void> {
     const result = await this.deps.initProcessor.process(input.bytes);
 
     this.deps.eventBus.emit('initProcessed', result);
 
     if (result.success) {
-      this.deps.manifest.value =
-        result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
+      this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
       }
@@ -179,21 +172,8 @@ export class SegmentRouter {
     }
 
     const status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
-
-    if (
-      vsiResult.sequenceReason === SequenceAnomalyReason.GAP_DETECTED &&
-      vsiResult.sequenceMissingFrom != null &&
-      vsiResult.sequenceMissingTo != null
-    ) {
-      this.recordMissingSegments(
-        mediaType,
-        vsiResult.sequenceMissingFrom,
-        vsiResult.sequenceMissingTo,
-      );
-    }
-
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
-    this.emitSegmentValidated((record));
+    this.emitSegmentValidated(record);
   }
 
   private async handleManifestBoxSegment(params: ManifestBoxSegmentParams): Promise<void> {
@@ -231,38 +211,20 @@ export class SegmentRouter {
       : isContinuityOnlyFailure
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
-    this.emitSegmentValidated(
-      ({
-        segmentNumber: result.sequenceNumber,
-        mediaType,
-        keyId: null,
-        hash: result.bmffHashHex,
-        status,
-        timestamp: Date.now(),
-        errorCodes: asValidationErrorCodes(result.errorCodes),
-        manifest: result.manifest,
-        previousManifestId: result.previousManifestId,
-      }),
-    );
+    this.emitSegmentValidated({
+      segmentNumber: result.sequenceNumber,
+      mediaType,
+      keyId: null,
+      hash: result.bmffHashHex,
+      status,
+      timestamp: Date.now(),
+      errorCodes: asValidationErrorCodes(result.errorCodes),
+      manifest: result.manifest,
+      previousManifestId: result.previousManifestId,
+    });
   }
-
 
   private emitSegmentValidated(record: SegmentRecord): void {
     this.deps.eventBus.emit('segmentValidated', record);
-  }
-
-  private recordMissingSegments(mediaType: MediaType, from: number, to: number): void {
-    const recorded = this.recordedMissingSequences.get(mediaType) ?? new Set<number>();
-    let missingCount = 0;
-    for (let n = from; n <= to; n++) {
-      if (recorded.has(n)) continue;
-      recorded.add(n);
-      missingCount++;
-    }
-    this.recordedMissingSequences.set(mediaType, recorded);
-
-    if (missingCount > 0) {
-      this.deps.eventBus.emit('segmentsMissing', { from, to, count: missingCount });
-    }
   }
 }
