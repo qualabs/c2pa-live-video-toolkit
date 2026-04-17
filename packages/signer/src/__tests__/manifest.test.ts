@@ -64,9 +64,7 @@ describe('parseManifest', () => {
 describe('injectStreamId', () => {
   it('sets streamId on the c2pa.livevideo.segment assertion', () => {
     const manifest = {
-      assertions: [
-        { label: 'c2pa.livevideo.segment', data: { sequenceNumber: 0 } },
-      ],
+      assertions: [{ label: 'c2pa.livevideo.segment', data: { sequenceNumber: 0 } }],
     };
     injectStreamId(manifest, 'my-stream');
     expect(manifest.assertions[0].data!['streamId']).toBe('my-stream');

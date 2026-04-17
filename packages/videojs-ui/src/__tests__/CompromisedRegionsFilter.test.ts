@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterRecentCompromisedRegions } from '../components/C2paMenu.js';
+import { filterRecentCompromisedRegions } from '../CompromisedRegionsFilter.js';
 
 describe('filterRecentCompromisedRegions', () => {
   const regions = ['01:00-01:30', '05:00-05:15', '18:00-18:30', '25:00-25:10'];

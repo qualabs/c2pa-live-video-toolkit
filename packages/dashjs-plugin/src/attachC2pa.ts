@@ -8,12 +8,11 @@ import {
 
 /**
  * Minimal structural interface for the dash.js player methods this plugin uses.
- *
- * Uses `interface` + method syntax so TypeScript applies bivariant parameter
- * checking, making dashjs.MediaPlayerClass directly assignable without casts.
+ * `override` is optional here so dashjs.MediaPlayerClass (whose `extend` declares
+ * it as required) remains assignable without casts.
  */
 export interface DashjsPlayer {
-  extend(name: string, factoryOrChild: object): void;
+  extend(name: string, factoryOrChild: object, override?: boolean): void;
 }
 
 /**

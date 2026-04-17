@@ -50,8 +50,6 @@ export type SignatureInfo = {
   certNotBefore?: string;
 };
 
-export const CREATIVE_WORK_ASSERTION_LABEL = 'stds.schema-org.CreativeWork';
-
 export type ManifestAssertion = {
   label: string;
   data: Record<string, unknown>;

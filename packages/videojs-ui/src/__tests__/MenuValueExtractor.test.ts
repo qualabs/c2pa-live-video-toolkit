@@ -75,11 +75,6 @@ describe('extractMenuValue', () => {
     expect(extractMenuValue('ALERT', status, [])).toBeNull();
   });
 
-  it('returns null for LOCATION (not implemented)', () => {
-    const status = makeStatusWithManifest(MANIFEST_WITH_ISSUER);
-    expect(extractMenuValue('LOCATION', status, [])).toBeNull();
-  });
-
   it('returns null when manifest is missing', () => {
     const status: PlaybackStatus = { verified: undefined, details: {} };
     expect(extractMenuValue('SIG_ISSUER', status, [])).toBeNull();
@@ -100,12 +95,6 @@ describe('renderMenuItemHtml', () => {
     expect(html).toContain(longValue);
   });
 
-  it('renders WEBSITE as a link', () => {
-    const html = renderMenuItemHtml('WEBSITE', 'Website', 'https://example.com');
-    expect(html).toContain('href="https://example.com"');
-    expect(html).toContain('target="_blank"');
-  });
-
   it('renders ALERT with alert-div wrapper', () => {
     const html = renderMenuItemHtml('ALERT', 'Alert', 'Something was tampered');
     expect(html).toContain('alert-div');
@@ -115,12 +104,5 @@ describe('renderMenuItemHtml', () => {
   it('renders VALIDATION_STATUS failed as nextLine', () => {
     const html = renderMenuItemHtml('VALIDATION_STATUS', 'Status', 'Failed');
     expect(html).toContain('nextLine');
-  });
-
-  it('renders SOCIAL as provider links', () => {
-    const urls = ['https://youtube.com/watch?v=abc', 'https://instagram.com/user'];
-    const html = renderMenuItemHtml('SOCIAL', 'Social Media', urls);
-    expect(html).toContain('YouTube');
-    expect(html).toContain('Instagram');
   });
 });

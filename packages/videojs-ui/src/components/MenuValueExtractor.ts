@@ -1,16 +1,14 @@
 import type { ActiveManifest, PlaybackStatus } from '../types.js';
-import { CREATIVE_WORK_ASSERTION_LABEL, VALIDATION_STATUS_VALUES } from '../types.js';
+import { VALIDATION_STATUS_VALUES } from '../types.js';
 import { extractActiveManifest } from '../ManifestNormalizer.js';
-import { providerInfoFromSocialUrl } from '../providers/SocialProviders.js';
+
+const CREATIVE_WORK_ASSERTION_LABEL = 'stds.schema-org.CreativeWork';
 
 export const MenuItemKey = {
   SIG_ISSUER: 'SIG_ISSUER',
   DATE: 'DATE',
   CLAIM_GENERATOR: 'CLAIM_GENERATOR',
   NAME: 'NAME',
-  LOCATION: 'LOCATION',
-  WEBSITE: 'WEBSITE',
-  SOCIAL: 'SOCIAL',
   VALIDATION_STATUS: 'VALIDATION_STATUS',
   ALERT: 'ALERT',
 } as const;
@@ -49,10 +47,6 @@ const VALUE_EXTRACTORS: Record<MenuItemKey, ValueExtractor> = {
     return authors?.[0]?.name ?? null;
   },
 
-  [MenuItemKey.LOCATION]: () => null,
-  [MenuItemKey.WEBSITE]: () => null,
-  [MenuItemKey.SOCIAL]: () => null,
-
   [MenuItemKey.VALIDATION_STATUS]: ({ status }) => {
     if (status.verified === true) return VALIDATION_STATUS_VALUES.PASSED;
     if (status.verified === false) return VALIDATION_STATUS_VALUES.FAILED;
@@ -78,20 +72,6 @@ export function extractMenuValue(
 type HtmlRenderer = (label: string, value: string | string[]) => string | null;
 
 const HTML_RENDERERS: Partial<Record<MenuItemKey, HtmlRenderer>> = {
-  [MenuItemKey.SOCIAL]: (label, value) => {
-    if (!Array.isArray(value)) return null;
-    const links = value.map((url) => {
-      const name = providerInfoFromSocialUrl(url).name;
-      return `<span><a class="url" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></span>`;
-    });
-    return `<span class="itemName">${label}</span> ${links.join('\n')}`;
-  },
-
-  [MenuItemKey.WEBSITE]: (label, value) => {
-    if (typeof value !== 'string') return null;
-    return `<div class="itemName">${label}</div><a class="url" href="${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
-  },
-
   [MenuItemKey.ALERT]: (_label, value) => {
     if (typeof value !== 'string') return null;
     return `<div class="alert-div"><img class="alert-icon" alt="alert"><div class="alert-content-scrollable">${value}</div></div>`;
