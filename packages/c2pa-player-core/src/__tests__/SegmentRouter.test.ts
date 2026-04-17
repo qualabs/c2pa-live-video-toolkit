@@ -79,6 +79,7 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     },
     sessionKeyStore,
     manifest: { value: null },
+    supportedMediaTypes: ['video', 'audio'],
   });
 
   return { router, eventBus, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
@@ -120,6 +121,36 @@ describe('SegmentRouter', () => {
       const { router, manifestBoxValidator } = buildDeps();
       await router.route(makeInput({ mediaType: 'text' as unknown as MediaType }));
       expect(manifestBoxValidator.validate).not.toHaveBeenCalled();
+    });
+
+    it('silently skips a media type outside the consumer-provided supportedMediaTypes', async () => {
+      const eventBus = new EventBus();
+      const manifestBoxValidator = {
+        validate: vi.fn(),
+        reset: vi.fn(),
+      };
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
+        vsiValidator: { validate: vi.fn() } as unknown as VsiValidator,
+        manifestBoxValidators: {
+          video: manifestBoxValidator as unknown as ManifestBoxValidator,
+        },
+        sessionKeyStore: new SessionKeyStore(),
+        manifest: { value: null },
+        supportedMediaTypes: ['video'],
+      });
+
+      const errorListener = vi.fn();
+      const validatedListener = vi.fn();
+      eventBus.on('error', errorListener);
+      eventBus.on('segmentValidated', validatedListener);
+
+      await router.route(makeInput({ mediaType: 'audio' }));
+
+      expect(manifestBoxValidator.validate).not.toHaveBeenCalled();
+      expect(errorListener).not.toHaveBeenCalled();
+      expect(validatedListener).not.toHaveBeenCalled();
     });
   });
 
@@ -181,6 +212,7 @@ describe('SegmentRouter', () => {
         },
         sessionKeyStore,
         manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
       });
 
       const validatedListener = vi.fn();

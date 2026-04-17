@@ -28,6 +28,7 @@ type SegmentRouterDeps = {
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   sessionKeyStore: SessionKeyStore;
   manifest: MutableRef<C2paManifest | null>;
+  supportedMediaTypes: readonly MediaType[];
 };
 
 const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, SegmentStatusValue>> = {
@@ -112,6 +113,7 @@ export class SegmentRouter {
    */
   async route(input: MediaSegmentInput): Promise<void> {
     if (!isMediaType(input.mediaType)) return;
+    if (!this.deps.supportedMediaTypes.includes(input.mediaType)) return;
 
     if (input.kind === 'init') {
       await this.handleInitSegment(input);
