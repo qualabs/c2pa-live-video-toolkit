@@ -17,7 +17,7 @@ const VERIFICATION_STATUS = {
 
 type VerificationStatus = (typeof VERIFICATION_STATUS)[keyof typeof VERIFICATION_STATUS];
 
-export type OnSeekingResult = {
+type OnSeekingResult = {
   seeking: boolean;
   lastPlaybackTime: number;
 };
@@ -28,10 +28,6 @@ export type OnSeekingResult = {
  */
 export class C2paTimeline {
   private readonly segments: HTMLElement[] = [];
-
-  onSeeked(): void {
-    // Seeking has ended — caller is responsible for resetting the seeking flag.
-  }
 
   onSeeking(
     currentTime: number,

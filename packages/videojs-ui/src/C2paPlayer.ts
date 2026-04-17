@@ -16,12 +16,13 @@ const SEEK_TIME_THRESHOLD = 0.5;
 const MENU_ADJUST_INTERVAL_MS = 500;
 const INITIAL_MENU_ADJUST_DELAY_MS = 100;
 
+// Hardcoded to avoid a runtime dependency on dashjs-plugin's SegmentStatus enum.
+// If dashjs-plugin's status values change, update this set accordingly.
 const INVALID_STATUSES = new Set(['invalid', 'replayed', 'reordered', 'warning']);
 
 function segmentToPlaybackStatus(record: SegmentRecord): PlaybackStatus {
-  const verified = record.status === 'valid' ? true
-    : INVALID_STATUSES.has(record.status) ? false
-    : undefined;
+  const verified =
+    record.status === 'valid' ? true : INVALID_STATUSES.has(record.status) ? false : undefined;
 
   return {
     verified,
@@ -69,7 +70,6 @@ export function C2paPlayerUI(
   });
 
   videoPlayer.on('seeked', () => {
-    timeline.onSeeked();
     seeking = false;
   });
 

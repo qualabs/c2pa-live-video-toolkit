@@ -8,6 +8,7 @@ import type {
 } from '../types.js';
 import { VALIDATION_STATUS_VALUES } from '../types.js';
 import { extractMenuValue, renderMenuItemHtml, MenuItemKey } from './MenuValueExtractor.js';
+import { filterRecentCompromisedRegions } from '../CompromisedRegionsFilter.js';
 
 /**
  * video.js MenuButton internals not exposed in public typings.
@@ -32,16 +33,12 @@ interface MenuItemInternals extends VjsComponent {
 
 const MENU_BUTTON_COMPONENT_NAME = 'C2PAMenuButton';
 const CONTROL_TEXT = 'Content Credentials';
-const TWENTY_MINUTES_IN_SECONDS = 20 * 60;
 
 const MENU_ITEM_LABELS: Record<MenuItemKey, string> = {
   SIG_ISSUER: 'Issued by',
   DATE: 'Issued on',
   CLAIM_GENERATOR: 'App or device used',
   NAME: 'Name',
-  LOCATION: 'Location',
-  WEBSITE: 'Website',
-  SOCIAL: 'Social Media',
   VALIDATION_STATUS: 'Current Validation Status',
   ALERT: 'Alert',
 };
@@ -182,22 +179,4 @@ export function updateMenuItems(
       (item.el() as HTMLElement).style.display = 'none';
     }
   }
-}
-
-// --- Private helpers ---
-
-export function filterRecentCompromisedRegions(
-  allRegions: string[],
-  isMonolithic: boolean,
-  currentTime: number,
-): string[] {
-  if (isMonolithic) return allRegions;
-
-  const cutoffTime = Math.max(0, currentTime - TWENTY_MINUTES_IN_SECONDS);
-
-  return allRegions.filter((region) => {
-    const [startStr] = region.split('-');
-    const [minutes, seconds] = startStr.split(':').map(Number);
-    return minutes * 60 + seconds >= cutoffTime;
-  });
 }
