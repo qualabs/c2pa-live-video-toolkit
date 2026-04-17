@@ -20,9 +20,10 @@ npm run format               # Format all packages
 npx turbo build --filter=@c2pa-live/signer
 npx turbo build --filter=@c2pa-live-toolkit/dashjs-plugin
 
-# Tests (only dashjs-plugin and videojs-ui have tests)
-cd packages/dashjs-plugin && npm run test       # Vitest, run once
-cd packages/dashjs-plugin && npm run test:watch  # Vitest, watch mode
+# Tests (c2pa-player-core, dashjs-plugin, and videojs-ui have tests)
+cd packages/c2pa-player-core && npm run test    # Vitest, run once — generic pipeline
+cd packages/dashjs-plugin && npm run test       # Vitest, run once — dash.js adapter
+cd packages/dashjs-plugin && npm run test:watch # Vitest, watch mode
 cd packages/videojs-ui && npm run test
 
 # Docker — full pipeline
@@ -51,13 +52,15 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 | `origin-server` | `@c2pa-live/origin-server` | Express static file server for signed segments |
 | `streamer` | `@c2pa-live/streamer` | FFmpeg scripts (no build step) |
 | `attack-proxy` | `@c2pa-live/attack-proxy` | DASH proxy with 4 attack types + manifest-server (dynamic MPDs with ad insertion) |
-| `dashjs-plugin` | `@c2pa-live-toolkit/dashjs-plugin` | Framework-agnostic dash.js plugin for real-time C2PA validation |
+| `c2pa-player-core` | `@c2pa-live-toolkit/c2pa-player-core` | **Internal** (not published). Player-agnostic C2PA validation engine — inlined into each player plugin's bundle at build time |
+| `dashjs-plugin` | `@c2pa-live-toolkit/dashjs-plugin` | Dash.js adapter on top of the core. Converts `DashjsChunk` → generic `MediaSegmentInput` and delegates validation |
 | `videojs-ui` | `@c2pa-live-toolkit/videojs-ui` | Video.js UI components (progress bar, credentials menu, friction modal) |
 | `player-demo` | `@c2pa-live-toolkit/player-demo` | React/Vite demo app (private), two modes: dashjs-native and videojs-enhanced |
 
-### Key dependency
+### Key dependencies
 
-`dashjs-plugin` depends on [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa) from npm — the SVTA Common Media Library C2PA validator. Installed as a regular registry dependency (`^1.0.0`).
+- `c2pa-player-core` depends on [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa) — the SVTA Common Media Library C2PA validator.
+- `dashjs-plugin` bundles `c2pa-player-core` via `tsup` (`noExternal`) and re-declares `@svta/cml-c2pa` as a real `dependency` so consumers get it transitively. The core is marked `private: true` and never published.
 
 ### Signing methods
 

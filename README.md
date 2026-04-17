@@ -100,6 +100,12 @@ See [packages/attack-proxy/README.md](packages/attack-proxy/README.md) for the f
 
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded, supporting both ManifestBox (§19.3) and VSI (§19.4) methods. Validation is powered by [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator.
 
+Internally, this package is a thin dash.js adapter on top of [`@c2pa-live-toolkit/c2pa-player-core`](packages/c2pa-player-core) (bundled at build time). Future player plugins (hls.js, shaka) will reuse the same core.
+
+### [`@c2pa-live-toolkit/c2pa-player-core`](packages/c2pa-player-core) — _internal_
+
+Player-agnostic C2PA validation engine. Not published to npm; each player plugin inlines it into its own published bundle via `tsup`. Use this directly only if you are building a new adapter for a streaming library not yet covered by an existing plugin.
+
 ### [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui)
 
 Video.js UI components for C2PA validation: colored progress bar showing segment status, content credentials menu, and friction modal for invalid streams. Consumes validation events from `dashjs-plugin`'s `C2paController` to visualize per-segment status in real time.
