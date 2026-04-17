@@ -15,27 +15,27 @@ describe('resolveInitKey', () => {
 
 describe('resolveSegmentKey', () => {
   it('replaces both $RepresentationID$ and $Number$ without padding', () => {
-    expect(
-      resolveSegmentKey('chunk-stream$RepresentationID$-$Number$.m4s', '0', 42),
-    ).toBe('chunk-stream0-42.m4s');
+    expect(resolveSegmentKey('chunk-stream$RepresentationID$-$Number$.m4s', '0', 42)).toBe(
+      'chunk-stream0-42.m4s',
+    );
   });
 
   it('pads the segment number when $Number%05d$ format is used', () => {
-    expect(
-      resolveSegmentKey('chunk-stream$RepresentationID$-$Number%05d$.m4s', '0', 7),
-    ).toBe('chunk-stream0-00007.m4s');
+    expect(resolveSegmentKey('chunk-stream$RepresentationID$-$Number%05d$.m4s', '0', 7)).toBe(
+      'chunk-stream0-00007.m4s',
+    );
   });
 
   it('pads with a different width', () => {
-    expect(
-      resolveSegmentKey('seg-$RepresentationID$-$Number%03d$.m4s', 'v1', 99),
-    ).toBe('seg-v1-099.m4s');
+    expect(resolveSegmentKey('seg-$RepresentationID$-$Number%03d$.m4s', 'v1', 99)).toBe(
+      'seg-v1-099.m4s',
+    );
   });
 
   it('does not pad when number already meets the width', () => {
-    expect(
-      resolveSegmentKey('seg$RepresentationID$-$Number%05d$.m4s', '0', 12345),
-    ).toBe('seg0-12345.m4s');
+    expect(resolveSegmentKey('seg$RepresentationID$-$Number%05d$.m4s', '0', 12345)).toBe(
+      'seg0-12345.m4s',
+    );
   });
 });
 

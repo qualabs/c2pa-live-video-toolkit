@@ -16,9 +16,7 @@ export function resolveSegmentKey(
   return pattern
     .replace(REPRESENTATION_ID_PLACEHOLDER, representationId)
     .replace(/\$Number(?:%0(\d+)d)?\$/, (_: string, padding: string) =>
-      padding
-        ? String(segmentNumber).padStart(parseInt(padding, 10), '0')
-        : String(segmentNumber),
+      padding ? String(segmentNumber).padStart(parseInt(padding, 10), '0') : String(segmentNumber),
     );
 }
 

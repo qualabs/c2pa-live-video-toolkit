@@ -172,7 +172,16 @@ async function processRepresentation(
   streamStateService: StreamStateService,
   ctx: RepresentationContext,
 ): Promise<boolean> {
-  const { representation, segmentTemplate, media, init, baseDirPrefix, startNumber, receivedTimestamp, requirements } = ctx;
+  const {
+    representation,
+    segmentTemplate,
+    media,
+    init,
+    baseDirPrefix,
+    startNumber,
+    receivedTimestamp,
+    requirements,
+  } = ctx;
   const repId: string = representation['@_id'];
   const timeline = segmentTemplate.SegmentTimeline;
   const maxSegmentInTimeline = timeline?.S
@@ -245,20 +254,16 @@ async function processAdaptationSets(
 
     let streamStateReset = false;
     for (const representation of representations) {
-      const wasReset = await processRepresentation(
-        segmentService,
-        streamStateService,
-        { 
-          representation, 
-          segmentTemplate, 
-          media, 
-          init, 
-          baseDirPrefix, 
-          startNumber, 
-          receivedTimestamp, 
-          requirements 
-        },
-      );
+      const wasReset = await processRepresentation(segmentService, streamStateService, {
+        representation,
+        segmentTemplate,
+        media,
+        init,
+        baseDirPrefix,
+        startNumber,
+        receivedTimestamp,
+        requirements,
+      });
       streamStateReset = streamStateReset || wasReset;
     }
 

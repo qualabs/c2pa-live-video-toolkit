@@ -8,7 +8,10 @@ vi.mock('../config.js', () => ({
 
 import { fetchFromOrigin } from '../proxy/fetchFromOrigin.js';
 
-function createMockResponse(statusCode: number, body: string): Readable & { statusCode: number; headers: Record<string, string> } {
+function createMockResponse(
+  statusCode: number,
+  body: string,
+): Readable & { statusCode: number; headers: Record<string, string> } {
   const readable = new Readable({
     read() {
       this.push(Buffer.from(body));
@@ -32,10 +35,12 @@ describe('fetchFromOrigin', () => {
 
   it('returns body and statusCode on success', async () => {
     const mockResponse = createMockResponse(200, 'segment-data');
-    vi.mocked(http.get).mockImplementation((_url: string | URL, callback?: (res: http.IncomingMessage) => void) => {
-      callback?.(mockResponse as unknown as http.IncomingMessage);
-      return { on: vi.fn().mockReturnThis() } as unknown as http.ClientRequest;
-    });
+    vi.mocked(http.get).mockImplementation(
+      (_url: string | URL, callback?: (res: http.IncomingMessage) => void) => {
+        callback?.(mockResponse as unknown as http.IncomingMessage);
+        return { on: vi.fn().mockReturnThis() } as unknown as http.ClientRequest;
+      },
+    );
 
     const result = await fetchFromOrigin('/chunk-stream0-00001.m4s');
 
@@ -46,10 +51,12 @@ describe('fetchFromOrigin', () => {
 
   it('returns non-200 status codes', async () => {
     const mockResponse = createMockResponse(404, 'not found');
-    vi.mocked(http.get).mockImplementation((_url: string | URL, callback?: (res: http.IncomingMessage) => void) => {
-      callback?.(mockResponse as unknown as http.IncomingMessage);
-      return { on: vi.fn().mockReturnThis() } as unknown as http.ClientRequest;
-    });
+    vi.mocked(http.get).mockImplementation(
+      (_url: string | URL, callback?: (res: http.IncomingMessage) => void) => {
+        callback?.(mockResponse as unknown as http.IncomingMessage);
+        return { on: vi.fn().mockReturnThis() } as unknown as http.ClientRequest;
+      },
+    );
 
     const result = await fetchFromOrigin('/missing.m4s');
 
@@ -57,17 +64,19 @@ describe('fetchFromOrigin', () => {
   });
 
   it('rejects when HTTP request errors', async () => {
-    vi.mocked(http.get).mockImplementation((_url: string | URL, _callback?: (res: http.IncomingMessage) => void) => {
-      const req = {
-        on: vi.fn((event: string, handler: (err: Error) => void) => {
-          if (event === 'error') {
-            setTimeout(() => handler(new Error('connection refused')), 0);
-          }
-          return req;
-        }),
-      };
-      return req as unknown as http.ClientRequest;
-    });
+    vi.mocked(http.get).mockImplementation(
+      (_url: string | URL, _callback?: (res: http.IncomingMessage) => void) => {
+        const req = {
+          on: vi.fn((event: string, handler: (err: Error) => void) => {
+            if (event === 'error') {
+              setTimeout(() => handler(new Error('connection refused')), 0);
+            }
+            return req;
+          }),
+        };
+        return req as unknown as http.ClientRequest;
+      },
+    );
 
     await expect(fetchFromOrigin('/fail.m4s')).rejects.toThrow('connection refused');
   });
