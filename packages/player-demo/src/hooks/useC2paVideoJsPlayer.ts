@@ -79,7 +79,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       const dashPlayer = dashjs.MediaPlayer().create();
       dashPlayerRef.current = dashPlayer;
 
-      const controller = attachC2pa(dashPlayer as unknown as Parameters<typeof attachC2pa>[0]);
+      const controller = attachC2pa(dashPlayer);
       c2paControllerRef.current = controller;
       setC2paController(controller);
 
