@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import dashjs from 'dashjs';
-import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
+import { C2paPlayerUI, initializeQualitySelector } from '@c2pa-live-toolkit/videojs-ui';
 import 'video.js/dist/video-js.css';
 import '@c2pa-live-toolkit/videojs-ui/styles';
-import type { C2paPlayerInstance, VideoJsPlayer } from '@c2pa-live-toolkit/videojs-ui';
+import type { C2paPlayerInstance, VideoJsPlayer, QualitySelectorInstance } from '@c2pa-live-toolkit/videojs-ui';
 import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
@@ -25,7 +25,6 @@ export type UseC2paVideoJsPlayerResult = {
   c2paController: C2paController | null;
   state: C2paPlayerState;
   changeStream: (url: string) => void;
-  videoJsReady: boolean;
 };
 
 /**
@@ -47,8 +46,13 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   const dashPlayerRef = useRef<dashjs.MediaPlayerClass | null>(null);
   const c2paControllerRef = useRef<C2paController | null>(null);
   const c2paUiRef = useRef<C2paPlayerInstance | null>(null);
+  const qualitySelectorRef = useRef<QualitySelectorInstance | null>(null);
   // Capture the initial videoSrc so the mount effect is truly mount-only
   const initialVideoSrcRef = useRef(videoSrc);
+
+  const currentQualityLabelRef = useRef<string>('—');
+  const currentAudioQualityLabelRef = useRef<string>('—');
+  const qualitiesInitializedRef = useRef(false);
 
   const [c2paController, setC2paController] = useState<C2paController | null>(null);
   const [state, setState] = useState<C2paPlayerState>({ segments: [], initData: null });
@@ -75,12 +79,18 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       const dashPlayer = dashjs.MediaPlayer().create();
       dashPlayerRef.current = dashPlayer;
 
-      const controller = attachC2pa(dashPlayer);
+      const controller = attachC2pa(dashPlayer as unknown as Parameters<typeof attachC2pa>[0]);
       c2paControllerRef.current = controller;
       setC2paController(controller);
 
       controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
-        setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
+        const quality = record.mediaType === 'video'
+          ? currentQualityLabelRef.current
+          : currentAudioQualityLabelRef.current;
+        setState((prev) => ({
+          ...prev,
+          segments: [...prev.segments, { ...record, quality }],
+        }));
       });
 
       controller.on(C2paEvent.INIT_PROCESSED, (event) => {
@@ -96,11 +106,63 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
         }
       });
 
+      const qualitySelector = initializeQualitySelector(
+        vjsPlayer as unknown as VideoJsPlayer,
+        (index) => {
+          if (index === 'auto') {
+            dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: true } } } });
+          } else {
+            dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: false } } } });
+            dashPlayer.setQualityFor('video', index);
+          }
+        },
+      );
+      qualitySelectorRef.current = qualitySelector;
+
+      dashPlayer.on(dashjs.MediaPlayer.events.MANIFEST_LOADED, () => {
+        const audioList = dashPlayer.getBitrateInfoListFor('audio') ?? [];
+        if (audioList.length > 0 && currentAudioQualityLabelRef.current === '—') {
+          const highestAudio = audioList[audioList.length - 1];
+          const kbps = Math.round(highestAudio.bitrate / 1000);
+          currentAudioQualityLabelRef.current = kbps > 0 ? `${kbps} kbps` : `audio 1`;
+        }
+
+        if (qualitiesInitializedRef.current) return;
+        const bitrateList = dashPlayer.getBitrateInfoListFor('video') ?? [];
+        const highestIndex = bitrateList.length - 1;
+        if (highestIndex >= 0) {
+          currentQualityLabelRef.current = `${bitrateList[highestIndex].height}p`;
+        }
+        if (bitrateList.length > 1) {
+          qualitiesInitializedRef.current = true;
+          dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: false } } } });
+          dashPlayer.setQualityFor('video', highestIndex);
+          qualitySelector.updateQualities(
+            bitrateList.map((info, i) => ({ index: i, height: info.height })),
+          );
+        }
+      });
+
+      dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_RENDERED, (e: unknown) => {
+        const { mediaType, newQuality } = e as { mediaType: string; newQuality: number };
+        if (mediaType === 'video') {
+          const info = dashPlayer.getBitrateInfoListFor('video')?.[newQuality];
+          if (info?.height) currentQualityLabelRef.current = `${info.height}p`;
+        } else if (mediaType === 'audio') {
+          const list = dashPlayer.getBitrateInfoListFor('audio') ?? [];
+          const info = list[newQuality];
+          if (info?.bitrate) currentAudioQualityLabelRef.current = `${Math.round(info.bitrate / 1000)} kbps`;
+        }
+        controller.resetSequence();
+      });
+
       dashPlayer.initialize(videoEl, streamUrl, true);
       setVideoJsReady(true);
     });
 
     return () => {
+      qualitySelectorRef.current?.destroy();
+      qualitySelectorRef.current = null;
       c2paUiRef.current?.destroy();
       c2paUiRef.current = null;
       c2paControllerRef.current?.detach();
@@ -129,9 +191,12 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   function changeStream(url: string): void {
     if (!dashPlayerRef.current) return;
     c2paControllerRef.current?.reset();
+    qualitiesInitializedRef.current = false;
+    currentQualityLabelRef.current = '—';
+    currentAudioQualityLabelRef.current = '—';
     setState({ segments: [], initData: null });
     dashPlayerRef.current.attachSource(url);
   }
 
-  return { containerRef, c2paController, state, changeStream, videoJsReady };
+  return { containerRef, c2paController, state, changeStream };
 }
