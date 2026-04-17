@@ -16,7 +16,7 @@ npm install video.js
 
 ## Prerequisites
 
-This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('playbackStatus', handler)` and `off('playbackStatus', handler)` is compatible.
+This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('segmentValidated', handler)` and `off('segmentValidated', handler)` is compatible.
 
 ## Quick Start
 
@@ -65,7 +65,7 @@ Attaches C2PA UI overlays to a video.js player and wires them to a `C2paControll
 | Parameter | Type | Description |
 |---|---|---|
 | `videoPlayer` | `VideoJsPlayer` | A video.js player instance |
-| `c2paController` | `C2paControllerEvents` | Any object with `on`/`off` for `'playbackStatus'` events |
+| `c2paController` | `C2paControllerEvents` | Any object with `on`/`off` for `'segmentValidated'` events |
 | `options` | `C2paPlayerOptions` | Optional configuration |
 
 ### `C2paPlayerOptions`
@@ -92,18 +92,6 @@ type C2paPlayerInstance = {
 | **C2paTimeline** | Colored progress bar overlaid on the video.js seek bar. Each segment is colored by validation status (valid, invalid, warning, unknown) |
 | **C2paMenu** | Dropdown menu in the control bar showing content credentials, provider info, and per-segment validation details |
 | **C2paFrictionModal** | Modal shown before playback when the stream manifest is invalid. Displayed once per session, dismissible by the user |
-
-## Additional Exports
-
-```ts
-import { providerInfoFromSocialUrl } from '@c2pa-live-toolkit/videojs-ui';
-import { formatTime } from '@c2pa-live-toolkit/videojs-ui';
-```
-
-| Export | Description |
-|---|---|
-| `providerInfoFromSocialUrl(url)` | Parses a social media URL and returns provider branding info |
-| `formatTime(seconds)` | Formats a number of seconds into `HH:MM:SS` display string |
 
 ## Styles
 

@@ -68,9 +68,6 @@ c2pa.once(C2paEvent.INIT_PROCESSED, (e) => { ... });
 c2pa.off(C2paEvent.SEGMENT_VALIDATED, handler);
 ```
 
-#### Query methods
-
-
 #### Lifecycle methods
 
 ```ts
@@ -88,17 +85,23 @@ Fired after each media segment is validated.
 type SegmentRecord = {
   segmentNumber: number;
   mediaType: MediaType;
-  sequenceNumber: number;
-  keyId: string;
-  hash: string;
+  keyId: string | null;
+  hash: string | null;
   status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReasonValue;
   timestamp: number;
-  arrivalIndex: number;
   errorCodes?: readonly ValidationErrorCode[];
   manifest?: C2paManifest | null;
   previousManifestId?: string | null;
 };
+```
+
+`SegmentStatusValue` can be one of: `'valid'`, `'invalid'`, `'replayed'`, `'reordered'`, `'missing'`, `'warning'`, `'unverified'`. Import the `SegmentStatus` runtime constant for type-safe comparisons:
+
+```ts
+import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+
+if (record.status === SegmentStatus.VALID) { ... }
 ```
 
 ### `initProcessed`
@@ -112,23 +115,6 @@ type InitProcessedEvent = {
   manifestId: string | undefined;
   errorCodes?: readonly string[];
   error?: string;
-};
-```
-
-### `playbackStatus`
-
-Fired on each `PLAYBACK_TIME_UPDATED` event from dash.js.
-
-```ts
-type PlaybackStatus = {
-  verified: VerificationStatus;
-  details: Partial<Record<MediaType, PlaybackStatusDetail>>;
-};
-
-type PlaybackStatusDetail = {
-  verified: VerificationStatus;
-  manifest: C2paManifest | null;
-  error: PlaybackDiagnosticValue | null;
 };
 ```
 
@@ -148,9 +134,18 @@ Fired on unexpected internal errors.
 type ErrorEvent = { source: string; error: unknown };
 ```
 
-### `reset`
+## Runtime constants
 
-Fired after `c2pa.reset()` is called.
+The following enum-like objects are exported as runtime values and can be used for type-safe comparisons:
+
+```ts
+import {
+  C2paEvent,            // event name keys: SEGMENT_VALIDATED, INIT_PROCESSED, SEGMENTS_MISSING, ERROR
+  SegmentStatus,        // status values: VALID, INVALID, REPLAYED, REORDERED, MISSING, WARNING, UNVERIFIED
+  SequenceAnomalyReason,// DUPLICATE, OUT_OF_ORDER, GAP_DETECTED, SEQUENCE_NUMBER_BELOW_MINIMUM
+  ValidationErrorCode,  // all C2PA and live-video error codes
+} from '@c2pa-live-toolkit/dashjs-plugin';
+```
 
 ## Validation Methods
 
