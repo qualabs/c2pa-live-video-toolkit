@@ -61,10 +61,6 @@ export type SegmentRecord = {
   timestamp: number;
   manifest?: C2paManifest | null;
   previousManifestId?: string | null;
-  /** First missing sequence number when this segment detected a gap (inclusive). */
-  sequenceMissingFrom?: number;
-  /** Last missing sequence number when this segment detected a gap (inclusive). */
-  sequenceMissingTo?: number;
 };
 
 export type InitProcessedEvent = {

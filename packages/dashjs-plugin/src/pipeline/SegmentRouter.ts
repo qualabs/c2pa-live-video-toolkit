@@ -99,8 +99,6 @@ function buildVsiSegmentRecord(
     timestamp: Date.now(),
     errorCodes: asValidationErrorCodes(vsiResult.errorCodes),
     manifest: manifest,
-    sequenceMissingFrom: vsiResult.sequenceMissingFrom ?? undefined,
-    sequenceMissingTo: vsiResult.sequenceMissingTo ?? undefined,
   };
 }
 

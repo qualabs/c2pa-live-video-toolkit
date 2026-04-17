@@ -187,7 +187,7 @@ describe('SegmentRouter', () => {
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
 
-    it('exposes the missing sequence range on the validated record when gap_detected', async () => {
+    it('emits a warning-status record when the validator reports gap_detected', async () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
 
@@ -195,8 +195,6 @@ describe('SegmentRouter', () => {
         ...makeValidVsiResult(),
         sequenceNumber: 5,
         sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
-        sequenceMissingFrom: 2,
-        sequenceMissingTo: 4,
       };
 
       const eventBus = new EventBus();
@@ -224,9 +222,8 @@ describe('SegmentRouter', () => {
       expect(validatedListener.mock.calls[0][0]).toMatchObject({
         segmentNumber: 5,
         mediaType: 'video',
+        status: 'warning',
         sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
-        sequenceMissingFrom: 2,
-        sequenceMissingTo: 4,
       });
     });
   });

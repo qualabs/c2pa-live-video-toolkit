@@ -1,11 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import type { SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
-import {
-  ValidationErrorCode,
-  SegmentStatus,
-  SequenceAnomalyReason,
-} from '@c2pa-live-toolkit/dashjs-plugin';
+import { ValidationErrorCode, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {
@@ -52,21 +48,12 @@ const InitBadgeStatus = {
 type InitBadgeStatusValue = (typeof InitBadgeStatus)[keyof typeof InitBadgeStatus];
 
 function lacksC2paData(segment: SegmentRecord): boolean {
-  return segment.status === SegmentStatus.MISSING || segment.status === SegmentStatus.UNVERIFIED;
-}
-
-function isManifestBoxContinuityBreak(segment: SegmentRecord): boolean {
-  // VSI gaps are surfaced as synthetic MISSING rows, so here we only need to
-  // flag the ManifestBox path, which reports the gap through a CONTINUITY_INVALID
-  // error on the next segment without emitting segmentsMissing.
-  if (segment.sequenceReason === SequenceAnomalyReason.GAP_DETECTED) return false;
-  return segment.errorCodes?.includes(ValidationErrorCode.CONTINUITY_INVALID) ?? false;
+  return segment.status === SegmentStatus.UNVERIFIED;
 }
 
 function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
-  if (segment.status === SegmentStatus.MISSING) return ValidationBadgeKind.MISSING;
   if (segment.status === SegmentStatus.UNVERIFIED) return ValidationBadgeKind.EMPTY;
-  if (isManifestBoxContinuityBreak(segment)) return ValidationBadgeKind.MISSING;
+  if (segment.status === SegmentStatus.WARNING) return ValidationBadgeKind.MISSING;
   return segment.status === SegmentStatus.VALID
     ? ValidationBadgeKind.VALID
     : ValidationBadgeKind.FAILED;

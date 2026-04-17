@@ -6,11 +6,7 @@ import type {
   SegmentRecord,
   InitProcessedEvent,
 } from '@c2pa-live-toolkit/dashjs-plugin';
-import {
-  buildMissingSegmentRecords,
-  resolveStreamUrl,
-  SEEK_BACK_OFFSET_SECONDS,
-} from './playerUtils.js';
+import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
 export type C2paPlayerState = {
   segments: SegmentRecord[];
@@ -58,10 +54,7 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     setC2paController(controller);
 
     controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
-      setState((prev) => {
-        const missingRecords = buildMissingSegmentRecords(record, prev.segments);
-        return { ...prev, segments: [...prev.segments, record, ...missingRecords] };
-      });
+      setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
     });
 
     controller.on(C2paEvent.INIT_PROCESSED, (event) => {

@@ -75,11 +75,17 @@ const STATUS_INFO_MAP: Record<
     meaning: 'One or more segments were dropped. Could indicate a gap attack or network failure.',
   },
   warning: {
-    title: 'Warning',
-    description: 'Segment has potential issues but may still be playable.',
-    details: ['⚠ Some validation checks could not be completed'],
+    title: 'Valid Segment (with warning)',
+    description:
+      'The segment itself is cryptographically valid. A stream-level anomaly was detected — typically a sequence gap or a broken continuity chain caused by a preceding missing segment.',
+    details: [
+      '✓ Cryptographic signature is valid',
+      '✓ Content hash matches the signed hash',
+      '⚠ Sequence or continuity anomaly detected in the surrounding stream',
+    ],
     color: '#fbbf24',
-    meaning: 'Segment could not be fully verified. May be normal for certain content types.',
+    meaning:
+      'This segment is authentic and playable. The warning flags context around it (a missing prior segment or a chain break), not an issue with this segment.',
   },
 };
 
