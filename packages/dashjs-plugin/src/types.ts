@@ -28,14 +28,6 @@ export const ValidationErrorCode = {
 
 export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
 
-type C2paStatusCodeKey =
-  | 'HASHED_URI_MISMATCH'
-  | 'ASSERTION_MISSING'
-  | 'INGREDIENT_MISMATCH'
-  | 'SIGNATURE_MISMATCH';
-
-export type C2paStatusCode = (typeof ValidationErrorCode)[C2paStatusCodeKey];
-
 export const SegmentStatus = {
   VALID: 'valid',
   INVALID: 'invalid',
@@ -43,7 +35,7 @@ export const SegmentStatus = {
   REORDERED: 'reordered',
   MISSING: 'missing',
   WARNING: 'warning',
-  AD: 'ad',
+  UNVERIFIED: 'unverified',
 } as const;
 
 export type SegmentStatusValue = (typeof SegmentStatus)[keyof typeof SegmentStatus];
@@ -61,30 +53,14 @@ export type SequenceAnomalyReasonValue =
 export type SegmentRecord = {
   segmentNumber: number;
   mediaType: MediaType;
-  sequenceNumber: number;
-  keyId: string;
-  hash: string;
+  keyId: string | null;
+  hash: string | null;
   status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReasonValue;
+  errorCodes?: readonly ValidationErrorCode[];
   timestamp: number;
-  arrivalIndex: number;
-  validationResults?: {
-    overall: boolean;
-    errorCodes?: readonly ValidationErrorCode[];
-  };
   manifest?: C2paManifest | null;
   previousManifestId?: string | null;
-};
-
-export type PlaybackStatusDetail = {
-  verified: boolean | undefined;
-  manifest: C2paManifest | null;
-  error: string | null;
-};
-
-export type PlaybackStatus = {
-  verified: boolean | undefined;
-  details: Partial<Record<MediaType, PlaybackStatusDetail>>;
 };
 
 export type InitProcessedEvent = {
@@ -96,37 +72,24 @@ export type InitProcessedEvent = {
   error?: string;
 };
 
-export type SegmentValidatedEvent = {
-  segmentNumber: number;
-  status: SegmentStatusValue;
-  sequenceReason?: SequenceAnomalyReasonValue;
-  hash: string;
-  keyId: string;
-  mediaType: MediaType;
-  errorCodes?: readonly ValidationErrorCode[];
-};
-
-export type SegmentsMissingEvent = {
-  from: number;
-  to: number;
-  count: number;
-};
-
 export type ErrorEvent = {
   source: string;
   error: unknown;
 };
 
 export type C2paEventMap = {
-  segmentValidated: SegmentValidatedEvent;
+  segmentValidated: SegmentRecord;
   initProcessed: InitProcessedEvent;
-  playbackStatus: PlaybackStatus;
-  segmentsMissing: SegmentsMissingEvent;
   error: ErrorEvent;
-  reset: Record<string, never>;
 };
 
 export type C2paEventType = keyof C2paEventMap;
+
+export const C2paEvent = {
+  SEGMENT_VALIDATED: 'segmentValidated',
+  INIT_PROCESSED: 'initProcessed',
+  ERROR: 'error',
+} as const satisfies Record<string, C2paEventType>;
 
 export type Logger = {
   log: (...args: unknown[]) => void;
@@ -136,9 +99,7 @@ export type Logger = {
 
 export type C2paOptions = {
   mediaTypes?: MediaType[];
-  maxStoredSegments?: number;
   logger?: Logger | false;
-  onSegmentValidated?: (record: SegmentRecord) => void;
 };
 
 export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
@@ -161,8 +122,6 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
 };
 
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];
-export const DEFAULT_MAX_STORED_SEGMENTS = 1000;
-export const PLAYBACK_SEARCH_WINDOW_SECONDS = 0.01;
 
 export function isMediaType(type: string): type is MediaType {
   return type === 'video' || type === 'audio';

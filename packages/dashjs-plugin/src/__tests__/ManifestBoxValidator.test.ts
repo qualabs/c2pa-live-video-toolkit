@@ -97,9 +97,7 @@ describe('ManifestBoxValidator', () => {
   });
 
   it('uses fallbackIndex when CML returns no sequenceNumber', async () => {
-    mockValidate.mockResolvedValue(
-      makeCmlResult({ sequenceNumber: null }) as never,
-    );
+    mockValidate.mockResolvedValue(makeCmlResult({ sequenceNumber: null }) as never);
 
     const result = await validator.validate(new Uint8Array([0x00]), 42);
 

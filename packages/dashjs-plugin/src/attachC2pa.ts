@@ -1,16 +1,13 @@
 import { EventBus } from './events/EventBus.js';
 import { SessionKeyStore } from './state/SessionKeyStore.js';
 import { SequenceTracker } from './state/SequenceTracker.js';
-import { SegmentStore } from './state/SegmentStore.js';
-import { TimeIntervalIndex } from './state/TimeIntervalIndex.js';
 import { InitSegmentProcessor } from './pipeline/InitSegmentProcessor.js';
 import { VsiValidator } from './pipeline/VsiValidator.js';
 import { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
 import { SegmentRouter } from './pipeline/SegmentRouter.js';
-import { PlaybackTracker } from './playback/PlaybackTracker.js';
 import { C2paController } from './C2paController.js';
 import type { C2paOptions, Logger, MediaType, MutableRef, C2paManifest } from './types.js';
-import { DEFAULT_MEDIA_TYPES, DEFAULT_MAX_STORED_SEGMENTS } from './types.js';
+import { DEFAULT_MEDIA_TYPES } from './types.js';
 
 const SILENT_LOGGER: Logger = {
   log: () => undefined,
@@ -34,10 +31,6 @@ export interface DashjsPlayer {
   on(event: string, handler: (e: unknown) => void, scope?: object): void;
 }
 
-type DashjsPlaybackEvent = {
-  time: number;
-};
-
 /**
  * Attaches C2PA validation to a dash.js player instance.
  *
@@ -48,30 +41,20 @@ type DashjsPlaybackEvent = {
  * ```ts
  * const player = dashjs.MediaPlayer().create();
  * const c2pa = attachC2pa(player);
- * c2pa.on('segmentValidated', (e) => console.log(e.status));
+ * c2pa.on(C2paEvent.SEGMENT_VALIDATED, (record) => console.log(record.status));
  * player.initialize(videoElement, streamUrl, true);
  * ```
  */
 export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2paController {
   const supportedMediaTypes: MediaType[] = options.mediaTypes ?? DEFAULT_MEDIA_TYPES;
-  const maxStoredSegments = options.maxStoredSegments ?? DEFAULT_MAX_STORED_SEGMENTS;
   const logger = buildLogger(options.logger);
 
-  // Shared mutable state containers (passed by reference)
   const manifest: MutableRef<C2paManifest | null> = { value: null };
-  const currentQuality: Record<string, string | number | null> = {};
-  for (const mediaType of supportedMediaTypes) {
-    currentQuality[mediaType] = null;
-  }
 
-  // State stores (instance-scoped — safe for multiple players on the same page)
   const eventBus = new EventBus();
   const sessionKeyStore = new SessionKeyStore();
   const sequenceTracker = new SequenceTracker();
-  const segmentStore = new SegmentStore(maxStoredSegments);
-  const timeIndex = new TimeIntervalIndex();
 
-  // Pipeline
   const initProcessor = new InitSegmentProcessor({ sessionKeyStore, logger });
   const vsiValidator = new VsiValidator({ sessionKeyStore, sequenceTracker });
   const manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>> = {};
@@ -85,19 +68,7 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     vsiValidator,
     manifestBoxValidators,
     sessionKeyStore,
-    segmentStore,
-    timeIndex,
     manifest,
-    currentQuality,
-    supportedMediaTypes,
-    logger,
-  });
-
-  const playbackTracker = new PlaybackTracker({
-    eventBus,
-    timeIndex,
-    manifest,
-    currentQuality,
     supportedMediaTypes,
     logger,
   });
@@ -115,36 +86,15 @@ export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2p
     },
   }));
 
-  const PLAYBACK_TIME_UPDATED = 'playbackTimeUpdated';
-  player.on(PLAYBACK_TIME_UPDATED, (e: unknown) => {
-    if (isDetached) return;
-    const time = (e as DashjsPlaybackEvent).time;
-    playbackTracker.handleTimeUpdate(time);
-  });
-
-  // Wire up direct callback if provided
-  if (options.onSegmentValidated) {
-    const callback = options.onSegmentValidated;
-    eventBus.on('segmentValidated', () => {
-      const latest = segmentStore.getLast();
-      if (latest) callback(latest);
-    });
-  }
-
-  const controller = new C2paController({
+  return new C2paController({
     eventBus,
-    segmentStore,
+    segmentRouter,
     sessionKeyStore,
     sequenceTracker,
-    timeIndex,
     manifestBoxValidators,
-    playbackTracker,
-    currentQuality,
     manifest,
     detachFn: () => {
       isDetached = true;
     },
   });
-
-  return controller;
 }

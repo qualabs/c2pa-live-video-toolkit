@@ -2,6 +2,7 @@ import type {
   VideoJsPlayer,
   C2paControllerEvents,
   PlaybackStatus,
+  SegmentRecord,
   C2paPlayerOptions,
   C2paPlayerInstance,
 } from './types.js';
@@ -15,20 +16,21 @@ const SEEK_TIME_THRESHOLD = 0.5;
 const MENU_ADJUST_INTERVAL_MS = 500;
 const INITIAL_MENU_ADJUST_DELAY_MS = 100;
 
-/**
- * Attaches C2PA UI overlays to a video.js player and wires them to a C2paController.
- *
- * @example
- * ```ts
- * import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
- * import '@c2pa-live-toolkit/videojs-ui/styles';
- *
- * const ui = C2paPlayerUI(videoJsPlayer, c2paController);
- *
- * // Later, when tearing down:
- * ui.destroy();
- * ```
- */
+const INVALID_STATUSES = new Set(['invalid', 'replayed', 'reordered', 'warning']);
+
+function segmentToPlaybackStatus(record: SegmentRecord): PlaybackStatus {
+  const verified = record.status === 'valid' ? true
+    : INVALID_STATUSES.has(record.status) ? false
+    : undefined;
+
+  return {
+    verified,
+    details: {
+      video: { verified, manifest: record.manifest ?? null, error: null },
+    },
+  };
+}
+
 export function C2paPlayerUI(
   videoPlayer: VideoJsPlayer,
   c2paController: C2paControllerEvents,
@@ -56,6 +58,7 @@ export function C2paPlayerUI(
   let seeking = false;
   let lastPlaybackTime = 0;
   let isManifestInvalid = false;
+  let latestSegment: SegmentRecord | null = null;
 
   videoPlayer.on('play', () => {
     if (frictionModal && isManifestInvalid && !playbackStarted) {
@@ -83,7 +86,6 @@ export function C2paPlayerUI(
     lastPlaybackTime = result.lastPlaybackTime;
   });
 
-  // Workaround: video.js has no resize event for menu content, so we poll periodically.
   const menuAdjustInterval = setInterval(() => {
     adjustMenuSize(menuButton, videoPlayer, MENU_HEIGHT_OFFSET);
   }, MENU_ADJUST_INTERVAL_MS);
@@ -91,11 +93,19 @@ export function C2paPlayerUI(
     adjustMenuSize(menuButton, videoPlayer, MENU_HEIGHT_OFFSET);
   }, INITIAL_MENU_ADJUST_DELAY_MS);
 
-  const handlePlaybackStatus = (status: PlaybackStatus): void => {
+  const handleSegmentValidated = (record: SegmentRecord): void => {
+    latestSegment = record;
+  };
+
+  videoPlayer.on('timeupdate', () => {
+    if (!latestSegment) return;
+
     const currentTime = videoPlayer.currentTime();
     const timeDelta = currentTime - lastPlaybackTime;
 
     if (!seeking && timeDelta >= 0 && timeDelta < SEEK_TIME_THRESHOLD) {
+      const status = segmentToPlaybackStatus(latestSegment);
+
       timeline.onValidationStatusChanged(
         status.verified,
         currentTime,
@@ -112,13 +122,13 @@ export function C2paPlayerUI(
     }
 
     lastPlaybackTime = currentTime;
-  };
+  });
 
-  c2paController.on('playbackStatus', handlePlaybackStatus);
+  c2paController.on('segmentValidated', handleSegmentValidated);
 
   return {
     destroy(): void {
-      c2paController.off('playbackStatus', handlePlaybackStatus);
+      c2paController.off('segmentValidated', handleSegmentValidated);
       clearInterval(menuAdjustInterval);
       timeline.reset();
     },

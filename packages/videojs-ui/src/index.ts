@@ -4,9 +4,4 @@ export type {
   C2paPlayerOptions,
   C2paPlayerInstance,
   VideoJsPlayer,
-  PlaybackStatus,
-  PlaybackStatusDetail,
-  MediaType,
 } from './types.js';
-export { providerInfoFromSocialUrl } from './providers/SocialProviders.js';
-export { formatTime } from './components/C2paTimeline.js';

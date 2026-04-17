@@ -20,12 +20,12 @@ npm install dashjs
 
 ```ts
 import dashjs from 'dashjs';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 
 const player = dashjs.MediaPlayer().create();
 const c2pa = attachC2pa(player);
 
-c2pa.on('segmentValidated', (e) => {
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => {
   console.log(`Segment ${e.segmentNumber}: ${e.status}`);
 });
 
@@ -54,9 +54,7 @@ Returns a `C2paController` instance.
 ```ts
 type C2paOptions = {
   mediaTypes?: ('video' | 'audio')[];  // Default: ['video', 'audio']
-  maxStoredSegments?: number;           // Segment history limit. Default: 1000
   logger?: Logger | false;             // Custom logger or false to disable all logs
-  onSegmentValidated?: (record: SegmentRecord) => void; // Direct callback per segment
 };
 ```
 
@@ -65,16 +63,9 @@ type C2paOptions = {
 #### Event methods
 
 ```ts
-c2pa.on('segmentValidated', (e) => { ... });
-c2pa.once('initProcessed', (e) => { ... });
-c2pa.off('segmentValidated', handler);
-```
-
-#### Query methods
-
-```ts
-const segments = c2pa.getSegments();         // All validated SegmentRecord[]
-const unsubscribe = c2pa.subscribeToSegments((segments) => { ... });
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => { ... });
+c2pa.once(C2paEvent.INIT_PROCESSED, (e) => { ... });
+c2pa.off(C2paEvent.SEGMENT_VALIDATED, handler);
 ```
 
 #### Lifecycle methods
@@ -91,15 +82,26 @@ c2pa.detach();   // Full cleanup — removes all listeners and disables validati
 Fired after each media segment is validated.
 
 ```ts
-type SegmentValidatedEvent = {
+type SegmentRecord = {
   segmentNumber: number;
-  status: 'valid' | 'invalid' | 'replayed' | 'reordered' | 'missing' | 'warning';
-  sequenceReason?: 'duplicate' | 'out_of_order' | 'gap_detected' | 'sequence_number_below_minimum';
-  hash: string;
-  keyId: string;
-  mediaType: 'video' | 'audio';
-  errorCodes?: readonly string[];
+  mediaType: MediaType;
+  keyId: string | null;
+  hash: string | null;
+  status: SegmentStatusValue;
+  sequenceReason?: SequenceAnomalyReasonValue;
+  timestamp: number;
+  errorCodes?: readonly ValidationErrorCode[];
+  manifest?: C2paManifest | null;
+  previousManifestId?: string | null;
 };
+```
+
+`SegmentStatusValue` can be one of: `'valid'`, `'invalid'`, `'replayed'`, `'reordered'`, `'missing'`, `'warning'`, `'unverified'`. Import the `SegmentStatus` runtime constant for type-safe comparisons:
+
+```ts
+import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+
+if (record.status === SegmentStatus.VALID) { ... }
 ```
 
 ### `initProcessed`
@@ -113,20 +115,6 @@ type InitProcessedEvent = {
   manifestId: string | undefined;
   errorCodes?: readonly string[];
   error?: string;
-};
-```
-
-### `playbackStatus`
-
-Fired on each `PLAYBACK_TIME_UPDATED` event from dash.js.
-
-```ts
-type PlaybackStatus = {
-  verified: boolean | undefined;  // undefined means inconclusive
-  details: {
-    video?: { verified: boolean | undefined; manifest: unknown; error: string | null };
-    audio?: { verified: boolean | undefined; manifest: unknown; error: string | null };
-  };
 };
 ```
 
@@ -146,9 +134,18 @@ Fired on unexpected internal errors.
 type ErrorEvent = { source: string; error: unknown };
 ```
 
-### `reset`
+## Runtime constants
 
-Fired after `c2pa.reset()` is called.
+The following enum-like objects are exported as runtime values and can be used for type-safe comparisons:
+
+```ts
+import {
+  C2paEvent,            // event name keys: SEGMENT_VALIDATED, INIT_PROCESSED, SEGMENTS_MISSING, ERROR
+  SegmentStatus,        // status values: VALID, INVALID, REPLAYED, REORDERED, MISSING, WARNING, UNVERIFIED
+  SequenceAnomalyReason,// DUPLICATE, OUT_OF_ORDER, GAP_DETECTED, SEQUENCE_NUMBER_BELOW_MINIMUM
+  ValidationErrorCode,  // all C2PA and live-video error codes
+} from '@c2pa-live-toolkit/dashjs-plugin';
+```
 
 ## Validation Methods
 
@@ -170,9 +167,9 @@ const c2paPlayer2 = attachC2pa(player2);
 ## Error Codes
 
 ```ts
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 
-c2pa.on('segmentValidated', (e) => {
+c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => {
   for (const code of e.errorCodes ?? []) {
     console.error(ERROR_CODE_MESSAGES[code] ?? code);
   }

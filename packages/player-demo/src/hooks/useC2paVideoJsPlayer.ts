@@ -5,7 +5,7 @@ import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
 import 'video.js/dist/video-js.css';
 import '@c2pa-live-toolkit/videojs-ui/styles';
 import type { C2paPlayerInstance, VideoJsPlayer } from '@c2pa-live-toolkit/videojs-ui';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
@@ -47,7 +47,6 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   const dashPlayerRef = useRef<dashjs.MediaPlayerClass | null>(null);
   const c2paControllerRef = useRef<C2paController | null>(null);
   const c2paUiRef = useRef<C2paPlayerInstance | null>(null);
-  const unsubscribeSegmentsRef = useRef<(() => void) | null>(null);
   // Capture the initial videoSrc so the mount effect is truly mount-only
   const initialVideoSrcRef = useRef(videoSrc);
 
@@ -80,11 +79,11 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       c2paControllerRef.current = controller;
       setC2paController(controller);
 
-      unsubscribeSegmentsRef.current = controller.subscribeToSegments((segments) => {
-        setState((prev) => ({ ...prev, segments }));
+      controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
+        setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
       });
 
-      controller.on('initProcessed', (event) => {
+      controller.on(C2paEvent.INIT_PROCESSED, (event) => {
         setState((prev) => ({ ...prev, initData: event }));
       });
 
@@ -102,8 +101,6 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
     });
 
     return () => {
-      unsubscribeSegmentsRef.current?.();
-      unsubscribeSegmentsRef.current = null;
       c2paUiRef.current?.destroy();
       c2paUiRef.current = null;
       c2paControllerRef.current?.detach();

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import dashjs from 'dashjs';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
 import type {
   C2paController,
   SegmentRecord,
@@ -53,11 +53,11 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     c2paControllerRef.current = controller;
     setC2paController(controller);
 
-    const unsubscribeSegments = controller.subscribeToSegments((segments) => {
-      setState((prev) => ({ ...prev, segments }));
+    controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
+      setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
     });
 
-    controller.on('initProcessed', (event) => {
+    controller.on(C2paEvent.INIT_PROCESSED, (event) => {
       setState((prev) => ({ ...prev, initData: event }));
     });
 
@@ -77,7 +77,6 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     dashPlayer.initialize(videoRef.current!, streamUrl, true);
 
     return () => {
-      unsubscribeSegments();
       controller.detach();
       dashPlayer.reset();
       dashPlayerRef.current = null;

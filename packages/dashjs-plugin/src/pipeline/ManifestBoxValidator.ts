@@ -7,7 +7,6 @@ export type ManifestBoxValidationResult = {
   sequenceNumber: number;
   bmffHashHex: string | null;
   manifest: C2paManifest | null;
-  issuer?: string | null;
   previousManifestId?: string | null;
   errorCodes?: readonly string[];
 };
@@ -52,14 +51,13 @@ export class ManifestBoxValidator {
       sequenceNumber: result.sequenceNumber ?? fallbackIndex,
       bmffHashHex: result.bmffHashHex,
       manifest: result.manifest,
-      issuer: result.issuer,
       previousManifestId: result.previousManifestId,
       errorCodes,
     };
   }
 
-  reset(initialManifestId?: string | null): void {
-    this.lastManifestId = initialManifestId ?? null;
+  reset(): void {
+    this.lastManifestId = null;
     this.lastState = undefined;
     this.isFirstSegment = true;
   }

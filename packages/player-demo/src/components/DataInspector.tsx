@@ -25,13 +25,6 @@ const STATUS_INFO_MAP: Record<
   Exclude<SegmentStatusValue, typeof SegmentStatus.INVALID>,
   StatusInfo
 > = {
-  ad: {
-    title: 'No C2PA Manifest',
-    description: 'This segment carries no C2PA provenance data.',
-    details: ['▶ No C2PA manifest found in segment', '— No cryptographic validation performed'],
-    color: '#60a5fa',
-    meaning: 'The segment was served without a C2PA manifest — likely an ad or non-C2PA period.',
-  },
   valid: {
     title: 'Valid Segment',
     description: 'This segment passed all C2PA validation checks.',
@@ -67,6 +60,13 @@ const STATUS_INFO_MAP: Record<
     color: '#f59e0b',
     meaning: 'Could be a network condition or an intentional reordering attack.',
   },
+  unverified: {
+    title: 'No C2PA Data',
+    description: 'This segment was delivered but carries no C2PA provenance data.',
+    details: ['— No EMSG or manifest box found', '— No cryptographic validation performed'],
+    color: '#60a5fa',
+    meaning: 'The segment was not signed. This may be expected for ad or pre-roll content.',
+  },
   missing: {
     title: 'Missing Segment Detected',
     description: 'This segment was dropped from the live stream.',
@@ -75,11 +75,17 @@ const STATUS_INFO_MAP: Record<
     meaning: 'One or more segments were dropped. Could indicate a gap attack or network failure.',
   },
   warning: {
-    title: 'Warning',
-    description: 'Segment has potential issues but may still be playable.',
-    details: ['⚠ Some validation checks could not be completed'],
+    title: 'Valid Segment (with warning)',
+    description:
+      'The segment itself is cryptographically valid. A stream-level anomaly was detected — typically a sequence gap or a broken continuity chain caused by a preceding missing segment.',
+    details: [
+      '✓ Cryptographic signature is valid',
+      '✓ Content hash matches the signed hash',
+      '⚠ Sequence or continuity anomaly detected in the surrounding stream',
+    ],
     color: '#fbbf24',
-    meaning: 'Segment could not be fully verified. May be normal for certain content types.',
+    meaning:
+      'This segment is authentic and playable. The warning flags context around it (a missing prior segment or a chain break), not an issue with this segment.',
   },
 };
 
@@ -137,17 +143,16 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
     );
   }
 
-  const errorCodes = (segment.validationResults?.errorCodes ?? []) as string[];
+  const errorCodes = (segment.errorCodes ?? []) as string[];
   const info = buildStatusInfo(segment.status, errorCodes, segment);
   const displayData = convertBuffersToHex({
     segmentNumber: segment.segmentNumber,
-    sequenceNumber: segment.sequenceNumber,
     mediaType: segment.mediaType,
     keyId: segment.keyId,
     hash: segment.hash,
     status: segment.status,
     sequenceReason: segment.sequenceReason,
-    validationResults: segment.validationResults,
+    errorCodes: segment.errorCodes,
   });
 
   return (
@@ -164,7 +169,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
           <PreviewInfo>
             <InfoRow>
               <InfoLabel>SEQ:</InfoLabel>
-              <InfoValue>{segment.sequenceNumber}</InfoValue>
+              <InfoValue>{segment.segmentNumber}</InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>Type:</InfoLabel>
@@ -172,7 +177,7 @@ export const DataInspector: React.FC<DataInspectorProps> = ({ segment }) => {
             </InfoRow>
             <InfoRow>
               <InfoLabel>Key ID:</InfoLabel>
-              <InfoValue>{segment.keyId.substring(0, 16)}…</InfoValue>
+              <InfoValue>{segment.keyId ? `${segment.keyId.substring(0, 16)}…` : '—'}</InfoValue>
             </InfoRow>
           </PreviewInfo>
           <ClickHint>Click to view details</ClickHint>
@@ -269,7 +274,7 @@ const PreviewTitle = styled.h3`
   color: #e5e5e5;
   margin: 0;
 `;
-const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'ad' }>`
+const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'unverified' }>`
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.25rem 0.5rem;
@@ -279,9 +284,9 @@ const StatusBadge = styled.span<{ $category: 'valid' | 'failed' | 'warning' | 'a
       ? '#4ade80'
       : p.$category === 'failed'
         ? '#ef4444'
-        : p.$category === 'ad'
-          ? '#60a5fa'
-          : '#fbbf24'};
+        : p.$category === 'warning'
+          ? '#fbbf24'
+          : '#60a5fa'};
 `;
 const PreviewInfo = styled.div`
   display: flex;

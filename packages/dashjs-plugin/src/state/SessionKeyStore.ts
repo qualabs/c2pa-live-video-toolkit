@@ -7,10 +7,6 @@ export class SessionKeyStore {
     this.keys.set(key.kid, key);
   }
 
-  get(kid: string): ValidatedSessionKey | null {
-    return this.keys.get(kid) ?? null;
-  }
-
   getAll(): ValidatedSessionKey[] {
     return Array.from(this.keys.values());
   }
