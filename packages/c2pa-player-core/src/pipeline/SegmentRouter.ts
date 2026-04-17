@@ -12,6 +12,7 @@ import {
 } from '../types.js';
 import type {
   MediaType,
+  MediaSegmentInput,
   SegmentRecord,
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
@@ -20,16 +21,6 @@ import type {
   C2paManifest,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
-
-type DashjsChunk = {
-  segmentType: 'InitializationSegment' | 'MediaSegment';
-  mediaInfo: { type: string };
-  bytes: ArrayBuffer | Uint8Array;
-  start: number;
-  end: number;
-  index: number;
-  representationId?: string | number;
-};
 
 type SegmentRouterDeps = {
   eventBus: EventBus;
@@ -62,11 +53,6 @@ type ManifestBoxSegmentParams = {
   mediaType: MediaType;
   segmentIndex: number;
 };
-
-function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
-  return data instanceof Uint8Array ? data : new Uint8Array(data);
-}
-
 
 function buildUnverifiedRecord(
   segmentNumber: number,
@@ -123,29 +109,31 @@ export class SegmentRouter {
     this.deps = deps;
   }
 
-  async route(chunk: DashjsChunk): Promise<void> {
-    if (chunk.segmentType === 'InitializationSegment') {
-      await this.handleInitSegment(chunk);
+  /**
+   * Route a player-agnostic segment input through the validation pipeline.
+   * Unsupported mediaTypes are silently ignored.
+   *
+   * The adapter is responsible for copying bytes before calling this method if
+   * its player detaches the underlying buffer asynchronously (e.g. dash.js
+   * transfers ArrayBuffers to MSE after the response modifier resolves).
+   */
+  async route(input: MediaSegmentInput): Promise<void> {
+    if (!isMediaType(input.mediaType)) return;
+
+    if (input.kind === 'init') {
+      await this.handleInitSegment(input);
       return;
     }
 
-    const mediaType = chunk.mediaInfo.type;
-    if (chunk.segmentType !== 'MediaSegment' || !isMediaType(mediaType)) {
-      return;
-    }
-
-    await this.handleMediaSegment(chunk, mediaType);
+    await this.handleMediaSegment(input);
   }
 
   reset(): void {
     this.recordedMissingSequences.clear();
   }
 
-  private async handleInitSegment(chunk: DashjsChunk): Promise<void> {
-    if (!chunk.mediaInfo?.type || !isMediaType(chunk.mediaInfo.type)) return;
-
-    const bytes = toUint8Array(chunk.bytes);
-    const result = await this.deps.initProcessor.process(bytes);
+  private async handleInitSegment(input: MediaSegmentInput): Promise<void> {
+    const result = await this.deps.initProcessor.process(input.bytes);
 
     this.deps.eventBus.emit('initProcessed', result);
 
@@ -158,21 +146,17 @@ export class SegmentRouter {
     }
   }
 
-  private async handleMediaSegment(chunk: DashjsChunk, mediaType: MediaType): Promise<void> {
-    const streamKey = buildStreamKey(mediaType, chunk.representationId);
-
-    // Copy bytes before queueMicrotask — dash.js transfers the underlying
-    // ArrayBuffer to MSE after this function returns, detaching it.
-    const segmentBytes = new Uint8Array(toUint8Array(chunk.bytes));
-    const segmentIndex = chunk.index + 1;
+  private async handleMediaSegment(input: MediaSegmentInput): Promise<void> {
+    const { bytes, mediaType, segmentIndex, streamId } = input;
+    const streamKey = buildStreamKey(mediaType, streamId);
 
     if (!this.deps.sessionKeyStore.hasKeys()) {
-      await this.handleManifestBoxSegment({ segmentBytes, mediaType, segmentIndex });
+      await this.handleManifestBoxSegment({ segmentBytes: bytes, mediaType, segmentIndex });
       return;
     }
 
     queueMicrotask(() => {
-      void this.handleVsiSegment({ segmentBytes, streamKey, mediaType, segmentIndex });
+      void this.handleVsiSegment({ segmentBytes: bytes, streamKey, mediaType, segmentIndex });
     });
   }
 

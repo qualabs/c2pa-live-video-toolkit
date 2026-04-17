@@ -1,24 +1,10 @@
-import { EventBus } from './events/EventBus.js';
-import { SessionKeyStore } from './state/SessionKeyStore.js';
-import { SequenceTracker } from './state/SequenceTracker.js';
-import { InitSegmentProcessor } from './pipeline/InitSegmentProcessor.js';
-import { VsiValidator } from './pipeline/VsiValidator.js';
-import { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
-import { SegmentRouter } from './pipeline/SegmentRouter.js';
-import { C2paController } from './C2paController.js';
-import type { C2paOptions, Logger, MediaType, MutableRef, C2paManifest } from './types.js';
-import { DEFAULT_MEDIA_TYPES } from './types.js';
-
-const SILENT_LOGGER: Logger = {
-  log: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-};
-
-function buildLogger(option: Logger | false | undefined): Logger {
-  if (option === false) return SILENT_LOGGER;
-  return option ?? console;
-}
+import {
+  createC2paPipeline,
+  type C2paController,
+  type C2paOptions,
+  type MediaSegmentInput,
+  type MediaType,
+} from '@c2pa-live-toolkit/c2pa-player-core';
 
 /**
  * Minimal structural interface for the dash.js player methods this plugin uses.
@@ -29,6 +15,49 @@ function buildLogger(option: Logger | false | undefined): Logger {
 export interface DashjsPlayer {
   extend(name: string, factoryOrChild: object, override?: boolean): void;
   on(event: string, handler: (e: unknown) => void, scope?: object): void;
+}
+
+/**
+ * Shape of the chunk object dash.js passes to a SegmentResponseModifier.
+ * Only the fields this adapter reads are listed.
+ */
+type DashjsChunk = {
+  segmentType: 'InitializationSegment' | 'MediaSegment';
+  mediaInfo: { type: string };
+  bytes: ArrayBuffer | Uint8Array;
+  index: number;
+  representationId?: string | number;
+};
+
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+  return data instanceof Uint8Array ? data : new Uint8Array(data);
+}
+
+/**
+ * Translate a dash.js chunk into the player-agnostic {@link MediaSegmentInput}
+ * shape the core pipeline expects. Returns `null` for chunks with an unsupported
+ * `segmentType` (anything other than Initialization/MediaSegment).
+ *
+ * Note: bytes are copied into a fresh Uint8Array because dash.js transfers the
+ * underlying ArrayBuffer to MSE after `modifyResponseAsync` resolves, detaching
+ * the original buffer.
+ */
+function adaptDashjsChunk(chunk: DashjsChunk): MediaSegmentInput | null {
+  const kind =
+    chunk.segmentType === 'InitializationSegment'
+      ? 'init'
+      : chunk.segmentType === 'MediaSegment'
+        ? 'media'
+        : null;
+  if (!kind) return null;
+
+  return {
+    kind,
+    mediaType: chunk.mediaInfo.type as MediaType,
+    bytes: new Uint8Array(toUint8Array(chunk.bytes)),
+    segmentIndex: chunk.index + 1,
+    streamId: chunk.representationId,
+  };
 }
 
 /**
@@ -46,55 +75,26 @@ export interface DashjsPlayer {
  * ```
  */
 export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2paController {
-  const supportedMediaTypes: MediaType[] = options.mediaTypes ?? DEFAULT_MEDIA_TYPES;
-  const logger = buildLogger(options.logger);
-
-  const manifest: MutableRef<C2paManifest | null> = { value: null };
-
-  const eventBus = new EventBus();
-  const sessionKeyStore = new SessionKeyStore();
-  const sequenceTracker = new SequenceTracker();
-
-  const initProcessor = new InitSegmentProcessor({ sessionKeyStore, logger });
-  const vsiValidator = new VsiValidator({ sessionKeyStore, sequenceTracker });
-  const manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>> = {};
-  for (const mediaType of supportedMediaTypes) {
-    manifestBoxValidators[mediaType] = new ManifestBoxValidator();
-  }
-
-  const segmentRouter = new SegmentRouter({
-    eventBus,
-    initProcessor,
-    vsiValidator,
-    manifestBoxValidators,
-    sessionKeyStore,
-    manifest,
-    supportedMediaTypes,
-    logger,
-  });
-
-  // Wire up detach flag — dash.js has no API to unregister extensions,
-  // so we use a flag to make modifyResponseAsync a no-op after detach.
+  // Wire up detach flag — dash.js has no API to unregister extensions, so we
+  // use a flag to make modifyResponseAsync a no-op after detach.
   let isDetached = false;
+
+  const pipeline = createC2paPipeline({
+    ...options,
+    onDetach: () => {
+      isDetached = true;
+    },
+  });
 
   player.extend('SegmentResponseModifier', () => ({
     modifyResponseAsync: async (chunk: unknown) => {
       if (!isDetached) {
-        await segmentRouter.route(chunk as Parameters<typeof segmentRouter.route>[0]);
+        const input = adaptDashjsChunk(chunk as DashjsChunk);
+        if (input) await pipeline.route(input);
       }
       return Promise.resolve(chunk);
     },
   }));
 
-  return new C2paController({
-    eventBus,
-    segmentRouter,
-    sessionKeyStore,
-    sequenceTracker,
-    manifestBoxValidators,
-    manifest,
-    detachFn: () => {
-      isDetached = true;
-    },
-  });
+  return pipeline.controller;
 }
