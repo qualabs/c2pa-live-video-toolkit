@@ -24,7 +24,7 @@ function truncate(value: string | undefined | null, length = KEY_ID_TRUNCATE_LEN
 const ValidationBadgeKind = {
   VALID: 'valid',
   FAILED: 'failed',
-  MISSING: 'missing',
+  WARNING: 'warning',
   EMPTY: 'empty',
   PENDING: 'pending',
 } as const;
@@ -34,7 +34,7 @@ type ValidationBadgeKindValue = (typeof ValidationBadgeKind)[keyof typeof Valida
 const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: 'VALID',
   [ValidationBadgeKind.FAILED]: 'NOT VALID',
-  [ValidationBadgeKind.MISSING]: 'MISSING SEGMENT',
+  [ValidationBadgeKind.WARNING]: 'MISSING SEGMENT',
   [ValidationBadgeKind.EMPTY]: '—',
   [ValidationBadgeKind.PENDING]: 'PENDING',
 };
@@ -53,7 +53,7 @@ function lacksC2paData(segment: SegmentRecord): boolean {
 
 function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
   if (segment.status === SegmentStatus.UNVERIFIED) return ValidationBadgeKind.EMPTY;
-  if (segment.status === SegmentStatus.WARNING) return ValidationBadgeKind.MISSING;
+  if (segment.status === SegmentStatus.WARNING) return ValidationBadgeKind.WARNING;
   return segment.status === SegmentStatus.VALID
     ? ValidationBadgeKind.VALID
     : ValidationBadgeKind.FAILED;
@@ -358,7 +358,7 @@ const Td = styled.td`
 const VALIDATION_BADGE_BACKGROUND: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: '#22c55e',
   [ValidationBadgeKind.FAILED]: '#ef4444',
-  [ValidationBadgeKind.MISSING]: '#eab308',
+  [ValidationBadgeKind.WARNING]: '#eab308',
   [ValidationBadgeKind.PENDING]: 'rgba(251, 191, 36, 0.2)',
   [ValidationBadgeKind.EMPTY]: 'transparent',
 };
