@@ -14,6 +14,10 @@ const JUMBF_UUID = new Uint8Array([
 
 const UUID_SIZE = 16;
 
+// VSI scheme URI per C2PA Live Video specification
+const VSI_SCHEME_URI = 'urn:c2pa:verifiable-segment-info';
+const VSI_SCHEME_URI_BYTES = new TextEncoder().encode(VSI_SCHEME_URI);
+
 function isC2paUuidBox(buffer: Uint8Array, offset: number): boolean {
   if (offset + 8 + UUID_SIZE > buffer.length) return false;
   const type = String.fromCharCode(
@@ -29,6 +33,30 @@ function isC2paUuidBox(buffer: Uint8Array, offset: number): boolean {
   );
 }
 
+function isVsiEmsgBox(buffer: Uint8Array, offset: number, boxSize: number): boolean {
+  if (offset + 12 > buffer.length) {
+    return false;
+  }
+  const type = String.fromCharCode(
+    buffer[offset + 4],
+    buffer[offset + 5],
+    buffer[offset + 6],
+    buffer[offset + 7],
+  );
+  if (type !== 'emsg') return false;
+
+  // scheme_id_uri starts at offset 12 (after size+type+version+flags)
+  if (buffer[offset + 8] !== 0) {
+    return false;
+  }
+  const schemeStart = offset + 12;
+  if (schemeStart + VSI_SCHEME_URI_BYTES.length >= offset + boxSize) {
+    return false;
+  }
+
+  return VSI_SCHEME_URI_BYTES.every((b, i) => b === buffer[schemeStart + i]);
+}
+
 export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8Array {
   const buffer = segmentBytes instanceof Uint8Array ? segmentBytes : new Uint8Array(segmentBytes);
   const parts: Uint8Array[] = [];
@@ -41,7 +69,7 @@ export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8A
     }
     if (boxSize === 0 || boxSize > buffer.length || offset + boxSize > buffer.length) break;
 
-    if (!isC2paUuidBox(buffer, offset)) {
+    if (!isC2paUuidBox(buffer, offset) && !isVsiEmsgBox(buffer, offset, boxSize)) {
       parts.push(buffer.subarray(offset, offset + boxSize));
     }
     offset += boxSize;
