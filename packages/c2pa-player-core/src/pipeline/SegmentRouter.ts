@@ -98,6 +98,7 @@ function resolveSegmentStatus(
 
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
+  private readonly previousWasUnverified = new Map<string, boolean>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -133,6 +134,7 @@ export class SegmentRouter {
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
       }
+      this.previousWasUnverified.clear();
     }
   }
 
@@ -193,19 +195,32 @@ export class SegmentRouter {
     }
 
     if (result.manifest == null) {
+      this.previousWasUnverified.set(mediaType, true);
       this.emitSegmentValidated(
         buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.UNVERIFIED),
       );
       return;
     }
 
+    const hadGapBefore = this.previousWasUnverified.get(mediaType) ?? false;
+    this.previousWasUnverified.set(mediaType, false);
+
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
       result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
+
+    // When the previous segment was a gap (unverified), a chain break on the
+    // current segment is a continuity gap, not content tampering.
+    const isChainBreakAfterGap =
+      hadGapBefore &&
+      !result.isValid &&
+      Array.isArray(result.errorCodes) &&
+      result.errorCodes.every((c) => c === ValidationErrorCode.SEGMENT_INVALID);
+
     const status: SegmentStatusValue = result.isValid
       ? SegmentStatus.VALID
-      : isContinuityOnlyFailure
+      : isContinuityOnlyFailure || isChainBreakAfterGap
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
     this.emitSegmentValidated({
