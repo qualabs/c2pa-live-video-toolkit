@@ -56,4 +56,13 @@ export class StreamStateRepository {
   clearPreviousSignedSegmentPath(repId: string): void {
     segmentStore.previousSignedSegmentPaths.delete(repId);
   }
+
+  getGeneration(repId: string): number {
+    return segmentStore.streamGenerations.get(repId) ?? 0;
+  }
+
+  incrementGeneration(repId: string): void {
+    const current = segmentStore.streamGenerations.get(repId) ?? 0;
+    segmentStore.streamGenerations.set(repId, current + 1);
+  }
 }

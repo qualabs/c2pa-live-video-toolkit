@@ -68,6 +68,14 @@ export class SegmentRepository {
     this.streamState.clearPreviousSignedSegmentPath(repId);
   }
 
+  getGeneration(repId: string): number {
+    return this.streamState.getGeneration(repId);
+  }
+
+  incrementGeneration(repId: string): void {
+    this.streamState.incrementGeneration(repId);
+  }
+
   // --- Queue delegates ---
 
   getReadyList(repId: string): Job[] {

@@ -13,11 +13,26 @@ const staticFilesRoot =
 
 app.use(cors());
 
+app.use((req, res, next) => {
+  if (req.path.endsWith('.mpd')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  } else if (req.path.endsWith('.m4s')) {
+    res.set('Cache-Control', 'public, max-age=3600, immutable');
+  }
+  next();
+});
+
 app.use(express.static(path.join(staticFilesRoot, 'processed', 'output')));
 app.use('/ads', express.static(path.join(staticFilesRoot, 'processed', 'ads')));
 
 app.get('/health', (_req, res) => {
   res.status(200).send('ok');
+});
+
+// UTC timing source advertised by the MPD's <UTCTiming> element. Clients sync their
+// wall clock against this to locate the live edge without drifting vs. availabilityStartTime.
+app.get('/time', (_req, res) => {
+  res.type('text/plain').send(new Date().toISOString());
 });
 
 app.listen(PORT, '0.0.0.0', () => {

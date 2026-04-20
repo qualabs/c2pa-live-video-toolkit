@@ -6,6 +6,12 @@ mkdir -p "$OUTPUT_DIR"
 
 echo "Starting multi-quality DASH live stream (1080p / 720p / 180p) + audio (128 kbps / 64 kbps)..."
 
+# UTC_TIMING_URL: published in the MPD's <UTCTiming> element. Without it, dash.js
+# falls back to an external time server (time.akamai.com) whose CORS-blocked response
+# makes the player stall without requesting any media segments. Default points to the
+# attack-proxy, which is the entry point the demo consumes.
+UTC_TIMING_URL="${UTC_TIMING_URL:-http://localhost:8083/time}"
+
 # -filter_complex split=3: one decode, three scaled outputs — avoids re-decoding per quality
 # Demo input is only 320x180, so the top rendition mainly preserves compression quality better
 # while the lowest rendition is intentionally starved to make ABR switches visually obvious.
@@ -25,10 +31,11 @@ ffmpeg -loglevel warning -nostats \
   -map 0:a -c:a:1 aac -b:a:1  64k -ar:a:1 48000 -ac:a:1 2 \
   -g:v 96 -keyint_min:v 96 -sc_threshold:v 0 \
   -seg_duration 4 \
-  -window_size 375 \
-  -extra_window_size 75 \
+  -window_size 30 \
+  -extra_window_size 10 \
   -remove_at_exit 0 \
   -use_template 1 -use_timeline 1 \
+  -utc_timing_url "$UTC_TIMING_URL" \
   -init_seg_name "init-stream\$RepresentationID\$.m4s" \
   -media_seg_name "chunk-stream\$RepresentationID\$-\$Number%05d\$.m4s" \
   -adaptation_sets "id=0,streams=v id=1,streams=a" \

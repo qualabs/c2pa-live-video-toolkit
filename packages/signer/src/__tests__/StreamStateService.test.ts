@@ -76,6 +76,20 @@ describe('StreamStateService', () => {
       expect(repository.hasInWaitingSet('v0', 'seg-2')).toBe(false);
       expect(repository.getPreviousSignedSegmentPath('v0')).toBeUndefined();
     });
+
+    it('increments the generation on each reset', () => {
+      expect(service.getGeneration('v0')).toBe(0);
+      service.resetRepresentationState('v0', 1);
+      expect(service.getGeneration('v0')).toBe(1);
+      service.resetRepresentationState('v0', 1);
+      expect(service.getGeneration('v0')).toBe(2);
+    });
+
+    it('increments generation independently per repId', () => {
+      service.resetRepresentationState('v0', 1);
+      expect(service.getGeneration('v0')).toBe(1);
+      expect(service.getGeneration('a0')).toBe(0);
+    });
   });
 
   describe('resetStreamState', () => {

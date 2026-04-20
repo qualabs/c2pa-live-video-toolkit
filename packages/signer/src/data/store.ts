@@ -32,6 +32,8 @@ interface SegmentStore {
   mpdPollingInterval: number;
   // c2patool live-video-sign: path to the last signed segment per representation (for --previous-segment)
   previousSignedSegmentPaths: Map<string, string>;
+  // Incremented on each stream reset to invalidate in-flight signing jobs
+  streamGenerations: Map<string, number>;
 }
 
 export function resetStore(): void {
@@ -49,6 +51,7 @@ export function resetStore(): void {
   segmentStore.manifestEnqueued.clear();
   segmentStore.mpdPollingInterval = DEFAULT_MPD_POLLING_INTERVAL_MS;
   segmentStore.previousSignedSegmentPaths.clear();
+  segmentStore.streamGenerations.clear();
 }
 
 export const segmentStore: SegmentStore = {
@@ -66,4 +69,5 @@ export const segmentStore: SegmentStore = {
   manifestEnqueued: new Set<string>(),
   mpdPollingInterval: DEFAULT_MPD_POLLING_INTERVAL_MS,
   previousSignedSegmentPaths: new Map<string, string>(),
+  streamGenerations: new Map<string, number>(),
 };

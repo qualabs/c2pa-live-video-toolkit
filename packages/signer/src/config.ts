@@ -39,6 +39,11 @@ export const config = {
   vsiSessionKeyPath: process.env.SESSION_KEY_PATH || '/app/certs/session.pem',
   streamId: process.env.STREAM_ID || 'live',
   c2patoolPath: process.env.C2PATOOL_PATH || DEFAULT_C2PATOOL_PATH,
+  // When set, overrides the MPD's suggestedPresentationDelay before publishing.
+  // Needed when the packager hardcodes a delay that doesn't account for signing latency
+  // (e.g. ffmpeg sets it to seg_duration). Use ISO 8601 duration format (e.g. "PT12S").
+  // Leave unset if the packager already accounts for signing latency.
+  presentationDelay: process.env.PRESENTATION_DELAY ?? null,
 };
 
 if (config.debug) {

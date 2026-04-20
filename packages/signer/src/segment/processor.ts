@@ -46,6 +46,7 @@ export async function processFile(
     const segmentNumber = parseSegmentNumber(representationId, fileKey, segmentPattern);
     if (segmentNumber === null) return;
 
+    const generationAtStart = streamStateService.getGeneration(representationId);
     const signingContext = buildSigningContext(
       representationId,
       filePath,
@@ -57,6 +58,14 @@ export async function processFile(
     logger.info(
       `[${representationId}] Signing completed (${signedAt - downloadTimings.downloadedAt}ms)`,
     );
+
+    if (streamStateService.getGeneration(representationId) !== generationAtStart) {
+      logger.warn(
+        `[${representationId}] Stream reset detected mid-signing for ${fileKey}. Discarding stale result.`,
+      );
+      await cleanupTempFile(signedSegmentPath);
+      return;
+    }
 
     await cleanupPreviousSignedSegment(signingContext.previousSegmentPath);
     streamStateService.storePreviousSignedSegmentPath(representationId, signedSegmentPath);
