@@ -167,6 +167,30 @@
   padding-bottom: 0px !important;
 }
 
+/*** QUALITY SELECTOR ***/
+.vjs-quality-selector {
+  display: flex;
+  align-items: center;
+  padding: 0 0.4em;
+  cursor: pointer;
+}
+.vjs-quality-select {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-family: sans-serif;
+  cursor: pointer;
+  outline: none;
+  padding: 0 2px;
+  appearance: none;
+}
+.vjs-quality-select option {
+  background: #1e1e1e;
+  color: #fff;
+}
+
 /*** FRICTION MODAL ***/
 .friction-overlay {
   position: absolute;
