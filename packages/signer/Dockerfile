@@ -9,12 +9,12 @@ COPY tsconfig.base.json ./
 
 # Copy signer package manifest and install dependencies
 COPY packages/signer/package*.json ./packages/signer/
-RUN npm ci --workspace=@c2pa-live/signer --no-audit --no-fund
+RUN npm ci --workspace=@qualabs/c2pa-live-signer --no-audit --no-fund
 
 # Copy signer source and compile
 COPY packages/signer/tsconfig.json ./packages/signer/
 COPY packages/signer/src ./packages/signer/src
-RUN npm run build --workspace=@c2pa-live/signer
+RUN npm run build --workspace=@qualabs/c2pa-live-signer
 
 
 FROM node:22-slim AS production

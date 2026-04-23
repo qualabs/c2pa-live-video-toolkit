@@ -1,4 +1,4 @@
-# @c2pa-live/signer
+# @qualabs/c2pa-live-signer
 
 C2PA signing service for live DASH video streaming. Monitors a DASH manifest (MPD), downloads new segments, signs them with C2PA provenance data, and publishes the signed output.
 

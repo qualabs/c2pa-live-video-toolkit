@@ -1,4 +1,4 @@
-# @c2pa-live-toolkit/player-demo
+# @qualabs/c2pa-live-player-demo
 
 Reference React/Vite demo app showcasing real-time C2PA validation in two modes:
 

@@ -1,4 +1,4 @@
-# @c2pa-live/origin-server
+# @qualabs/c2pa-live-origin-server
 
 Static file server that serves C2PA-signed DASH segments and ad segments. In production, this role would be fulfilled by a CDN or Cloud Storage.
 

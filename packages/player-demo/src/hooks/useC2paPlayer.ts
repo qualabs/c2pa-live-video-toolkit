@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import dashjs from 'dashjs';
-import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 import type {
   C2paController,
   SegmentRecord,
   InitProcessedEvent,
-} from '@c2pa-live-toolkit/dashjs-plugin';
+} from '@qualabs/c2pa-live-dashjs-plugin';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
 export type C2paPlayerState = {

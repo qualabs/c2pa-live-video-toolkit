@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live/streamer",
+  "name": "@qualabs/c2pa-live-streamer",
   "version": "1.0.0",
   "private": true,
   "scripts": {

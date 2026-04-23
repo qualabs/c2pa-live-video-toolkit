@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ERROR_CODE_MESSAGES } from '@c2pa-live-toolkit/dashjs-plugin';
-import type { InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { InitProcessedEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 
 interface ManifestModalProps {

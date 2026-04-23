@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live-toolkit/player-demo",
+  "name": "@qualabs/c2pa-live-player-demo",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "format": "prettier --write 'src/**/*.{ts,tsx}'"
   },
   "dependencies": {
-    "@c2pa-live-toolkit/dashjs-plugin": "*",
-    "@c2pa-live-toolkit/videojs-ui": "*",
+    "@qualabs/c2pa-live-dashjs-plugin": "*",
+    "@qualabs/c2pa-live-videojs-ui": "*",
     "dashjs": "^4.7.4",
     "framer-motion": "^11.2.12",
     "react": "^18.3.1",

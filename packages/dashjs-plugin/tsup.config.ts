@@ -4,7 +4,7 @@ export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
   // Generate bundled .d.ts so consumers get types without needing
-  // @c2pa-live-toolkit/c2pa-player-core or @svta/cml-c2pa installed.
+  // @qualabs/c2pa-live-player-core or @svta/cml-c2pa installed.
   // `resolve` tells tsup's dts bundler to follow imports from these packages
   // and inline their .d.ts files into the output — matching what the JS
   // bundler already does transitively.
@@ -12,7 +12,7 @@ export default defineConfig({
   // external dependency — it's a real public library, not internal plumbing.
   // Consumers will install it transitively via our `dependencies`.
   dts: {
-    resolve: ['@c2pa-live-toolkit/c2pa-player-core'],
+    resolve: ['@qualabs/c2pa-live-player-core'],
   },
   external: ['@svta/cml-c2pa'],
   clean: true,
@@ -21,5 +21,5 @@ export default defineConfig({
   // Inline the internal core package into the published bundle so it never has
   // to be published to npm. Anything not listed here is externalized by default
   // if it appears in `dependencies` or `peerDependencies` (dashjs is peer).
-  noExternal: ['@c2pa-live-toolkit/c2pa-player-core'],
+  noExternal: ['@qualabs/c2pa-live-player-core'],
 });

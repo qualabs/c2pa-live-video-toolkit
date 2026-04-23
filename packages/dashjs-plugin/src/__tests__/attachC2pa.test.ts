@@ -4,7 +4,7 @@ import type { DashjsPlayer } from '../attachC2pa.js';
 
 /**
  * These tests cover the dash.js-specific adapter layer. The C2PA validation
- * pipeline itself is tested in `@c2pa-live-toolkit/c2pa-player-core`; here we
+ * pipeline itself is tested in `@qualabs/c2pa-live-player-core`; here we
  * only verify that:
  *
  *  1. `attachC2pa` registers a SegmentResponseModifier with the dash.js player.

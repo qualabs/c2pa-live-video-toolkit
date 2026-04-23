@@ -25,7 +25,7 @@ Client (Browser):                                        ┌──────�
 └───────────────────────────────────────────────────────────────────────────
 ```
 
-On the player side, [`@c2pa-live-toolkit/dashjs-plugin`](packages/dashjs-plugin) intercepts each downloaded DASH segment and validates its C2PA provenance using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator. The [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui) package then renders the validation results as colored timeline segments, a content credentials menu, and an optional friction modal.
+On the player side, [`@qualabs/c2pa-live-dashjs-plugin`](packages/dashjs-plugin) intercepts each downloaded DASH segment and validates its C2PA provenance using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator. The [`@qualabs/c2pa-live-videojs-ui`](packages/videojs-ui) package then renders the validation results as colored timeline segments, a content credentials menu, and an optional friction modal.
 
 | Service | Package | Port | Description |
 |---|---|---|---|
@@ -67,7 +67,7 @@ Point a DASH player at: `http://localhost:8083/stream_with_ad.mpd`
 
 ## Packages
 
-### [`@c2pa-live/signer`](packages/signer)
+### [`@qualabs/c2pa-live-signer`](packages/signer)
 
 C2PA signing service. Polls the DASH manifest, downloads new segments, signs them using `c2patool`, and writes signed output to the shared volume.
 
@@ -75,15 +75,15 @@ Supports two signing strategies via `USE_VSI_METHOD`:
 - **ManifestBox** (default) — embeds C2PA manifest inside the segment
 - **VSI** — Verifiable Segment Information, external validation
 
-### [`@c2pa-live/origin-server`](packages/origin-server)
+### [`@qualabs/c2pa-live-origin-server`](packages/origin-server)
 
 Minimal Express static file server. Serves signed segments from the shared volume. In production this role would be fulfilled by a CDN.
 
-### [`@c2pa-live/streamer`](packages/streamer)
+### [`@qualabs/c2pa-live-streamer`](packages/streamer)
 
 FFmpeg streaming scripts. Generates the raw DASH stream that the signer consumes.
 
-### [`@c2pa-live/attack-proxy`](packages/attack-proxy)
+### [`@qualabs/c2pa-live-attack-proxy`](packages/attack-proxy)
 
 DASH proxy that can simulate C2PA validation failures for testing and demonstration. Supports four attack types:
 
@@ -96,21 +96,21 @@ DASH proxy that can simulate C2PA validation failures for testing and demonstrat
 
 See [packages/attack-proxy/README.md](packages/attack-proxy/README.md) for the full API.
 
-### [`@c2pa-live-toolkit/dashjs-plugin`](packages/dashjs-plugin)
+### [`@qualabs/c2pa-live-dashjs-plugin`](packages/dashjs-plugin)
 
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded, supporting both ManifestBox (§19.3) and VSI (§19.4) methods. Validation is powered by [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the SVTA Common Media Library C2PA validator.
 
-Internally, this package is a thin dash.js adapter on top of [`@c2pa-live-toolkit/c2pa-player-core`](packages/c2pa-player-core) (bundled at build time). Future player plugins (hls.js, shaka) will reuse the same core.
+Internally, this package is a thin dash.js adapter on top of [`@qualabs/c2pa-live-player-core`](packages/c2pa-player-core) (bundled at build time). Future player plugins (hls.js, shaka) will reuse the same core.
 
-### [`@c2pa-live-toolkit/c2pa-player-core`](packages/c2pa-player-core) — _internal_
+### [`@qualabs/c2pa-live-player-core`](packages/c2pa-player-core) — _internal_
 
 Player-agnostic C2PA validation engine. Not published to npm; each player plugin inlines it into its own published bundle via `tsup`. Use this directly only if you are building a new adapter for a streaming library not yet covered by an existing plugin.
 
-### [`@c2pa-live-toolkit/videojs-ui`](packages/videojs-ui)
+### [`@qualabs/c2pa-live-videojs-ui`](packages/videojs-ui)
 
 Video.js UI components for C2PA validation: colored progress bar showing segment status, content credentials menu, and friction modal for invalid streams. Consumes validation events from `dashjs-plugin`'s `C2paController` to visualize per-segment status in real time.
 
-### [`@c2pa-live-toolkit/player-demo`](packages/player-demo)
+### [`@qualabs/c2pa-live-player-demo`](packages/player-demo)
 
 Reference React/Vite demo app showcasing both plugins in two modes: dash.js native validation and video.js enhanced UI.
 
@@ -121,7 +121,7 @@ Reference React/Vite demo app showcasing both plugins in two modes: dash.js nati
 npm run build
 
 # Build a single package
-npx turbo build --filter=@c2pa-live/signer
+npx turbo build --filter=@qualabs/c2pa-live-signer
 
 # Build Docker images without starting
 docker compose build

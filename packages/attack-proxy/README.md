@@ -1,4 +1,4 @@
-# @c2pa-live/attack-proxy
+# @qualabs/c2pa-live-attack-proxy
 
 C2PA attack simulation proxy for DASH streams. Proxies segments from the origin server while optionally applying attacks that trigger C2PA validation failures, preserving DASH player playback integrity.
 

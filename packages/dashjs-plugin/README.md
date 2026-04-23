@@ -1,11 +1,14 @@
-# @c2pa-live-toolkit/dashjs-plugin
+# @qualabs/c2pa-live-dashjs-plugin
+
+[![npm version](https://img.shields.io/npm/v/@qualabs/c2pa-live-dashjs-plugin.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin)
+[![license](https://img.shields.io/npm/l/@qualabs/c2pa-live-dashjs-plugin.svg)](https://github.com/qualabs/c2pa-live-video-toolkit/blob/main/LICENSE)
 
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the [SVTA Common Media Library](https://github.com/streaming-video-technology-alliance/common-media-library) C2PA validator.
 
 ## Installation
 
 ```bash
-npm install @c2pa-live-toolkit/dashjs-plugin
+npm install @qualabs/c2pa-live-dashjs-plugin
 ```
 
 dash.js must be installed separately as a peer dependency:
@@ -20,7 +23,7 @@ npm install dashjs
 
 ```ts
 import dashjs from 'dashjs';
-import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
+import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 
 const player = dashjs.MediaPlayer().create();
 const c2pa = attachC2pa(player);
@@ -36,7 +39,7 @@ player.initialize(videoElement, 'https://example.com/stream.mpd', true);
 
 The plugin registers as a dash.js `SegmentResponseModifier`, intercepting every downloaded segment before it reaches the media buffer. Init segments are processed first to extract session keys (for the VSI method). Each subsequent media segment is then validated through `@svta/cml-c2pa`'s validation functions, which verify cryptographic signatures, check sequence continuity, and detect replay or reorder attacks. Results are emitted as typed events that any UI layer can consume.
 
-Internally the plugin is a thin adapter on top of an internal, player-agnostic validation engine (`@c2pa-live-toolkit/c2pa-player-core`, bundled into this package's published output — you never install it separately). The adapter's only job is to translate dash.js chunks into the engine's generic `MediaSegmentInput` shape. The same engine will back future hls.js and Shaka plugins.
+Internally the plugin is a thin adapter on top of an internal, player-agnostic validation engine (`@qualabs/c2pa-live-player-core`, bundled into this package's published output — you never install it separately). The adapter's only job is to translate dash.js chunks into the engine's generic `MediaSegmentInput` shape. The same engine will back future hls.js and Shaka plugins.
 
 ## API
 
@@ -101,7 +104,7 @@ type SegmentRecord = {
 `SegmentStatusValue` can be one of: `'valid'`, `'invalid'`, `'replayed'`, `'reordered'`, `'missing'`, `'warning'`, `'unverified'`. Import the `SegmentStatus` runtime constant for type-safe comparisons:
 
 ```ts
-import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import { SegmentStatus } from '@qualabs/c2pa-live-dashjs-plugin';
 
 if (record.status === SegmentStatus.VALID) { ... }
 ```
@@ -146,7 +149,7 @@ import {
   SegmentStatus,        // status values: VALID, INVALID, REPLAYED, REORDERED, MISSING, WARNING, UNVERIFIED
   SequenceAnomalyReason,// DUPLICATE, OUT_OF_ORDER, GAP_DETECTED, SEQUENCE_NUMBER_BELOW_MINIMUM
   ValidationErrorCode,  // all C2PA and live-video error codes
-} from '@c2pa-live-toolkit/dashjs-plugin';
+} from '@qualabs/c2pa-live-dashjs-plugin';
 ```
 
 ## Validation Methods
@@ -169,7 +172,7 @@ const c2paPlayer2 = attachC2pa(player2);
 ## Error Codes
 
 ```ts
-import { ERROR_CODE_MESSAGES, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
+import { ERROR_CODE_MESSAGES, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 
 c2pa.on(C2paEvent.SEGMENT_VALIDATED, (e) => {
   for (const code of e.errorCodes ?? []) {

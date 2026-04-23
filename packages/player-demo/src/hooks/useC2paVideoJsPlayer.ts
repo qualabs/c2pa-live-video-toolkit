@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import dashjs from 'dashjs';
-import { C2paPlayerUI, initializeQualitySelector } from '@c2pa-live-toolkit/videojs-ui';
+import { C2paPlayerUI, initializeQualitySelector } from '@qualabs/c2pa-live-videojs-ui';
 import 'video.js/dist/video-js.css';
-import '@c2pa-live-toolkit/videojs-ui/styles';
-import type { C2paPlayerInstance, VideoJsPlayer, QualitySelectorInstance } from '@c2pa-live-toolkit/videojs-ui';
-import { attachC2pa, C2paEvent } from '@c2pa-live-toolkit/dashjs-plugin';
-import type { C2paController } from '@c2pa-live-toolkit/dashjs-plugin';
+import '@qualabs/c2pa-live-videojs-ui/styles';
+import type { C2paPlayerInstance, VideoJsPlayer, QualitySelectorInstance } from '@qualabs/c2pa-live-videojs-ui';
+import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { C2paController } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 

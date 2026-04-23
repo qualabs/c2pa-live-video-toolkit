@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, SegmentStatusValue } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, SegmentStatusValue } from '@qualabs/c2pa-live-dashjs-plugin';
 import {
   ERROR_CODE_MESSAGES,
   ValidationErrorCode,
   SegmentStatus,
-} from '@c2pa-live-toolkit/dashjs-plugin';
+} from '@qualabs/c2pa-live-dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 import { statusIcon, statusCategory } from '../utils/segmentStatusUtils.js';
 

@@ -7,11 +7,11 @@ COPY package*.json ./
 COPY tsconfig.base.json ./
 
 COPY packages/attack-proxy/package*.json ./packages/attack-proxy/
-RUN npm ci --workspace=@c2pa-live/attack-proxy --no-audit --no-fund
+RUN npm ci --workspace=@qualabs/c2pa-live-attack-proxy --no-audit --no-fund
 
 COPY packages/attack-proxy/tsconfig.json ./packages/attack-proxy/
 COPY packages/attack-proxy/src ./packages/attack-proxy/src
-RUN npm run build --workspace=@c2pa-live/attack-proxy
+RUN npm run build --workspace=@qualabs/c2pa-live-attack-proxy
 
 
 FROM node:22-alpine AS production

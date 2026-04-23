@@ -1,4 +1,4 @@
-# @c2pa-live/streamer
+# @qualabs/c2pa-live-streamer
 
 FFmpeg-based live DASH stream generator. Produces the input stream that the signer consumes.
 

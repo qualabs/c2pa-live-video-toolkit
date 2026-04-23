@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live/signer",
+  "name": "@qualabs/c2pa-live-signer",
   "version": "1.0.0",
   "private": true,
   "type": "module",

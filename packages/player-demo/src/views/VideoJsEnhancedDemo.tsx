@@ -7,7 +7,7 @@ import { DEFAULT_STREAM_URL } from '../constants.js';
 /**
  * videojs-enhanced mode: dash.js + video.js + C2paPlayerUI overlays.
  * Demonstrates the full C2PA UI experience (colored progress bar, credentials
- * menu, friction modal) via @c2pa-live-toolkit/videojs-ui.
+ * menu, friction modal) via @qualabs/c2pa-live-videojs-ui.
  *
  * Note: video.js with fluid:true creates its own wrapper div with padding-top:56.25%
  * for a 16:9 ratio. VideoWrapper only needs width:100%.

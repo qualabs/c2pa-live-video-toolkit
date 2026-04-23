@@ -1,5 +1,5 @@
-import { SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
-import type { SegmentStatusValue } from '@c2pa-live-toolkit/dashjs-plugin';
+import { SegmentStatus } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { SegmentStatusValue } from '@qualabs/c2pa-live-dashjs-plugin';
 
 export function statusIcon(status: SegmentStatusValue): string {
   switch (status) {

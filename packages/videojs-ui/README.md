@@ -1,11 +1,14 @@
-# @c2pa-live-toolkit/videojs-ui
+# @qualabs/c2pa-live-videojs-ui
+
+[![npm version](https://img.shields.io/npm/v/@qualabs/c2pa-live-videojs-ui.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-videojs-ui)
+[![license](https://img.shields.io/npm/l/@qualabs/c2pa-live-videojs-ui.svg)](https://github.com/qualabs/c2pa-live-video-toolkit/blob/main/LICENSE)
 
 Video.js UI components for real-time C2PA validation: colored progress bar showing per-segment status, content credentials menu, and friction modal for invalid streams.
 
 ## Installation
 
 ```bash
-npm install @c2pa-live-toolkit/videojs-ui
+npm install @qualabs/c2pa-live-videojs-ui
 ```
 
 video.js must be installed separately as a peer dependency:
@@ -16,15 +19,15 @@ npm install video.js
 
 ## Prerequisites
 
-This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('segmentValidated', handler)` and `off('segmentValidated', handler)` is compatible.
+This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@qualabs/c2pa-live-dashjs-plugin`](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('segmentValidated', handler)` and `off('segmentValidated', handler)` is compatible.
 
 ## Quick Start
 
 ```ts
-import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
-import '@c2pa-live-toolkit/videojs-ui/styles';
+import { C2paPlayerUI } from '@qualabs/c2pa-live-videojs-ui';
+import '@qualabs/c2pa-live-videojs-ui/styles';
 
-// c2paController comes from @c2pa-live-toolkit/dashjs-plugin
+// c2paController comes from @qualabs/c2pa-live-dashjs-plugin
 const ui = C2paPlayerUI(videoPlayer, c2paController);
 
 // Later, when tearing down:
@@ -36,9 +39,9 @@ ui.destroy();
 ```ts
 import dashjs from 'dashjs';
 import videojs from 'video.js';
-import { attachC2pa } from '@c2pa-live-toolkit/dashjs-plugin';
-import { C2paPlayerUI } from '@c2pa-live-toolkit/videojs-ui';
-import '@c2pa-live-toolkit/videojs-ui/styles';
+import { attachC2pa } from '@qualabs/c2pa-live-dashjs-plugin';
+import { C2paPlayerUI } from '@qualabs/c2pa-live-videojs-ui';
+import '@qualabs/c2pa-live-videojs-ui/styles';
 
 // 1. Create players
 const dashPlayer = dashjs.MediaPlayer().create();
@@ -98,5 +101,5 @@ type C2paPlayerInstance = {
 Import the CSS file to apply the default component styles:
 
 ```ts
-import '@c2pa-live-toolkit/videojs-ui/styles';
+import '@qualabs/c2pa-live-videojs-ui/styles';
 ```

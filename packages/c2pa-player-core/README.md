@@ -1,9 +1,9 @@
-# @c2pa-live-toolkit/c2pa-player-core
+# @qualabs/c2pa-live-player-core
 
 > **Internal package — not published to npm.**
-> Marked `"private": true` in `package.json`. Each player plugin in this monorepo bundles this package's code directly into its own published output via `tsup` (`noExternal: ['@c2pa-live-toolkit/c2pa-player-core']`). External consumers install only the player plugin (e.g. [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin)) and get everything in a single package.
+> Marked `"private": true` in `package.json`. Each player plugin in this monorepo bundles this package's code directly into its own published output via `tsup` (`noExternal: ['@qualabs/c2pa-live-player-core']`). External consumers install only the player plugin (e.g. [`@qualabs/c2pa-live-dashjs-plugin`](../dashjs-plugin)) and get everything in a single package.
 
-Player-agnostic C2PA live video validation core. Shared engine powering `@c2pa-live-toolkit/dashjs-plugin` and any future `hlsjs-plugin` / `shaka-plugin`.
+Player-agnostic C2PA live video validation core. Shared engine powering `@qualabs/c2pa-live-dashjs-plugin` and any future `hlsjs-plugin` / `shaka-plugin`.
 
 This package does not talk to any streaming library directly. It exposes a generic pipeline that accepts raw segment bytes (plus minimal metadata) and emits typed validation events. Adapters (one per player) are responsible for intercepting segments from their specific player and feeding them into this pipeline.
 
@@ -28,7 +28,7 @@ export type MediaSegmentInput = {
 ## Quick Start (for adapter authors)
 
 ```ts
-import { createC2paPipeline, C2paEvent } from '@c2pa-live-toolkit/c2pa-player-core';
+import { createC2paPipeline, C2paEvent } from '@qualabs/c2pa-live-player-core';
 
 const pipeline = createC2paPipeline({
   mediaTypes: ['video', 'audio'],
@@ -54,4 +54,4 @@ await pipeline.route({
 
 ## Full API documentation
 
-See [`@c2pa-live-toolkit/dashjs-plugin`](../dashjs-plugin) — the event types, status enums, and error codes are identical and documented there. The plugin re-exports the entire core public API, so consumer-facing docs live in the plugin package.
+See [`@qualabs/c2pa-live-dashjs-plugin`](../dashjs-plugin) — the event types, status enums, and error codes are identical and documented there. The plugin re-exports the entire core public API, so consumer-facing docs live in the plugin package.

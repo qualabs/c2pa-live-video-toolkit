@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live/origin-server",
+  "name": "@qualabs/c2pa-live-origin-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
