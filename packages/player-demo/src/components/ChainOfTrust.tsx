@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
-import { ValidationErrorCode, SegmentStatus } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, InitProcessedEvent } from '@qualabs/c2pa-live-dashjs-plugin';
+import { ValidationErrorCode, SegmentStatus } from '@qualabs/c2pa-live-dashjs-plugin';
 import { statusIcon, statusText, statusCategory } from '../utils/segmentStatusUtils.js';
 
 interface ChainOfTrustProps {

@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live-toolkit/dashjs-plugin",
+  "name": "@qualabs/c2pa-live-dashjs-plugin",
   "version": "1.0.0",
   "type": "module",
   "description": "Framework-agnostic dash.js plugin for real-time C2PA segment validation",
@@ -60,7 +60,7 @@
     "dashjs": ">=4.0.0"
   },
   "devDependencies": {
-    "@c2pa-live-toolkit/c2pa-player-core": "*",
+    "@qualabs/c2pa-live-player-core": "*",
     "dashjs": "^4.7.4",
     "tsup": "^8.5.1",
     "typescript": "^5.8.3",

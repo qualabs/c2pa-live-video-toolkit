@@ -4,7 +4,7 @@ import {
   type C2paOptions,
   type MediaSegmentInput,
   type MediaType,
-} from '@c2pa-live-toolkit/c2pa-player-core';
+} from '@qualabs/c2pa-live-player-core';
 
 /**
  * Minimal structural interface for the dash.js player methods this plugin uses.

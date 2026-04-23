@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import type { SegmentRecord, InitProcessedEvent } from '@c2pa-live-toolkit/dashjs-plugin';
+import type { SegmentRecord, InitProcessedEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 import {
   injectGapAttack,
   injectOutOfOrderAttack,

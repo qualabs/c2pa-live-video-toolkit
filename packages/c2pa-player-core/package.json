@@ -1,5 +1,5 @@
 {
-  "name": "@c2pa-live-toolkit/c2pa-player-core",
+  "name": "@qualabs/c2pa-live-player-core",
   "version": "1.0.0",
   "private": true,
   "type": "module",

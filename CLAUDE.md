@@ -17,8 +17,8 @@ npm run typecheck            # Type-check all packages
 npm run format               # Format all packages
 
 # Single package
-npx turbo build --filter=@c2pa-live/signer
-npx turbo build --filter=@c2pa-live-toolkit/dashjs-plugin
+npx turbo build --filter=@qualabs/c2pa-live-signer
+npx turbo build --filter=@qualabs/c2pa-live-dashjs-plugin
 
 # Tests (c2pa-player-core, dashjs-plugin, and videojs-ui have tests)
 cd packages/c2pa-player-core && npm run test    # Vitest, run once — generic pipeline
@@ -48,14 +48,14 @@ Players consume from attack-proxy at http://localhost:8083/stream_with_ad.mpd
 
 | Package | Scope | Role |
 |---|---|---|
-| `signer` | `@c2pa-live/signer` | Polls MPD, signs segments with c2patool, writes output |
-| `origin-server` | `@c2pa-live/origin-server` | Express static file server for signed segments |
-| `streamer` | `@c2pa-live/streamer` | FFmpeg scripts (no build step) |
-| `attack-proxy` | `@c2pa-live/attack-proxy` | DASH proxy with 4 attack types + manifest-server (dynamic MPDs with ad insertion) |
-| `c2pa-player-core` | `@c2pa-live-toolkit/c2pa-player-core` | **Internal** (not published). Player-agnostic C2PA validation engine — inlined into each player plugin's bundle at build time |
-| `dashjs-plugin` | `@c2pa-live-toolkit/dashjs-plugin` | Dash.js adapter on top of the core. Converts `DashjsChunk` → generic `MediaSegmentInput` and delegates validation |
-| `videojs-ui` | `@c2pa-live-toolkit/videojs-ui` | Video.js UI components (progress bar, credentials menu, friction modal) |
-| `player-demo` | `@c2pa-live-toolkit/player-demo` | React/Vite demo app (private), two modes: dashjs-native and videojs-enhanced |
+| `signer` | `@qualabs/c2pa-live-signer` | Polls MPD, signs segments with c2patool, writes output |
+| `origin-server` | `@qualabs/c2pa-live-origin-server` | Express static file server for signed segments |
+| `streamer` | `@qualabs/c2pa-live-streamer` | FFmpeg scripts (no build step) |
+| `attack-proxy` | `@qualabs/c2pa-live-attack-proxy` | DASH proxy with 4 attack types + manifest-server (dynamic MPDs with ad insertion) |
+| `c2pa-player-core` | `@qualabs/c2pa-live-player-core` | **Internal** (not published). Player-agnostic C2PA validation engine — inlined into each player plugin's bundle at build time |
+| `dashjs-plugin` | `@qualabs/c2pa-live-dashjs-plugin` | Dash.js adapter on top of the core. Converts `DashjsChunk` → generic `MediaSegmentInput` and delegates validation |
+| `videojs-ui` | `@qualabs/c2pa-live-videojs-ui` | Video.js UI components (progress bar, credentials menu, friction modal) |
+| `player-demo` | `@qualabs/c2pa-live-player-demo` | React/Vite demo app (private), two modes: dashjs-native and videojs-enhanced |
 
 ### Key dependencies
 

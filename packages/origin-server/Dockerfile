@@ -7,11 +7,11 @@ COPY package*.json ./
 COPY tsconfig.base.json ./
 
 COPY packages/origin-server/package*.json ./packages/origin-server/
-RUN npm ci --workspace=@c2pa-live/origin-server --no-audit --no-fund
+RUN npm ci --workspace=@qualabs/c2pa-live-origin-server --no-audit --no-fund
 
 COPY packages/origin-server/tsconfig.json ./packages/origin-server/
 COPY packages/origin-server/src ./packages/origin-server/src
-RUN npm run build --workspace=@c2pa-live/origin-server
+RUN npm run build --workspace=@qualabs/c2pa-live-origin-server
 
 
 FROM node:22-alpine AS production
