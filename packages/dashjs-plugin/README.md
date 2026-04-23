@@ -1,5 +1,8 @@
 # @qualabs/c2pa-live-dashjs-plugin
 
+[![npm version](https://img.shields.io/npm/v/@qualabs/c2pa-live-dashjs-plugin.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin)
+[![license](https://img.shields.io/npm/l/@qualabs/c2pa-live-dashjs-plugin.svg)](https://github.com/qualabs/c2pa-live-video-toolkit/blob/main/LICENSE)
+
 Framework-agnostic dash.js plugin for real-time C2PA segment validation. Validates each DASH segment as it is downloaded using [`@svta/cml-c2pa`](https://www.npmjs.com/package/@svta/cml-c2pa), the [SVTA Common Media Library](https://github.com/streaming-video-technology-alliance/common-media-library) C2PA validator.
 
 ## Installation

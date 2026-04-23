@@ -1,5 +1,8 @@
 # @qualabs/c2pa-live-videojs-ui
 
+[![npm version](https://img.shields.io/npm/v/@qualabs/c2pa-live-videojs-ui.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-videojs-ui)
+[![license](https://img.shields.io/npm/l/@qualabs/c2pa-live-videojs-ui.svg)](https://github.com/qualabs/c2pa-live-video-toolkit/blob/main/LICENSE)
+
 Video.js UI components for real-time C2PA validation: colored progress bar showing per-segment status, content credentials menu, and friction modal for invalid streams.
 
 ## Installation
@@ -16,7 +19,7 @@ npm install video.js
 
 ## Prerequisites
 
-This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@qualabs/c2pa-live-dashjs-plugin`](../dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('segmentValidated', handler)` and `off('segmentValidated', handler)` is compatible.
+This package requires a `C2paController` instance to receive validation events. In practice, this comes from calling `attachC2pa(dashPlayer)` in [`@qualabs/c2pa-live-dashjs-plugin`](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin). However, `videojs-ui` is framework-agnostic — any object implementing `on('segmentValidated', handler)` and `off('segmentValidated', handler)` is compatible.
 
 ## Quick Start
 
