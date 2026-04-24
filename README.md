@@ -1,6 +1,6 @@
 # C2PA Live Video Toolkit
 
-A collection of open-source tools for embedding and verifying [C2PA](https://c2pa.org/) provenance in live DASH video streams.
+A collection of open-source tools for embedding and verifying [C2PA](https://c2pa.org/) provenance in live CMAF-based DASH/HLS video streams.
 
 ## Architecture
 

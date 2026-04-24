@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-C2PA Live Video Toolkit — open-source tools for embedding and verifying C2PA provenance in live DASH/HLS video streams. Turbo monorepo with 8 packages under `packages/`.
+C2PA Live Video Toolkit — open-source tools for embedding and verifying C2PA provenance in live CMAF-based DASH/HLS video streams. Turbo monorepo with 8 packages under `packages/`.
 
 ## Commands
 
