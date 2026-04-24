@@ -23,6 +23,14 @@ export const DemoModeSwitcher: React.FC = () => (
         <ModeDesc>attachC2pa() only — no video.js</ModeDesc>
       </ModeInfo>
     </ModeLink>
+    <Divider />
+    <ModeLink to="/hls-native" end>
+      <ModeIcon>📡</ModeIcon>
+      <ModeInfo>
+        <ModeName>hls.js Native</ModeName>
+        <ModeDesc>attachC2pa() for CMAF HLS streams</ModeDesc>
+      </ModeInfo>
+    </ModeLink>
   </Nav>
 );
 

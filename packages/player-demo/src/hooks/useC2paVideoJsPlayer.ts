@@ -4,7 +4,11 @@ import dashjs from 'dashjs';
 import { C2paPlayerUI, initializeQualitySelector } from '@qualabs/c2pa-live-videojs-ui';
 import 'video.js/dist/video-js.css';
 import '@qualabs/c2pa-live-videojs-ui/styles';
-import type { C2paPlayerInstance, VideoJsPlayer, QualitySelectorInstance } from '@qualabs/c2pa-live-videojs-ui';
+import type {
+  C2paPlayerInstance,
+  VideoJsPlayer,
+  QualitySelectorInstance,
+} from '@qualabs/c2pa-live-videojs-ui';
 import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paController } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
@@ -84,9 +88,10 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       setC2paController(controller);
 
       controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
-        const quality = record.mediaType === 'video'
-          ? currentQualityLabelRef.current
-          : currentAudioQualityLabelRef.current;
+        const quality =
+          record.mediaType === 'video'
+            ? currentQualityLabelRef.current
+            : currentAudioQualityLabelRef.current;
         setState((prev) => ({
           ...prev,
           segments: [...prev.segments, { ...record, quality }],
@@ -110,9 +115,13 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
         vjsPlayer as unknown as VideoJsPlayer,
         (index) => {
           if (index === 'auto') {
-            dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: true } } } });
+            dashPlayer.updateSettings({
+              streaming: { abr: { autoSwitchBitrate: { video: true } } },
+            });
           } else {
-            dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: false } } } });
+            dashPlayer.updateSettings({
+              streaming: { abr: { autoSwitchBitrate: { video: false } } },
+            });
             dashPlayer.setQualityFor('video', index);
           }
         },
@@ -135,7 +144,9 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
         }
         if (bitrateList.length > 1) {
           qualitiesInitializedRef.current = true;
-          dashPlayer.updateSettings({ streaming: { abr: { autoSwitchBitrate: { video: false } } } });
+          dashPlayer.updateSettings({
+            streaming: { abr: { autoSwitchBitrate: { video: false } } },
+          });
           dashPlayer.setQualityFor('video', highestIndex);
           qualitySelector.updateQualities(
             bitrateList.map((info, i) => ({ index: i, height: info.height })),
@@ -151,7 +162,8 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
         } else if (mediaType === 'audio') {
           const list = dashPlayer.getBitrateInfoListFor('audio') ?? [];
           const info = list[newQuality];
-          if (info?.bitrate) currentAudioQualityLabelRef.current = `${Math.round(info.bitrate / 1000)} kbps`;
+          if (info?.bitrate)
+            currentAudioQualityLabelRef.current = `${Math.round(info.bitrate / 1000)} kbps`;
         }
         controller.resetSequence();
       });

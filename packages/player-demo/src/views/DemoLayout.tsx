@@ -14,6 +14,8 @@ interface DemoLayoutProps {
   state: C2paPlayerState;
   streamUrl: string;
   onStreamChange: (url: string) => void;
+  /** Initial value for the URL input field. Defaults to DEFAULT_STREAM_URL. */
+  initialUrl?: string;
 }
 
 /**
@@ -26,8 +28,9 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
   state,
   streamUrl,
   onStreamChange,
+  initialUrl = DEFAULT_STREAM_URL,
 }) => {
-  const [inputUrl, setInputUrl] = useState(DEFAULT_STREAM_URL);
+  const [inputUrl, setInputUrl] = useState(initialUrl);
   const [showManifestModal, setShowManifestModal] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<SegmentRecord | null>(null);
 
