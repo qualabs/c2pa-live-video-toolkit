@@ -9,7 +9,7 @@ const ORIGIN_TARGET = `http://localhost:${ORIGIN_PORT}`;
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['dashjs'],
+    include: ['dashjs', 'hls.js'],
   },
   server: {
     port: 3008,
@@ -19,6 +19,7 @@ export default defineConfig({
       '/streamer': { target: PROXY_TARGET, changeOrigin: true },
       '/stream.mpd': { target: PROXY_TARGET, changeOrigin: true },
       '/stream_with_ad.mpd': { target: PROXY_TARGET, changeOrigin: true },
+      '/stream.m3u8': { target: PROXY_TARGET, changeOrigin: true },
       '/init-stream': { target: PROXY_TARGET, changeOrigin: true },
       '/chunk-stream': { target: PROXY_TARGET, changeOrigin: true },
     },

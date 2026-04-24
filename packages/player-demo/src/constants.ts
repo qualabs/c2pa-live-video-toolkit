@@ -1,4 +1,5 @@
 export const DEFAULT_STREAM_URL = '/stream.mpd';
+export const DEFAULT_HLS_STREAM_URL = '/stream.m3u8';
 
 export const QUALABS_LOGO_URL =
   'https://www.qualabs.com/packages/website/images/logos/qualabs-light.svg';

@@ -6,6 +6,7 @@ import { QUALABS_LOGO_URL, C2PA_LOGO_URL, GOOGLE_LOGO_BASE64 } from './constants
 
 const DashjsNativeDemo = lazy(() => import('./views/DashjsNativeDemo.js'));
 const VideoJsEnhancedDemo = lazy(() => import('./views/VideoJsEnhancedDemo.js'));
+const HlsNativeDemo = lazy(() => import('./views/HlsNativeDemo.js'));
 
 const DEMO_TITLE = 'C2PA live streaming end-2-end reference workflow';
 
@@ -33,6 +34,7 @@ const App: React.FC = () => (
             <Route path="/" element={<Navigate to="/videojs-enhanced" replace />} />
             <Route path="/dashjs-native" element={<DashjsNativeDemo />} />
             <Route path="/videojs-enhanced" element={<VideoJsEnhancedDemo />} />
+            <Route path="/hls-native" element={<HlsNativeDemo />} />
           </Routes>
         </Suspense>
       </Content>
