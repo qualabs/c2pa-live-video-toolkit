@@ -93,10 +93,13 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
           record.mediaType === 'video'
             ? currentQualityLabelRef.current
             : currentAudioQualityLabelRef.current;
-        setState((prev) => ({
-          ...prev,
-          segments: [...prev.segments, { ...record, quality }],
-        }));
+        setState((prev) => {
+          const alreadyExists = prev.segments.some(
+            (s) => s.mediaType === record.mediaType && s.segmentNumber === record.segmentNumber,
+          );
+          if (alreadyExists) return prev;
+          return { ...prev, segments: [...prev.segments, { ...record, quality }] };
+        });
       });
 
       controller.on(C2paEvent.INIT_PROCESSED, (event) => {
@@ -156,15 +159,16 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       });
 
       dashPlayer.on('qualityChangeRendered', (e: unknown) => {
-        const { mediaType, newQuality } = e as { mediaType: string; newQuality: number };
+        const { newRepresentation } = e as {
+          newRepresentation: { height?: number; bandwidth?: number; mediaInfo?: { type?: string } };
+        };
+        const mediaType = newRepresentation?.mediaInfo?.type;
         if (mediaType === 'video') {
-          const info = dashPlayer.getRepresentationsByType('video')?.[newQuality];
-          if (info?.height) currentQualityLabelRef.current = `${info.height}p`;
+          if (newRepresentation?.height)
+            currentQualityLabelRef.current = `${newRepresentation.height}p`;
         } else if (mediaType === 'audio') {
-          const list = dashPlayer.getRepresentationsByType('audio') ?? [];
-          const info = list[newQuality];
-          if (info?.bandwidth)
-            currentAudioQualityLabelRef.current = `${Math.round(info.bandwidth / 1000)} kbps`;
+          if (newRepresentation?.bandwidth)
+            currentAudioQualityLabelRef.current = `${Math.round(newRepresentation.bandwidth / 1000)} kbps`;
         }
         controller.resetSequence();
       });
