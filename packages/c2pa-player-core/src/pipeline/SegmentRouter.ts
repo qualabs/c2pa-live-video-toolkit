@@ -134,14 +134,17 @@ export class SegmentRouter {
       for (const validator of Object.values(this.deps.manifestBoxValidators)) {
         validator?.reset();
       }
-      this.previousWasUnverified.clear();
+      if (result.sessionKeysCount === 0) {
+        for (const mediaType of this.deps.supportedMediaTypes) {
+          this.previousWasUnverified.delete(mediaType);
+        }
+      }
     }
   }
 
   private async handleMediaSegment(input: MediaSegmentInput): Promise<void> {
     const { bytes, mediaType, segmentIndex, streamId } = input;
     const streamKey = buildStreamKey(mediaType, streamId);
-
     if (!this.deps.sessionKeyStore.hasKeys()) {
       await this.handleManifestBoxSegment({ segmentBytes: bytes, mediaType, segmentIndex });
       return;
@@ -153,7 +156,7 @@ export class SegmentRouter {
   }
 
   private async handleVsiSegment(params: VsiSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType, segmentIndex } = params;
+    const { segmentBytes, streamKey, mediaType } = params;
 
     let vsiResult: VsiValidationResult | null = null;
     try {
@@ -164,13 +167,25 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      this.emitSegmentValidated(
-        buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.UNVERIFIED),
-      );
+      this.previousWasUnverified.set(mediaType, true);
+      // Sequence number is unknown until the next valid segment arrives; emit then with inferred seq.
       return;
     }
 
-    const status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+    const hadGapBefore = this.previousWasUnverified.get(mediaType) ?? false;
+    this.previousWasUnverified.set(mediaType, false);
+
+    if (hadGapBefore) {
+      this.emitSegmentValidated(
+        buildUnverifiedRecord(vsiResult.sequenceNumber - 1, mediaType, SegmentStatus.UNVERIFIED),
+      );
+    }
+
+    let status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+    if (hadGapBefore && status === SegmentStatus.VALID) {
+      status = SegmentStatus.WARNING;
+    }
+
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
     this.emitSegmentValidated(record);
   }
@@ -223,6 +238,7 @@ export class SegmentRouter {
       : isContinuityOnlyFailure || isChainBreakAfterGap
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
+
     this.emitSegmentValidated({
       segmentNumber: result.sequenceNumber,
       mediaType,

@@ -57,7 +57,10 @@ function isVsiEmsgBox(buffer: Uint8Array, offset: number, boxSize: number): bool
   return VSI_SCHEME_URI_BYTES.every((b, i) => b === buffer[schemeStart + i]);
 }
 
-export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8Array {
+function filterBoxes(
+  segmentBytes: Uint8Array | Buffer,
+  shouldKeep: (buffer: Uint8Array, offset: number, boxSize: number) => boolean,
+): Uint8Array {
   const buffer = segmentBytes instanceof Uint8Array ? segmentBytes : new Uint8Array(segmentBytes);
   const parts: Uint8Array[] = [];
   let offset = 0;
@@ -69,7 +72,7 @@ export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8A
     }
     if (boxSize === 0 || boxSize > buffer.length || offset + boxSize > buffer.length) break;
 
-    if (!isC2paUuidBox(buffer, offset) && !isVsiEmsgBox(buffer, offset, boxSize)) {
+    if (shouldKeep(buffer, offset, boxSize)) {
       parts.push(buffer.subarray(offset, offset + boxSize));
     }
     offset += boxSize;
@@ -83,6 +86,26 @@ export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8A
     pos += part.length;
   }
   return result;
+}
+
+function boxType(buffer: Uint8Array, offset: number): string {
+  return String.fromCharCode(
+    buffer[offset + 4],
+    buffer[offset + 5],
+    buffer[offset + 6],
+    buffer[offset + 7],
+  );
+}
+
+export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8Array {
+  return filterBoxes(
+    segmentBytes,
+    (buf, off, size) => !isC2paUuidBox(buf, off) && !isVsiEmsgBox(buf, off, size),
+  );
+}
+
+export function removeMdat(segmentBytes: Uint8Array | Buffer): Uint8Array {
+  return filterBoxes(segmentBytes, (buf, off) => boxType(buf, off) !== 'mdat');
 }
 
 export interface MoofMdatExtraction {

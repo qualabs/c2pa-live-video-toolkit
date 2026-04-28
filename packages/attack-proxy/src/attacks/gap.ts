@@ -17,11 +17,11 @@ export function applyGapAttack(
   }
 
   if (attackConfig.gapAt !== null && n === attackConfig.gapAt) {
-    if (!guards.gap) {
+    const firstFire = !guards.gap;
+    if (firstFire) {
       guards.gap = true;
       attackConfig.enabled = false;
     }
-    logger.info(`GAP: serving segment ${n} without C2PA manifest box`);
     return { ...noAttack, gapEmptySegment: true, gapAt: n };
   }
 
