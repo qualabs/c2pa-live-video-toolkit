@@ -2,64 +2,22 @@ import {
   createC2paPipeline,
   type C2paController,
   type C2paOptions,
-  type MediaSegmentInput,
-  type MediaType,
 } from '@qualabs/c2pa-live-player-core';
+import type { DashjsPlayer } from './types.js';
+import { registerInterceptor5x } from './registration5x.js';
+import { registerModifier4x } from './registration4x.js';
 
-/**
- * Minimal structural interface for the dash.js player methods this plugin uses.
- * `override` is optional here so dashjs.MediaPlayerClass (whose `extend` declares
- * it as required) remains assignable without casts.
- */
-export interface DashjsPlayer {
-  extend(name: string, factoryOrChild: object, override?: boolean): void;
-}
-
-/**
- * Shape of the chunk object dash.js passes to a SegmentResponseModifier.
- * Only the fields this adapter reads are listed.
- */
-type DashjsChunk = {
-  segmentType: 'InitializationSegment' | 'MediaSegment';
-  mediaInfo: { type: string };
-  bytes: ArrayBuffer | Uint8Array;
-  index: number;
-  representationId?: string | number;
-};
-
-/**
- * Translate a dash.js chunk into the player-agnostic {@link MediaSegmentInput}
- * shape the core pipeline expects. Returns `null` for chunks with an unsupported
- * `segmentType` (anything other than Initialization/MediaSegment).
- *
- * Note: bytes are copied into a fresh Uint8Array because dash.js transfers the
- * underlying ArrayBuffer to MSE after `modifyResponseAsync` resolves, detaching
- * the original buffer.
- */
-function adaptDashjsChunk(chunk: DashjsChunk): MediaSegmentInput | null {
-  const kind =
-    chunk.segmentType === 'InitializationSegment'
-      ? 'init'
-      : chunk.segmentType === 'MediaSegment'
-        ? 'media'
-        : null;
-  if (!kind) return null;
-
-  const source = chunk.bytes instanceof Uint8Array ? chunk.bytes : new Uint8Array(chunk.bytes);
-  return {
-    kind,
-    mediaType: chunk.mediaInfo.type as MediaType,
-    bytes: new Uint8Array(source),
-    segmentIndex: chunk.index + 1,
-    streamId: chunk.representationId,
-  };
-}
+export type { DashjsPlayer };
 
 /**
  * Attaches C2PA validation to a dash.js player instance.
  *
- * Must be called BEFORE `player.initialize()` because dash.js registers
- * extension factories during initialization.
+ * Supports dash.js 4.x and 5.x via feature detection:
+ * - 5.x: uses `addResponseInterceptor` / `removeResponseInterceptor`
+ * - 4.x: uses `player.extend('SegmentResponseModifier', ...)`
+ *
+ * For dash.js 4.x this must be called BEFORE `player.initialize()` because
+ * dash.js registers extension factories during initialization.
  *
  * @example
  * ```ts
@@ -70,26 +28,20 @@ function adaptDashjsChunk(chunk: DashjsChunk): MediaSegmentInput | null {
  * ```
  */
 export function attachC2pa(player: DashjsPlayer, options: C2paOptions = {}): C2paController {
-  // Wire up detach flag — dash.js has no API to unregister extensions, so we
-  // use a flag to make modifyResponseAsync a no-op after detach.
-  let isDetached = false;
+  let cleanup: () => void = () => {};
 
-  const pipeline = createC2paPipeline({
-    ...options,
-    onDetach: () => {
-      isDetached = true;
-    },
-  });
+  const pipeline = createC2paPipeline({ ...options, onDetach: () => cleanup() });
 
-  player.extend('SegmentResponseModifier', () => ({
-    modifyResponseAsync: async (chunk: unknown) => {
-      if (!isDetached) {
-        const input = adaptDashjsChunk(chunk as DashjsChunk);
-        if (input) await pipeline.route(input);
-      }
-      return Promise.resolve(chunk);
-    },
-  }));
+  if (typeof player.addResponseInterceptor === 'function') {
+    cleanup = registerInterceptor5x(player, pipeline.route);
+  } else if (typeof player.extend === 'function') {
+    cleanup = registerModifier4x(player, pipeline.route);
+  } else {
+    throw new Error(
+      '[@qualabs/c2pa-live-dashjs-plugin] Unsupported dash.js version: ' +
+        'neither addResponseInterceptor (≥5.x) nor extend (4.x) found on the player instance.',
+    );
+  }
 
   return pipeline.controller;
 }

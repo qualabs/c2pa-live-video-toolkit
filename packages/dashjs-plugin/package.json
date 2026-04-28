@@ -1,6 +1,6 @@
 {
   "name": "@qualabs/c2pa-live-dashjs-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Framework-agnostic dash.js plugin for real-time C2PA segment validation",
   "license": "Apache-2.0",
