@@ -2,6 +2,14 @@
 
 A collection of open-source tools for embedding and verifying [C2PA](https://c2pa.org/) provenance in live CMAF-based DASH/HLS video streams.
 
+## Published packages
+
+| Package | npm |
+|---|---|
+| [`@qualabs/c2pa-live-dashjs-plugin`](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin) | [![npm](https://img.shields.io/npm/v/@qualabs/c2pa-live-dashjs-plugin.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-dashjs-plugin) |
+| [`@qualabs/c2pa-live-hls-plugin`](https://www.npmjs.com/package/@qualabs/c2pa-live-hls-plugin) | [![npm](https://img.shields.io/npm/v/@qualabs/c2pa-live-hls-plugin.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-hls-plugin) |
+| [`@qualabs/c2pa-live-videojs-ui`](https://www.npmjs.com/package/@qualabs/c2pa-live-videojs-ui) | [![npm](https://img.shields.io/npm/v/@qualabs/c2pa-live-videojs-ui.svg)](https://www.npmjs.com/package/@qualabs/c2pa-live-videojs-ui) |
+
 ## Architecture
 
 ```
