@@ -90,6 +90,8 @@ export type SegmentRecord = {
 
 export type InitProcessedEvent = {
   success: boolean;
+  /** True when the init segment simply has no C2PA data (e.g. unsigned ad period). */
+  noC2paData?: boolean;
   sessionKeysCount: number;
   manifestId: string | undefined;
   manifest: C2paManifest | null;

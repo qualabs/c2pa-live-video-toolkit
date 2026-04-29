@@ -25,6 +25,7 @@ export interface SessionState {
   attackConfig: AttackConfig;
   guards: AttackGuards;
   lastSeenSegment: number | null;
+  lowestObservedStreamId: string | null;
   pendingGap: boolean;
   pendingMoofTamper: boolean;
   mdatAttackAt: number | null;
@@ -49,4 +50,5 @@ export interface AttackResult {
   reorderAttack?: boolean;
   serveContentOf?: number;
   asSlot?: number;
+  prefetchSegment?: number;
 }

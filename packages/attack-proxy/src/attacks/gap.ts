@@ -17,11 +17,11 @@ export function applyGapAttack(
   }
 
   if (attackConfig.gapAt !== null && n === attackConfig.gapAt) {
-    if (!guards.gap) {
+    const firstFire = !guards.gap;
+    if (firstFire) {
       guards.gap = true;
       attackConfig.enabled = false;
     }
-    logger.info(`GAP: serving segment ${n} without C2PA manifest box`);
     return { ...noAttack, gapEmptySegment: true, gapAt: n };
   }
 
@@ -53,6 +53,8 @@ export async function proxyGapEmptySegment(
   // Strip only the C2PA manifest box so the validator marks this segment as
   // CONTINUITY_INVALID (gap warning). The moof+mdat are preserved intact so
   // MSE can decode the fragment and the player timeline continues to advance.
+  // In VSI mode this also strips the emsg box, causing validateC2paSegment to
+  // return null → previousWasUnverified=true → next valid segment emits WARNING.
   const gapSegment = Buffer.from(removeC2paManifestBox(nBytes));
   res.writeHead(200, { 'Content-Type': 'video/iso4', 'Content-Length': gapSegment.length });
   res.end(gapSegment);

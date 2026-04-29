@@ -12,7 +12,6 @@ router.post('/gap', (_req, res) => {
   state.attackConfig = { ...state.attackConfig, enabled: true, type: 'gap', gapAt: null };
   state.pendingGap = true;
   resetGuards();
-  logger.info('Gap attack armed');
   res.json({ ok: true });
 });
 
