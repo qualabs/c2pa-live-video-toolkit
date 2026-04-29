@@ -1,0 +1,70 @@
+{
+  "name": "@qualabs/c2pa-live-hlsjs-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Framework-agnostic hls.js plugin for real-time C2PA segment validation",
+  "license": "Apache-2.0",
+  "author": "Qualabs",
+  "contributors": [
+    "Nicolás Caballero <8515648+N1Knight@users.noreply.github.com>",
+    "Valentina Giusti <234478367+valentinamgiusti@users.noreply.github.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit.git",
+    "directory": "packages/hlsjs-plugin"
+  },
+  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/hlsjs-plugin",
+  "bugs": {
+    "url": "https://github.com/qualabs/c2pa-live-video-toolkit/issues"
+  },
+  "keywords": [
+    "c2pa",
+    "hls",
+    "hlsjs",
+    "cmaf",
+    "live-video",
+    "provenance",
+    "content-credentials",
+    "validation",
+    "cml"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint 'src/**/*.ts' --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write 'src/**/*.ts'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@svta/cml-c2pa": "^1.0.0"
+  },
+  "peerDependencies": {
+    "hls.js": ">=1.5.0 <2.0.0"
+  },
+  "devDependencies": {
+    "@qualabs/c2pa-live-player-core": "*",
+    "hls.js": "^1.5.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.0.0"
+  }
+}
