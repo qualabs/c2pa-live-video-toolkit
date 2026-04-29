@@ -27,7 +27,7 @@ export function applyOutOfOrderAttack(
     attackConfig.reorderSeg2 = n + 2;
     guards.reorder = true;
     logger.info(`OUT-OF-ORDER: Armed for seg ${n + 1} and ${n + 2}`);
-    return noAttack;
+    return { ...noAttack, prefetchSegment: n + 2 };
   }
 
   if (attackConfig.reorderSeg1 === null || attackConfig.reorderSeg2 === null) return null;
@@ -74,23 +74,39 @@ export async function proxyReorderAttack(
   let segBMoofMdat: ReturnType<typeof extractMoofMdat>;
 
   if (isFirst) {
+    // Fetch the current segment (asSlot = N+1) — always available since the player requested it
     let bBytes: Buffer;
-    let aBytes: Buffer;
     try {
-      [bBytes, aBytes] = await Promise.all([
-        fetchSegment(asSlot, info),
-        fetchSegment(serveContentOf, info),
-      ]);
+      bBytes = await fetchSegment(asSlot, info);
     } catch (err) {
-      logger.warn(`[REORDER] Segment not available, cancelling attack: ${errorMessage(err)}`);
+      logger.warn(`[REORDER] Current segment unavailable, cancelling attack: ${errorMessage(err)}`);
       state.attackConfig.reorderSeg1 = null;
       state.attackConfig.reorderSeg2 = null;
       state.attackConfig.enabled = false;
       return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
     }
     cacheContent(asSlot, bBytes);
-    cacheContent(serveContentOf, aBytes);
     segBMoofMdat = extractMoofMdat(bBytes);
+
+    // Use the pre-fetched N+2 from cache; fall back to a single fetch attempt
+    const cachedFuture = state.contentCache.get(serveContentOf);
+    let aBytes: Buffer;
+    if (cachedFuture?.full) {
+      aBytes = cachedFuture.full;
+      logger.info(`[REORDER] Using pre-fetched segment ${serveContentOf} from cache`);
+    } else {
+      try {
+        aBytes = await fetchSegment(serveContentOf, info);
+        cacheContent(serveContentOf, aBytes);
+      } catch (err) {
+        logger.warn(`[REORDER] Future segment ${serveContentOf} not ready, cancelling attack: ${errorMessage(err)}`);
+        state.attackConfig.reorderSeg1 = null;
+        state.attackConfig.reorderSeg2 = null;
+        state.attackConfig.enabled = false;
+        return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+      }
+    }
+
     const aContent = extractMoofMdat(aBytes);
     if (!aContent) {
       return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);

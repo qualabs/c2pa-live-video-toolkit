@@ -7,7 +7,18 @@ import { buildSwappedSegment } from '../mp4/buildSwappedSegment.js';
 import { logger, errorMessage } from '../utils/logger.js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
-export function applyMdatSwapAttack(session: SessionState, n: number): AttackResult | null {
+export function applyMdatSwapAttack(
+  session: SessionState,
+  n: number,
+  streamId: string,
+): AttackResult | null {
+  // Only fire the mdat-swap on the lowest observed stream (video stream 0).
+  // Audio requests arrive first and would otherwise steal the attack target.
+  const targetStream = session.lowestObservedStreamId;
+  if (targetStream !== null && streamId !== targetStream) {
+    return null;
+  }
+
   if (session.mdatAttackAt === null) {
     session.mdatAttackAt = session.lastSeenSegment !== null ? session.lastSeenSegment + 1 : n;
   }
