@@ -23,7 +23,7 @@ export function applyAttack(session: SessionState, segment: SegmentInfo): Attack
     return applyReplayAttack(session, n, noAttack) ?? noAttack;
   }
   if (attackConfig.type === 'mdat-swap' && session.pendingMoofTamper) {
-    return applyMdatSwapAttack(session, n) ?? noAttack;
+    return applyMdatSwapAttack(session, n, segment.streamId) ?? noAttack;
   }
 
   return noAttack;

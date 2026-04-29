@@ -21,6 +21,7 @@ function createEmptyState(): SessionState {
     attackConfig: createEmptyAttackConfig(),
     guards: createEmptyGuards(),
     lastSeenSegment: null,
+    lowestObservedStreamId: null,
     pendingGap: false,
     pendingMoofTamper: false,
     mdatAttackAt: null,

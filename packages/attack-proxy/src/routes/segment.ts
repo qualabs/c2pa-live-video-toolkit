@@ -10,11 +10,14 @@ import { proxyWithContentSwap } from '../attacks/mdat-swap.js';
 
 const router = Router();
 
-function observeSegment(seg: number): void {
+function observeSegment(seg: number, streamId: string): void {
   if (state.lastSeenSegment !== seg) {
     state.observedSegments.push(seg);
     state.lastSeenSegment = seg;
     if (state.observedSegments.length > 20) state.observedSegments.shift();
+  }
+  if (state.lowestObservedStreamId === null || +streamId < +state.lowestObservedStreamId) {
+    state.lowestObservedStreamId = streamId;
   }
 }
 
@@ -30,7 +33,7 @@ router.get('*.m4s', async (req, res) => {
     return proxySegment(req, res, req.path, null);
   }
 
-  observeSegment(info.number);
+  observeSegment(info.number, info.streamId);
   const attack = applyAttack(state, info);
   const targetPath = buildSegmentPath(info, attack.targetSegment);
 
