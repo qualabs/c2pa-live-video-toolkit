@@ -129,16 +129,26 @@ export class SegmentRouter {
 
     this.deps.eventBus.emit('initProcessed', result);
 
+    // Always reset per-stream state on a new init segment (period transition or stream switch).
+    // If we skip this on failure, stale ManifestBox state / VSI session keys from the previous
+    // period bleed into the new one — unsigned ad segments then either throw inside the
+    // ManifestBox validator (caught, silently dropped) or go down the VSI path with stale keys
+    // (validateC2paSegment returns null → silently dropped).
+    for (const validator of Object.values(this.deps.manifestBoxValidators)) {
+      validator?.reset();
+    }
+    for (const mediaType of this.deps.supportedMediaTypes) {
+      this.previousWasUnverified.delete(mediaType);
+    }
+
     if (result.success) {
       this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
-      for (const validator of Object.values(this.deps.manifestBoxValidators)) {
-        validator?.reset();
-      }
-      if (result.sessionKeysCount === 0) {
-        for (const mediaType of this.deps.supportedMediaTypes) {
-          this.previousWasUnverified.delete(mediaType);
-        }
-      }
+    } else {
+      // Unsigned / unrecognised init (e.g. ad period) — clear cross-period state so that
+      // the incoming media segments are routed through ManifestBox with a clean slate and
+      // emitted as UNVERIFIED rather than being silently dropped.
+      this.deps.manifest.value = null;
+      this.deps.sessionKeyStore.clear();
     }
   }
 
