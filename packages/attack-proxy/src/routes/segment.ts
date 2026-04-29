@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import path from 'path';
 import { state } from '../state.js';
-import { parseSegmentFilename, proxySegment, buildSegmentPath } from '../proxy/segment-proxy.js';
+import { parseSegmentFilename, proxySegment, buildSegmentPath, prefetchInBackground } from '../proxy/segment-proxy.js';
 import { applyAttack } from '../attacks/index.js';
 import { proxyGapEmptySegment } from '../attacks/gap.js';
 import { proxyReplayAttack } from '../attacks/replay.js';
@@ -36,6 +36,10 @@ router.get('*.m4s', async (req, res) => {
   observeSegment(info.number, info.streamId);
   const attack = applyAttack(state, info);
   const targetPath = buildSegmentPath(info, attack.targetSegment);
+
+  if (attack.prefetchSegment != null) {
+    void prefetchInBackground(attack.prefetchSegment, info);
+  }
 
   if (attack.gapEmptySegment) return proxyGapEmptySegment(res, info, attack);
   if (attack.replayAttack) return proxyReplayAttack(req, res, info, attack);

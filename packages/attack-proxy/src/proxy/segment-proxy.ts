@@ -63,6 +63,26 @@ export async function fetchSegment(segNum: number, info: SegmentInfo): Promise<B
   return response.body;
 }
 
+const PREFETCH_MAX_ATTEMPTS = 12;
+const PREFETCH_RETRY_DELAY_MS = 500;
+
+export async function prefetchInBackground(segNum: number, info: SegmentInfo): Promise<void> {
+  for (let attempt = 0; attempt < PREFETCH_MAX_ATTEMPTS; attempt++) {
+    if (state.contentCache.has(segNum)) return;
+    try {
+      const bytes = await fetchSegment(segNum, info);
+      cacheContent(segNum, bytes);
+      logger.info(`[PREFETCH] Cached segment ${segNum}`);
+      return;
+    } catch {
+      if (attempt < PREFETCH_MAX_ATTEMPTS - 1) {
+        await new Promise<void>((resolve) => setTimeout(resolve, PREFETCH_RETRY_DELAY_MS));
+      }
+    }
+  }
+  logger.warn(`[PREFETCH] Segment ${segNum} unavailable after ${PREFETCH_MAX_ATTEMPTS} attempts`);
+}
+
 export async function proxySegment(
   _req: IncomingMessage,
   res: ServerResponse,

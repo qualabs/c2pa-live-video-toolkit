@@ -50,4 +50,5 @@ export interface AttackResult {
   reorderAttack?: boolean;
   serveContentOf?: number;
   asSlot?: number;
+  prefetchSegment?: number;
 }
