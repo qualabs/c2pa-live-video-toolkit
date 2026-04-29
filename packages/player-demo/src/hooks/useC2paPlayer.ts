@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import dashjs from 'dashjs';
+import { MediaPlayer } from 'dashjs';
+import type { MediaPlayerClass } from 'dashjs';
 import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { DashjsPlayer } from '@qualabs/c2pa-live-dashjs-plugin';
 import type {
   C2paController,
   SegmentRecord,
@@ -29,7 +31,7 @@ export type UseC2paPlayerResult = {
  */
 export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const dashPlayerRef = useRef<dashjs.MediaPlayerClass | null>(null);
+  const dashPlayerRef = useRef<MediaPlayerClass | null>(null);
   const c2paControllerRef = useRef<C2paController | null>(null);
   const isInitializedRef = useRef(false);
   // Capture the initial videoSrc so the mount effect is truly mount-only
@@ -46,10 +48,10 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
     const streamUrl = resolveStreamUrl(initialVideoSrcRef.current);
     setCurrentStreamUrl(streamUrl);
 
-    const dashPlayer = dashjs.MediaPlayer().create();
+    const dashPlayer = MediaPlayer().create();
     dashPlayerRef.current = dashPlayer;
 
-    const controller = attachC2pa(dashPlayer);
+    const controller = attachC2pa(dashPlayer as unknown as DashjsPlayer);
     c2paControllerRef.current = controller;
     setC2paController(controller);
 
@@ -61,7 +63,7 @@ export function useC2paPlayer(videoSrc?: string): UseC2paPlayerResult {
       setState((prev) => ({ ...prev, initData: event }));
     });
 
-    dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (e: unknown) => {
+    dashPlayer.on('error', (e: unknown) => {
       const event = e as { error?: unknown };
       console.warn('[player-demo] dash.js error:', event.error);
       // Seek to end of buffer to recover from gap attacks

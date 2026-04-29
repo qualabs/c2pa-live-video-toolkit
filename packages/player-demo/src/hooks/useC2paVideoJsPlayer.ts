@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
-import dashjs from 'dashjs';
+import { MediaPlayer } from 'dashjs';
+import type { MediaPlayerClass } from 'dashjs';
 import { C2paPlayerUI, initializeQualitySelector } from '@qualabs/c2pa-live-videojs-ui';
 import 'video.js/dist/video-js.css';
 import '@qualabs/c2pa-live-videojs-ui/styles';
@@ -10,7 +11,7 @@ import type {
   QualitySelectorInstance,
 } from '@qualabs/c2pa-live-videojs-ui';
 import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
-import type { C2paController } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { C2paController, DashjsPlayer } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 
@@ -47,7 +48,7 @@ export type UseC2paVideoJsPlayerResult = {
 export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerResult {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoJsPlayerRef = useRef<ReturnType<typeof videojs> | null>(null);
-  const dashPlayerRef = useRef<dashjs.MediaPlayerClass | null>(null);
+  const dashPlayerRef = useRef<MediaPlayerClass | null>(null);
   const c2paControllerRef = useRef<C2paController | null>(null);
   const c2paUiRef = useRef<C2paPlayerInstance | null>(null);
   const qualitySelectorRef = useRef<QualitySelectorInstance | null>(null);
@@ -80,10 +81,10 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
     vjsPlayer.ready(() => {
       const streamUrl = resolveStreamUrl(initialVideoSrcRef.current);
 
-      const dashPlayer = dashjs.MediaPlayer().create();
+      const dashPlayer = MediaPlayer().create();
       dashPlayerRef.current = dashPlayer;
 
-      const controller = attachC2pa(dashPlayer);
+      const controller = attachC2pa(dashPlayer as unknown as DashjsPlayer);
       c2paControllerRef.current = controller;
       setC2paController(controller);
 
@@ -92,17 +93,20 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
           record.mediaType === 'video'
             ? currentQualityLabelRef.current
             : currentAudioQualityLabelRef.current;
-        setState((prev) => ({
-          ...prev,
-          segments: [...prev.segments, { ...record, quality }],
-        }));
+        setState((prev) => {
+          const alreadyExists = prev.segments.some(
+            (s) => s.mediaType === record.mediaType && s.segmentNumber === record.segmentNumber,
+          );
+          if (alreadyExists) return prev;
+          return { ...prev, segments: [...prev.segments, { ...record, quality }] };
+        });
       });
 
       controller.on(C2paEvent.INIT_PROCESSED, (event) => {
         setState((prev) => ({ ...prev, initData: event }));
       });
 
-      dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (e: unknown) => {
+      dashPlayer.on('error', (e: unknown) => {
         const event = e as { error?: unknown };
         console.warn('[player-demo] dash.js error:', event.error);
         const ranges = videoEl.buffered;
@@ -122,48 +126,49 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
             dashPlayer.updateSettings({
               streaming: { abr: { autoSwitchBitrate: { video: false } } },
             });
-            dashPlayer.setQualityFor('video', index);
+            dashPlayer.setRepresentationForTypeByIndex('video', index);
           }
         },
       );
       qualitySelectorRef.current = qualitySelector;
 
-      dashPlayer.on(dashjs.MediaPlayer.events.MANIFEST_LOADED, () => {
-        const audioList = dashPlayer.getBitrateInfoListFor('audio') ?? [];
+      dashPlayer.on('manifestLoaded', () => {
+        const audioList = dashPlayer.getRepresentationsByType('audio') ?? [];
         if (audioList.length > 0 && currentAudioQualityLabelRef.current === '—') {
           const highestAudio = audioList[audioList.length - 1];
-          const kbps = Math.round(highestAudio.bitrate / 1000);
+          const kbps = Math.round(highestAudio.bandwidth / 1000);
           currentAudioQualityLabelRef.current = kbps > 0 ? `${kbps} kbps` : `audio 1`;
         }
 
         if (qualitiesInitializedRef.current) return;
-        const bitrateList = dashPlayer.getBitrateInfoListFor('video') ?? [];
-        const highestIndex = bitrateList.length - 1;
+        const repList = dashPlayer.getRepresentationsByType('video') ?? [];
+        const highestIndex = repList.length - 1;
         if (highestIndex >= 0) {
-          currentQualityLabelRef.current = `${bitrateList[highestIndex].height}p`;
+          currentQualityLabelRef.current = `${repList[highestIndex].height}p`;
         }
-        if (bitrateList.length > 1) {
+        if (repList.length > 1) {
           qualitiesInitializedRef.current = true;
           dashPlayer.updateSettings({
             streaming: { abr: { autoSwitchBitrate: { video: false } } },
           });
-          dashPlayer.setQualityFor('video', highestIndex);
+          dashPlayer.setRepresentationForTypeByIndex('video', highestIndex);
           qualitySelector.updateQualities(
-            bitrateList.map((info, i) => ({ index: i, height: info.height })),
+            repList.map((info, i) => ({ index: i, height: info.height })),
           );
         }
       });
 
-      dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_RENDERED, (e: unknown) => {
-        const { mediaType, newQuality } = e as { mediaType: string; newQuality: number };
+      dashPlayer.on('qualityChangeRendered', (e: unknown) => {
+        const { newRepresentation } = e as {
+          newRepresentation: { height?: number; bandwidth?: number; mediaInfo?: { type?: string } };
+        };
+        const mediaType = newRepresentation?.mediaInfo?.type;
         if (mediaType === 'video') {
-          const info = dashPlayer.getBitrateInfoListFor('video')?.[newQuality];
-          if (info?.height) currentQualityLabelRef.current = `${info.height}p`;
+          if (newRepresentation?.height)
+            currentQualityLabelRef.current = `${newRepresentation.height}p`;
         } else if (mediaType === 'audio') {
-          const list = dashPlayer.getBitrateInfoListFor('audio') ?? [];
-          const info = list[newQuality];
-          if (info?.bitrate)
-            currentAudioQualityLabelRef.current = `${Math.round(info.bitrate / 1000)} kbps`;
+          if (newRepresentation?.bandwidth)
+            currentAudioQualityLabelRef.current = `${Math.round(newRepresentation.bandwidth / 1000)} kbps`;
         }
         controller.resetSequence();
       });
