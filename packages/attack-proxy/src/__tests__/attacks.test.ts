@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { applyGapAttack } from '../attacks/gap.js';
 import { applyOutOfOrderAttack } from '../attacks/out-of-order.js';
 import { applyReplayAttack } from '../attacks/replay.js';
@@ -19,6 +19,7 @@ function createSession(overrides: Partial<SessionState> = {}): SessionState {
     },
     guards: { replay: false, gap: false, mdatSwap: false, reorder: false },
     lastSeenSegment: null,
+    lowestObservedStreamId: null,
     pendingGap: false,
     pendingMoofTamper: false,
     mdatAttackAt: null,
@@ -73,7 +74,7 @@ describe('applyOutOfOrderAttack', () => {
 
     const result = applyOutOfOrderAttack(session, 5, NO_ATTACK);
 
-    expect(result).toEqual(NO_ATTACK);
+    expect(result).toEqual({ ...NO_ATTACK, prefetchSegment: 7 });
     expect(session.guards.reorder).toBe(true);
     expect(session.attackConfig.reorderSeg1).toBe(6);
     expect(session.attackConfig.reorderSeg2).toBe(7);
@@ -166,7 +167,7 @@ describe('applyMdatSwapAttack', () => {
     });
 
     // Segment 9 arrives first — arms the attack for segment 11 but doesn't trigger
-    const result = applyMdatSwapAttack(session, 9);
+    const result = applyMdatSwapAttack(session, 9, '0');
 
     expect(session.mdatAttackAt).toBe(11);
     expect(result).toBeNull();
@@ -179,7 +180,7 @@ describe('applyMdatSwapAttack', () => {
       attackConfig: { ...createSession().attackConfig, type: 'mdat-swap', enabled: true },
     });
 
-    const result = applyMdatSwapAttack(session, 5);
+    const result = applyMdatSwapAttack(session, 5, '0');
 
     expect(result).not.toBeNull();
     expect(result!.swapMdat).toBe(true);
@@ -190,7 +191,7 @@ describe('applyMdatSwapAttack', () => {
   it('returns null when segment does not match', () => {
     const session = createSession({ mdatAttackAt: 10 });
 
-    expect(applyMdatSwapAttack(session, 5)).toBeNull();
+    expect(applyMdatSwapAttack(session, 5, '0')).toBeNull();
   });
 });
 
