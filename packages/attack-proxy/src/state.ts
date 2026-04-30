@@ -4,7 +4,6 @@ function createEmptyAttackConfig(): AttackConfig {
   return {
     enabled: false,
     type: 'none',
-    gapAt: null,
     reorderSeg1: null,
     reorderSeg2: null,
     replaySegment: null,
@@ -23,6 +22,9 @@ function createEmptyState(): SessionState {
     lastSeenSegment: null,
     lowestObservedStreamId: null,
     pendingGap: false,
+    gapFiredStreams: new Set(),
+    gapFiredAtSegment: null,
+    gapFiredAtTimestamp: null,
     pendingMoofTamper: false,
     mdatAttackAt: null,
     observedSegments: [],
