@@ -1,59 +1,50 @@
 import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
-import { fetchSegment } from '../proxy/segment-proxy.js';
-import { removeC2paManifestBox } from '../mp4/mdat-utils.js';
-import { logger, errorMessage } from '../utils/logger.js';
 import type { ServerResponse } from 'http';
+
+// How long after the first gap fire we accept late streams (covers ~1 segment duration plus
+// network variance but expires before the GapController ABR switch ~8 s later).
+const GAP_WINDOW_MS = 6_000;
 
 export function applyGapAttack(
   session: SessionState,
-  n: number,
+  streamId: string,
+  segmentNumber: number,
   noAttack: AttackResult,
 ): AttackResult | null {
-  const { attackConfig, guards } = session;
+  if (!session.pendingGap) return null;
+  if (session.gapFiredStreams.has(streamId)) return null;
 
-  if (session.pendingGap && session.lastSeenSegment !== null) {
-    attackConfig.gapAt = session.lastSeenSegment + 1;
-    session.pendingGap = false;
-  }
+  const now = Date.now();
 
-  if (attackConfig.gapAt !== null && n === attackConfig.gapAt) {
-    if (!guards.gap) {
-      guards.gap = true;
-      attackConfig.enabled = false;
+  if (session.gapFiredAtSegment !== null) {
+    const elapsed = now - (session.gapFiredAtTimestamp ?? now);
+    const segmentRange = segmentNumber - session.gapFiredAtSegment;
+    // Only gap streams at the exact same segment number. Video now goes through the proxy
+    // on every request (no-store cache control), so N+1 in-flight catch-up is not needed.
+    // The time window is a safety net against stale re-fires.
+    if (elapsed > GAP_WINDOW_MS || segmentRange !== 0) {
+      return null;
     }
-    logger.info(`GAP: serving segment ${n} without C2PA manifest box`);
-    return { ...noAttack, gapEmptySegment: true, gapAt: n };
+  } else {
+    // No pre-armed target: first stream determines the gap segment.
+    session.gapFiredAtSegment = segmentNumber;
   }
 
-  return null;
+  // Lazy timestamp — set on the first stream that actually fires (covers both the
+  // pre-armed and the first-stream-sets-it paths).
+  if (session.gapFiredAtTimestamp === null) {
+    session.gapFiredAtTimestamp = now;
+  }
+
+  session.gapFiredStreams.add(streamId);
+  return { ...noAttack, gapEmptySegment: true };
 }
 
-export async function proxyGapEmptySegment(
+export function proxyGapEmptySegment(
   res: ServerResponse,
-  info: SegmentInfo,
-  attack: AttackResult,
-): Promise<void> {
-  if (attack.gapAt == null) {
-    res.statusCode = 500;
-    res.end();
-    return;
-  }
-
-  const N = attack.gapAt;
-  let nBytes: Buffer;
-  try {
-    nBytes = await fetchSegment(N, info);
-  } catch (err) {
-    logger.error(`[GAP] Failed to fetch segment ${N}: ${errorMessage(err)}`);
-    res.statusCode = 502;
-    res.end();
-    return;
-  }
-
-  // Strip only the C2PA manifest box so the validator marks this segment as
-  // CONTINUITY_INVALID (gap warning). The moof+mdat are preserved intact so
-  // MSE can decode the fragment and the player timeline continues to advance.
-  const gapSegment = Buffer.from(removeC2paManifestBox(nBytes));
-  res.writeHead(200, { 'Content-Type': 'video/iso4', 'Content-Length': gapSegment.length });
-  res.end(gapSegment);
+  _info: SegmentInfo,
+  _attack: AttackResult,
+): void {
+  res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': 0 });
+  res.end();
 }

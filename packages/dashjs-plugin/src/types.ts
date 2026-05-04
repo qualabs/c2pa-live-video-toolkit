@@ -23,7 +23,7 @@ export type Dash5xRequestMetadata = {
 
 // Minimal subset of CommonMediaResponse passed to addResponseInterceptor
 export type Dash5xCommonMediaResponse = {
-  request?: { customData?: { request?: Dash5xRequestMetadata } };
+  request?: { url?: string; customData?: { request?: Dash5xRequestMetadata } };
   data?: unknown;
 };
 

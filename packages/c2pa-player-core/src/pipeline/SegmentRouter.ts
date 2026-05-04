@@ -99,6 +99,12 @@ function resolveSegmentStatus(
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
   private readonly previousWasUnverified = new Map<string, boolean>();
+  // Accumulates all manifestIds ever seen per media type within the current content period.
+  // A quality switch brings a different manifestId (each representation is signed separately),
+  // but when GapController switches back to a quality we've already played, that manifestId is
+  // in the set and we know it's a same-period switch — so we preserve gap-detection state.
+  // The set is cleared only when an unsigned init arrives (genuine period transition, e.g. ad).
+  private readonly knownManifestIds = new Map<string, Set<string>>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -129,19 +135,45 @@ export class SegmentRouter {
 
     this.deps.eventBus.emit('initProcessed', result);
 
+    // Only reset state for the media type of this init segment.
+    // Resetting all media types would wipe the gap-detection state for the other track,
+    // causing it to miss the WARNING when the next valid segment arrives after a gap.
+    this.deps.manifestBoxValidators[input.mediaType]?.reset();
+
     if (result.success) {
-      this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
-      for (const validator of Object.values(this.deps.manifestBoxValidators)) {
-        validator?.reset();
+      const newManifestId = result.manifestId;
+      const known = this.knownManifestIds.get(input.mediaType) ?? new Set<string>();
+      // A manifestId we've already seen means we've played this quality level before within
+      // the current content period (GapController switched back to it). Preserve gap-detection
+      // state so the WARNING fires on the next valid segment.
+      // A never-seen manifestId is either a genuine period transition or the first time we hit
+      // this quality — in both cases, conservatively clear gap state.
+      const isKnownSession = newManifestId !== undefined && known.has(newManifestId);
+
+      if (!isKnownSession) {
+        this.previousWasUnverified.delete(input.mediaType);
       }
-      this.previousWasUnverified.clear();
+      if (newManifestId !== undefined) {
+        known.add(newManifestId);
+        this.knownManifestIds.set(input.mediaType, known);
+      }
+
+      this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
+    } else {
+      // Unsigned / unrecognised init (e.g. ad period) — clear cross-period state so that
+      // the incoming media segments are routed through ManifestBox with a clean slate and
+      // emitted as UNVERIFIED rather than being silently dropped.
+      // Also reset knownManifestIds so the next content period starts fresh.
+      this.previousWasUnverified.delete(input.mediaType);
+      this.knownManifestIds.delete(input.mediaType);
+      this.deps.manifest.value = null;
+      this.deps.sessionKeyStore.clear();
     }
   }
 
   private async handleMediaSegment(input: MediaSegmentInput): Promise<void> {
     const { bytes, mediaType, segmentIndex, streamId } = input;
     const streamKey = buildStreamKey(mediaType, streamId);
-
     if (!this.deps.sessionKeyStore.hasKeys()) {
       await this.handleManifestBoxSegment({ segmentBytes: bytes, mediaType, segmentIndex });
       return;
@@ -153,7 +185,7 @@ export class SegmentRouter {
   }
 
   private async handleVsiSegment(params: VsiSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType, segmentIndex } = params;
+    const { segmentBytes, streamKey, mediaType } = params;
 
     let vsiResult: VsiValidationResult | null = null;
     try {
@@ -164,13 +196,25 @@ export class SegmentRouter {
     }
 
     if (!vsiResult) {
-      this.emitSegmentValidated(
-        buildUnverifiedRecord(segmentIndex, mediaType, SegmentStatus.UNVERIFIED),
-      );
+      this.previousWasUnverified.set(mediaType, true);
+      // Sequence number is unknown until the next valid segment arrives; emit then with inferred seq.
       return;
     }
 
-    const status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+    const hadGapBefore = this.previousWasUnverified.get(mediaType) ?? false;
+    this.previousWasUnverified.set(mediaType, false);
+
+    if (hadGapBefore) {
+      this.emitSegmentValidated(
+        buildUnverifiedRecord(vsiResult.sequenceNumber - 1, mediaType, SegmentStatus.UNVERIFIED),
+      );
+    }
+
+    let status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+    if (hadGapBefore && status === SegmentStatus.VALID) {
+      status = SegmentStatus.WARNING;
+    }
+
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
     this.emitSegmentValidated(record);
   }
@@ -223,6 +267,7 @@ export class SegmentRouter {
       : isContinuityOnlyFailure || isChainBreakAfterGap
         ? SegmentStatus.WARNING
         : SegmentStatus.INVALID;
+
     this.emitSegmentValidated({
       segmentNumber: result.sequenceNumber,
       mediaType,

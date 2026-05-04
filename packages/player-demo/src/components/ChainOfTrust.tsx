@@ -27,6 +27,7 @@ const ValidationBadgeKind = {
   WARNING: 'warning',
   EMPTY: 'empty',
   PENDING: 'pending',
+  NO_C2PA: 'no_c2pa',
 } as const;
 
 type ValidationBadgeKindValue = (typeof ValidationBadgeKind)[keyof typeof ValidationBadgeKind];
@@ -37,11 +38,13 @@ const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.WARNING]: 'MISSING SEGMENT',
   [ValidationBadgeKind.EMPTY]: '—',
   [ValidationBadgeKind.PENDING]: 'PENDING',
+  [ValidationBadgeKind.NO_C2PA]: 'No C2PA',
 };
 
 const InitBadgeStatus = {
   VALID: ValidationBadgeKind.VALID,
   FAILED: ValidationBadgeKind.FAILED,
+  NO_C2PA: ValidationBadgeKind.NO_C2PA,
   PENDING: ValidationBadgeKind.PENDING,
 } as const;
 
@@ -61,7 +64,8 @@ function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValu
 
 function resolveInitBadgeStatus(initData: InitProcessedEvent | null): InitBadgeStatusValue {
   if (initData == null) return InitBadgeStatus.PENDING;
-  return initData.success ? InitBadgeStatus.VALID : InitBadgeStatus.FAILED;
+  if (initData.success) return InitBadgeStatus.VALID;
+  return initData.noC2paData ? InitBadgeStatus.NO_C2PA : InitBadgeStatus.FAILED;
 }
 
 export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
@@ -71,7 +75,11 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   onSegmentSelect,
 }) => {
   const sortedSegments = React.useMemo(
-    () => [...segments].sort((a, b) => b.timestamp - a.timestamp),
+    () =>
+      [...segments].sort((a, b) => {
+        if (b.segmentNumber !== a.segmentNumber) return b.segmentNumber - a.segmentNumber;
+        return b.timestamp - a.timestamp;
+      }),
     [segments],
   );
 
@@ -138,7 +146,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                       ? 'valid'
                       : initStatus === InitBadgeStatus.FAILED
                         ? 'failed'
-                        : 'warning'
+                        : initStatus === InitBadgeStatus.NO_C2PA
+                          ? 'unverified'
+                          : 'warning'
                   }
                 >
                   <span>🔑</span>
@@ -369,11 +379,13 @@ const VALIDATION_BADGE_BACKGROUND: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.WARNING]: '#eab308',
   [ValidationBadgeKind.PENDING]: 'rgba(251, 191, 36, 0.2)',
   [ValidationBadgeKind.EMPTY]: 'transparent',
+  [ValidationBadgeKind.NO_C2PA]: '#555',
 };
 
 const MUTED_BADGE_KINDS: ReadonlySet<ValidationBadgeKindValue> = new Set([
   ValidationBadgeKind.EMPTY,
   ValidationBadgeKind.PENDING,
+  ValidationBadgeKind.NO_C2PA,
 ]);
 
 const ValidBadge = styled.span<{ $status: ValidationBadgeKindValue }>`

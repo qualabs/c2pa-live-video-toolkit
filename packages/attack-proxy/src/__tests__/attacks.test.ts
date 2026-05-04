@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { applyGapAttack } from '../attacks/gap.js';
 import { applyOutOfOrderAttack } from '../attacks/out-of-order.js';
 import { applyReplayAttack } from '../attacks/replay.js';
@@ -11,7 +11,6 @@ function createSession(overrides: Partial<SessionState> = {}): SessionState {
     attackConfig: {
       enabled: false,
       type: 'none',
-      gapAt: null,
       reorderSeg1: null,
       reorderSeg2: null,
       replaySegment: null,
@@ -19,7 +18,11 @@ function createSession(overrides: Partial<SessionState> = {}): SessionState {
     },
     guards: { replay: false, gap: false, mdatSwap: false, reorder: false },
     lastSeenSegment: null,
+    lowestObservedStreamId: null,
     pendingGap: false,
+    gapFiredStreams: new Set(),
+    gapFiredAtSegment: null,
+    gapFiredAtTimestamp: null,
     pendingMoofTamper: false,
     mdatAttackAt: null,
     observedSegments: [],
@@ -31,37 +34,94 @@ function createSession(overrides: Partial<SessionState> = {}): SessionState {
 const NO_ATTACK: AttackResult = { targetSegment: 5, swapMdat: false };
 
 describe('applyGapAttack', () => {
-  it('arms gap at next segment when pendingGap is true and lastSeen is set', () => {
+  it('fires on first request from a new stream when pendingGap is true', () => {
     const session = createSession({
       pendingGap: true,
-      lastSeenSegment: 10,
       attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
     });
 
-    applyGapAttack(session, 11, NO_ATTACK);
-
-    expect(session.attackConfig.gapAt).toBe(11);
-    expect(session.pendingGap).toBe(false);
-  });
-
-  it('returns gap result when segment matches gapAt', () => {
-    const session = createSession({
-      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true, gapAt: 5 },
-    });
-
-    const result = applyGapAttack(session, 5, NO_ATTACK);
+    const result = applyGapAttack(session, 'stream0', 6, NO_ATTACK);
 
     expect(result).not.toBeNull();
     expect(result!.gapEmptySegment).toBe(true);
-    expect(result!.gapAt).toBe(5);
+    expect(session.gapFiredStreams.has('stream0')).toBe(true);
+    expect(session.gapFiredAtSegment).toBe(6);
   });
 
-  it('returns null when segment does not match gapAt', () => {
+  it('does not fire twice for the same stream', () => {
     const session = createSession({
-      attackConfig: { ...createSession().attackConfig, type: 'gap', gapAt: 10 },
+      pendingGap: true,
+      gapFiredStreams: new Set(['stream0']),
+      gapFiredAtSegment: 6,
+      gapFiredAtTimestamp: Date.now(),
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
     });
 
-    expect(applyGapAttack(session, 5, NO_ATTACK)).toBeNull();
+    expect(applyGapAttack(session, 'stream0', 6, NO_ATTACK)).toBeNull();
+  });
+
+  it('fires for a second stream at the same segment number', () => {
+    const session = createSession({
+      pendingGap: true,
+      gapFiredStreams: new Set(['stream0']),
+      gapFiredAtSegment: 6,
+      gapFiredAtTimestamp: Date.now(),
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
+    });
+
+    const result = applyGapAttack(session, 'stream4', 6, NO_ATTACK);
+
+    expect(result).not.toBeNull();
+    expect(result!.gapEmptySegment).toBe(true);
+  });
+
+  it('does not fire for a stream at gapFiredAtSegment+1 (ABR switch after gap)', () => {
+    // Scenario: GapController switches ABR quality after the gap — the new stream
+    // requests N+1 and must NOT be gapped again.
+    const session = createSession({
+      pendingGap: true,
+      gapFiredStreams: new Set(['stream0', 'stream4']),
+      gapFiredAtSegment: 6,
+      gapFiredAtTimestamp: Date.now() - 500, // 500 ms ago — still within window
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
+    });
+
+    expect(applyGapAttack(session, 'stream3', 7, NO_ATTACK)).toBeNull();
+  });
+
+  it('does not fire for a stream at gapFiredAtSegment+1 after the time window expires', () => {
+    const session = createSession({
+      pendingGap: true,
+      gapFiredStreams: new Set(['stream0', 'stream4']),
+      gapFiredAtSegment: 6,
+      gapFiredAtTimestamp: Date.now() - 10_000, // 10 s ago — window expired
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
+    });
+
+    expect(applyGapAttack(session, 'stream3', 7, NO_ATTACK)).toBeNull();
+    expect(applyGapAttack(session, 'stream3', 8, NO_ATTACK)).toBeNull();
+  });
+
+  it('does not fire for a stream at gapFiredAtSegment+2 or beyond', () => {
+    const session = createSession({
+      pendingGap: true,
+      gapFiredStreams: new Set(['stream0']),
+      gapFiredAtSegment: 6,
+      gapFiredAtTimestamp: Date.now(),
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
+    });
+
+    expect(applyGapAttack(session, 'stream3', 8, NO_ATTACK)).toBeNull();
+    expect(applyGapAttack(session, 'stream3', 9, NO_ATTACK)).toBeNull();
+  });
+
+  it('returns null when pendingGap is false', () => {
+    const session = createSession({
+      pendingGap: false,
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
+    });
+
+    expect(applyGapAttack(session, 'stream0', 6, NO_ATTACK)).toBeNull();
   });
 });
 
@@ -73,7 +133,7 @@ describe('applyOutOfOrderAttack', () => {
 
     const result = applyOutOfOrderAttack(session, 5, NO_ATTACK);
 
-    expect(result).toEqual(NO_ATTACK);
+    expect(result).toEqual({ ...NO_ATTACK, prefetchSegment: 7 });
     expect(session.guards.reorder).toBe(true);
     expect(session.attackConfig.reorderSeg1).toBe(6);
     expect(session.attackConfig.reorderSeg2).toBe(7);
@@ -166,7 +226,7 @@ describe('applyMdatSwapAttack', () => {
     });
 
     // Segment 9 arrives first — arms the attack for segment 11 but doesn't trigger
-    const result = applyMdatSwapAttack(session, 9);
+    const result = applyMdatSwapAttack(session, 9, '0');
 
     expect(session.mdatAttackAt).toBe(11);
     expect(result).toBeNull();
@@ -179,7 +239,7 @@ describe('applyMdatSwapAttack', () => {
       attackConfig: { ...createSession().attackConfig, type: 'mdat-swap', enabled: true },
     });
 
-    const result = applyMdatSwapAttack(session, 5);
+    const result = applyMdatSwapAttack(session, 5, '0');
 
     expect(result).not.toBeNull();
     expect(result!.swapMdat).toBe(true);
@@ -190,7 +250,7 @@ describe('applyMdatSwapAttack', () => {
   it('returns null when segment does not match', () => {
     const session = createSession({ mdatAttackAt: 10 });
 
-    expect(applyMdatSwapAttack(session, 5)).toBeNull();
+    expect(applyMdatSwapAttack(session, 5, '0')).toBeNull();
   });
 });
 
@@ -205,9 +265,10 @@ describe('applyAttack (dispatcher)', () => {
     expect(result.targetSegment).toBe(5);
   });
 
-  it('dispatches gap attack when type is gap', () => {
+  it('dispatches gap attack when type is gap and pendingGap is true', () => {
     const session = createSession({
-      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true, gapAt: 5 },
+      pendingGap: true,
+      attackConfig: { ...createSession().attackConfig, type: 'gap', enabled: true },
     });
 
     const result = applyAttack(session, { streamId: '0', number: 5, pattern: 'chunk-stream' });

@@ -37,13 +37,18 @@ export class InitSegmentProcessor {
         errorCodes: asValidationErrorCodes(result.errorCodes),
       };
     } catch (error) {
-      this.logger.error('[InitSegmentProcessor] Failed to process init segment:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      const noC2paData = /no c2pa/i.test(message) || /uuid box/i.test(message);
+      if (!noC2paData) {
+        this.logger.error('[InitSegmentProcessor] Failed to process init segment:', error);
+      }
       return {
         success: false,
+        noC2paData,
         sessionKeysCount: 0,
         manifestId: undefined,
         manifest: null,
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
       };
     }
   }

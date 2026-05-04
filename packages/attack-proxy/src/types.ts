@@ -1,7 +1,6 @@
 export interface AttackConfig {
   enabled: boolean;
   type: 'none' | 'gap' | 'out-of-order' | 'replay' | 'mdat-swap';
-  gapAt: number | null;
   reorderSeg1: number | null;
   reorderSeg2: number | null;
   replaySegment: number | null;
@@ -25,7 +24,11 @@ export interface SessionState {
   attackConfig: AttackConfig;
   guards: AttackGuards;
   lastSeenSegment: number | null;
+  lowestObservedStreamId: string | null;
   pendingGap: boolean;
+  gapFiredStreams: Set<string>;
+  gapFiredAtSegment: number | null;
+  gapFiredAtTimestamp: number | null;
   pendingMoofTamper: boolean;
   mdatAttackAt: number | null;
   observedSegments: number[];
@@ -49,4 +52,5 @@ export interface AttackResult {
   reorderAttack?: boolean;
   serveContentOf?: number;
   asSlot?: number;
+  prefetchSegment?: number;
 }

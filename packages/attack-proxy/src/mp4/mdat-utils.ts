@@ -2,14 +2,12 @@ import { readUint32BE, readUint64BE, findBox } from './mp4-utils.js';
 
 // C2PA manifest store UUID per C2PA specification (d8fec3d6-1a96-4f32-a0f6-f3ecf96c10ea)
 const C2PA_MANIFEST_UUID = new Uint8Array([
-  0xd8, 0xfe, 0xc3, 0xd6, 0x1a, 0x96, 0x4f, 0x32, 0xa0, 0xf6, 0xf3, 0xec, 0xf9, 0x6c, 0x10,
-  0xea,
+  0xd8, 0xfe, 0xc3, 0xd6, 0x1a, 0x96, 0x4f, 0x32, 0xa0, 0xf6, 0xf3, 0xec, 0xf9, 0x6c, 0x10, 0xea,
 ]);
 
 // JUMBF UUID per ISO 19566-5 (used by some JUMBF-compliant tools)
 const JUMBF_UUID = new Uint8Array([
-  0xd8, 0xfe, 0xc3, 0xd6, 0x1b, 0x0e, 0x48, 0x3c, 0x92, 0x97, 0x58, 0x28, 0x87, 0x7e, 0xc4,
-  0x81,
+  0xd8, 0xfe, 0xc3, 0xd6, 0x1b, 0x0e, 0x48, 0x3c, 0x92, 0x97, 0x58, 0x28, 0x87, 0x7e, 0xc4, 0x81,
 ]);
 
 const UUID_SIZE = 16;
@@ -57,7 +55,10 @@ function isVsiEmsgBox(buffer: Uint8Array, offset: number, boxSize: number): bool
   return VSI_SCHEME_URI_BYTES.every((b, i) => b === buffer[schemeStart + i]);
 }
 
-export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8Array {
+function filterBoxes(
+  segmentBytes: Uint8Array | Buffer,
+  shouldKeep: (buffer: Uint8Array, offset: number, boxSize: number) => boolean,
+): Uint8Array {
   const buffer = segmentBytes instanceof Uint8Array ? segmentBytes : new Uint8Array(segmentBytes);
   const parts: Uint8Array[] = [];
   let offset = 0;
@@ -69,7 +70,7 @@ export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8A
     }
     if (boxSize === 0 || boxSize > buffer.length || offset + boxSize > buffer.length) break;
 
-    if (!isC2paUuidBox(buffer, offset) && !isVsiEmsgBox(buffer, offset, boxSize)) {
+    if (shouldKeep(buffer, offset, boxSize)) {
       parts.push(buffer.subarray(offset, offset + boxSize));
     }
     offset += boxSize;
@@ -83,6 +84,26 @@ export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8A
     pos += part.length;
   }
   return result;
+}
+
+function boxType(buffer: Uint8Array, offset: number): string {
+  return String.fromCharCode(
+    buffer[offset + 4],
+    buffer[offset + 5],
+    buffer[offset + 6],
+    buffer[offset + 7],
+  );
+}
+
+export function removeC2paManifestBox(segmentBytes: Uint8Array | Buffer): Uint8Array {
+  return filterBoxes(
+    segmentBytes,
+    (buf, off, size) => !isC2paUuidBox(buf, off) && !isVsiEmsgBox(buf, off, size),
+  );
+}
+
+export function removeMdat(segmentBytes: Uint8Array | Buffer): Uint8Array {
+  return filterBoxes(segmentBytes, (buf, off) => boxType(buf, off) !== 'mdat');
 }
 
 export interface MoofMdatExtraction {

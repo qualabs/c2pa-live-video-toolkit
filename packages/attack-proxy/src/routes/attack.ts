@@ -9,10 +9,14 @@ function resetGuards(): void {
 }
 
 router.post('/gap', (_req, res) => {
-  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'gap', gapAt: null };
   state.pendingGap = true;
+  state.gapFiredStreams = new Set();
+  // Pre-arm at the next segment so any in-flight segment finishes normally.
+  state.gapFiredAtSegment = (state.lastSeenSegment ?? 0) + 1;
+  state.gapFiredAtTimestamp = null;
+  state.attackConfig = { ...state.attackConfig, enabled: true, type: 'gap' };
   resetGuards();
-  logger.info('Gap attack armed');
+  logger.info('[GAP] Armed — will fire on next request from each stream');
   res.json({ ok: true });
 });
 
@@ -42,6 +46,9 @@ router.post('/disable', (_req, res) => {
   state.attackConfig.enabled = false;
   state.attackConfig.type = 'none';
   state.pendingGap = false;
+  state.gapFiredStreams.clear();
+  state.gapFiredAtSegment = null;
+  state.gapFiredAtTimestamp = null;
   resetGuards();
   res.json({ ok: true });
 });
