@@ -21,12 +21,12 @@ UTC_TIMING_URL="${UTC_TIMING_URL:-http://localhost:8083/time}"
 ffmpeg -loglevel warning -nostats \
   -stream_loop -1 -re -i "$INPUT_VIDEO" \
   -filter_complex "[0:v]split=3[v1][v2][v3]; \
-    [v1]scale=1920:1080:flags=lanczos[out1]; \
-    [v2]scale=1280:720:flags=bicubic[out2];  \
+    [v1]scale=1280:720:flags=bicubic[out1]; \
+    [v2]scale=640:360:flags=fast_bilinear[out2];  \
     [v3]scale=320:180:flags=fast_bilinear[out3]" \
-  -map "[out1]" -c:v:0 libx264 -preset:v:0 medium -b:v:0 8000k -maxrate:v:0 9000k -bufsize:v:0 16000k \
-  -map "[out2]" -c:v:1 libx264 -preset:v:1 medium -b:v:1 2200k -maxrate:v:1 2500k -bufsize:v:1  4400k \
-  -map "[out3]" -c:v:2 libx264 -preset:v:2 veryfast -b:v:2  220k -maxrate:v:2  260k -bufsize:v:2   440k \
+  -map "[out1]" -c:v:0 libx264 -preset:v:0 ultrafast -b:v:0 2000k -maxrate:v:0 2400k -bufsize:v:0 4000k \
+  -map "[out2]" -c:v:1 libx264 -preset:v:1 ultrafast -b:v:1  800k -maxrate:v:1 1000k -bufsize:v:1 1600k \
+  -map "[out3]" -c:v:2 libx264 -preset:v:2 ultrafast -b:v:2  200k -maxrate:v:2  240k -bufsize:v:2  400k \
   -map 0:a -c:a:0 aac -b:a:0 128k -ar:a:0 48000 -ac:a:0 2 \
   -map 0:a -c:a:1 aac -b:a:1  64k -ar:a:1 48000 -ac:a:1 2 \
   -g:v 96 -keyint_min:v 96 -sc_threshold:v 0 \

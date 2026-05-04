@@ -200,20 +200,16 @@ describe('applyOutOfOrderAttack', () => {
 });
 
 describe('applyReplayAttack', () => {
-  it('arms the replay when content cache has the previous segment', () => {
-    const contentCache = new Map();
-    contentCache.set('0:4', { moof: Buffer.alloc(0), mdat: Buffer.alloc(0), full: Buffer.alloc(0) });
-
+  it('arms the replay at the current segment and schedules attack at N+1', () => {
     const session = createSession({
       attackConfig: { ...createSession().attackConfig, type: 'replay', enabled: true },
-      contentCache,
     });
 
     const result = applyReplayAttack(session, 5, '0', NO_ATTACK);
 
     expect(result).toEqual(NO_ATTACK);
     expect(session.guards.replay).toBe(true);
-    expect(session.attackConfig.replaySegment).toBe(4);
+    expect(session.attackConfig.replaySegment).toBe(5);
     expect(session.attackConfig.replayStreamId).toBe('0');
     expect(session.attackConfig._attackSegment).toBe(6);
   });

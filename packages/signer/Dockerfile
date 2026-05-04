@@ -30,6 +30,9 @@ RUN npm install --omit=dev --no-audit --no-fund
 COPY packages/signer/bin/c2patool /usr/local/bin/c2patool
 RUN chmod +x /usr/local/bin/c2patool
 
+COPY packages/signer/sample-manifests/segment_manifest_vsi.json /app/segment_manifest_vsi.json
+COPY packages/signer/sample-manifests/segment_manifest.json /app/segment_manifest.json
+
 EXPOSE 8080
 
 CMD ["npm", "start"]

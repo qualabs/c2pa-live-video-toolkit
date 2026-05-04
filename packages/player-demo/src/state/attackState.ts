@@ -3,7 +3,7 @@
  * Only sends HTTP commands to the proxy — does not touch dash.js or segment state.
  */
 
-export const PROXY_BASE = import.meta.env.VITE_PROXY_URL ?? 'http://localhost:8083';
+export const PROXY_BASE = import.meta.env.VITE_PROXY_URL ?? '';
 
 async function post(path: string, body?: unknown): Promise<boolean> {
   try {
