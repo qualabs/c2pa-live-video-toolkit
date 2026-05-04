@@ -75,7 +75,11 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   onSegmentSelect,
 }) => {
   const sortedSegments = React.useMemo(
-    () => [...segments].sort((a, b) => b.timestamp - a.timestamp),
+    () =>
+      [...segments].sort((a, b) => {
+        if (b.segmentNumber !== a.segmentNumber) return b.segmentNumber - a.segmentNumber;
+        return b.timestamp - a.timestamp;
+      }),
     [segments],
   );
 

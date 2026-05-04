@@ -7,7 +7,6 @@ import { proxyGapEmptySegment } from '../attacks/gap.js';
 import { proxyReplayAttack } from '../attacks/replay.js';
 import { proxyReorderAttack } from '../attacks/out-of-order.js';
 import { proxyWithContentSwap } from '../attacks/mdat-swap.js';
-
 const router = Router();
 
 function observeSegment(seg: number, streamId: string): void {
@@ -29,7 +28,9 @@ router.get('*.m4s', async (req, res) => {
   const filename = path.basename(req.path);
   const info = parseSegmentFilename(filename);
 
-  if (!info || filename.includes('stream1') || filename.includes('audio')) {
+  const filtered = !info || filename.includes('stream1') || filename.includes('audio');
+
+  if (filtered) {
     return proxySegment(req, res, req.path, null);
   }
 

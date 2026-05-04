@@ -98,6 +98,148 @@ describe('SegmentRouter', () => {
       await router.route(makeInput({ kind: 'init', mediaType: 'text' as unknown as MediaType }));
       expect(initProcessor.process).not.toHaveBeenCalled();
     });
+
+    it('video init segment with same manifestId does not clear the video gap-detection state', async () => {
+      // Scenario: video gets a 0-byte gap segment, then a quality switch triggers a new
+      // video init with the SAME manifestId. The gap state must survive so that the next
+      // valid video segment is correctly emitted as WARNING.
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = { validate: vi.fn() };
+      vsiValidator.validate
+        .mockResolvedValueOnce(null) // video gap segment
+        .mockResolvedValueOnce({ ...makeValidVsiResult(), sequenceNumber: 2 }); // video after gap
+
+      const initProcess = vi.fn();
+      initProcess
+        .mockResolvedValueOnce({ success: true, sessionKeysCount: 1, manifestId: 'session-1' }) // initial video init
+        .mockResolvedValueOnce({ success: true, sessionKeysCount: 1, manifestId: 'session-1' }); // quality switch — same manifestId
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: initProcess } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+
+      // 1. Initial video init (sets activeManifestId['video'] = 'session-1')
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+
+      // 2. Video gap segment → previousWasUnverified['video'] = true
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 1 }));
+
+      // 3. Video quality-switch init with SAME manifestId — must NOT clear gap state
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+
+      // 4. Next valid video segment → gap state survives → WARNING
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 2 }));
+
+      expect(validated).toHaveBeenCalledTimes(2);
+      expect(validated.mock.calls[0][0]).toMatchObject({ segmentNumber: 1, status: 'unverified' });
+      expect(validated.mock.calls[1][0]).toMatchObject({ segmentNumber: 2, status: 'warning' });
+    });
+
+    it('video init segment with different manifestId clears the video gap-detection state', async () => {
+      // Scenario: video gets a 0-byte gap segment, then a new content period starts
+      // (different manifestId). The gap state must be cleared so the new period starts fresh.
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = { validate: vi.fn() };
+      vsiValidator.validate
+        .mockResolvedValueOnce(null) // video gap segment
+        .mockResolvedValueOnce({ ...makeValidVsiResult(), sequenceNumber: 2 }); // new period segment
+
+      const initProcess = vi.fn();
+      initProcess
+        .mockResolvedValueOnce({ success: true, sessionKeysCount: 1, manifestId: 'session-1' }) // initial video init
+        .mockResolvedValueOnce({ success: true, sessionKeysCount: 1, manifestId: 'session-2' }); // period transition — different manifestId
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: initProcess } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+
+      // 1. Initial video init (sets activeManifestId['video'] = 'session-1')
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+
+      // 2. Video gap segment → previousWasUnverified['video'] = true
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 1 }));
+
+      // 3. New content period init with DIFFERENT manifestId — clears gap state
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+
+      // 4. First segment of new period → gap state cleared → VALID (not WARNING)
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 2 }));
+
+      expect(validated).toHaveBeenCalledTimes(1);
+      expect(validated.mock.calls[0][0]).toMatchObject({ segmentNumber: 2, status: 'valid' });
+    });
+
+    it('audio init segment does not clear the video gap-detection state', async () => {
+      // Scenario: video gets a 0-byte gap segment (no C2PA data), then an audio ABR switch
+      // happens (audio init arrives). The video gap state must survive the audio init so that
+      // the next valid video segment is correctly emitted as WARNING.
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = {
+        validate: vi.fn(),
+      };
+      // First video call: 0-byte → no C2PA data (vsiResult = null)
+      // Audio init arrives in between
+      // Second video call: valid → should emit WARNING because gap state was preserved
+      vsiValidator.validate
+        .mockResolvedValueOnce(null) // video gap segment
+        .mockResolvedValueOnce({ ...makeValidVsiResult(), sequenceNumber: 2 }); // video after gap
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: {
+          process: vi.fn().mockResolvedValue({ success: true, sessionKeysCount: 1, manifestId: 'm' }),
+        } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+
+      // 1. Video gap segment (0 bytes, no C2PA data) → sets previousWasUnverified['video']
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 1 }));
+
+      // 2. Audio init segment arrives (ABR switch) — must NOT clear video gap state
+      await router.route(makeInput({ kind: 'init', mediaType: 'audio' }));
+
+      // 3. Next valid video segment → gap state survives → WARNING
+      await router.route(makeInput({ kind: 'media', mediaType: 'video', segmentIndex: 2 }));
+
+      // Expect: synthetic UNVERIFIED for segment 1 + WARNING for segment 2
+      expect(validated).toHaveBeenCalledTimes(2);
+      expect(validated.mock.calls[0][0]).toMatchObject({ segmentNumber: 1, status: 'unverified' });
+      expect(validated.mock.calls[1][0]).toMatchObject({ segmentNumber: 2, status: 'warning' });
+    });
   });
 
   describe('media segment routing', () => {

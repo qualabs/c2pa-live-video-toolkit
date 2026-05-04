@@ -105,6 +105,7 @@ export async function proxySegment(
     res.writeHead(response.statusCode, {
       ...response.headers,
       'Content-Length': response.body.length,
+      'Cache-Control': 'no-store',
     });
     res.end(response.body);
   } catch (err) {

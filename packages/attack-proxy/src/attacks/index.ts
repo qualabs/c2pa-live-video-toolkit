@@ -10,7 +10,7 @@ export function applyAttack(session: SessionState, segment: SegmentInfo): Attack
   const { attackConfig } = session;
 
   if (attackConfig.type === 'gap') {
-    const result = applyGapAttack(session, n, noAttack);
+    const result = applyGapAttack(session, segment.streamId, n, noAttack);
     if (result) return result;
   }
 

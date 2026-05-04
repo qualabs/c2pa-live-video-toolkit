@@ -99,6 +99,12 @@ function resolveSegmentStatus(
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
   private readonly previousWasUnverified = new Map<string, boolean>();
+  // Accumulates all manifestIds ever seen per media type within the current content period.
+  // A quality switch brings a different manifestId (each representation is signed separately),
+  // but when GapController switches back to a quality we've already played, that manifestId is
+  // in the set and we know it's a same-period switch — so we preserve gap-detection state.
+  // The set is cleared only when an unsigned init arrives (genuine period transition, e.g. ad).
+  private readonly knownManifestIds = new Map<string, Set<string>>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -129,24 +135,37 @@ export class SegmentRouter {
 
     this.deps.eventBus.emit('initProcessed', result);
 
-    // Always reset per-stream state on a new init segment (period transition or stream switch).
-    // If we skip this on failure, stale ManifestBox state / VSI session keys from the previous
-    // period bleed into the new one — unsigned ad segments then either throw inside the
-    // ManifestBox validator (caught, silently dropped) or go down the VSI path with stale keys
-    // (validateC2paSegment returns null → silently dropped).
-    for (const validator of Object.values(this.deps.manifestBoxValidators)) {
-      validator?.reset();
-    }
-    for (const mediaType of this.deps.supportedMediaTypes) {
-      this.previousWasUnverified.delete(mediaType);
-    }
+    // Only reset state for the media type of this init segment.
+    // Resetting all media types would wipe the gap-detection state for the other track,
+    // causing it to miss the WARNING when the next valid segment arrives after a gap.
+    this.deps.manifestBoxValidators[input.mediaType]?.reset();
 
     if (result.success) {
+      const newManifestId = result.manifestId;
+      const known = this.knownManifestIds.get(input.mediaType) ?? new Set<string>();
+      // A manifestId we've already seen means we've played this quality level before within
+      // the current content period (GapController switched back to it). Preserve gap-detection
+      // state so the WARNING fires on the next valid segment.
+      // A never-seen manifestId is either a genuine period transition or the first time we hit
+      // this quality — in both cases, conservatively clear gap state.
+      const isKnownSession = newManifestId !== undefined && known.has(newManifestId);
+
+      if (!isKnownSession) {
+        this.previousWasUnverified.delete(input.mediaType);
+      }
+      if (newManifestId !== undefined) {
+        known.add(newManifestId);
+        this.knownManifestIds.set(input.mediaType, known);
+      }
+
       this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
     } else {
       // Unsigned / unrecognised init (e.g. ad period) — clear cross-period state so that
       // the incoming media segments are routed through ManifestBox with a clean slate and
       // emitted as UNVERIFIED rather than being silently dropped.
+      // Also reset knownManifestIds so the next content period starts fresh.
+      this.previousWasUnverified.delete(input.mediaType);
+      this.knownManifestIds.delete(input.mediaType);
       this.deps.manifest.value = null;
       this.deps.sessionKeyStore.clear();
     }

@@ -25,7 +25,10 @@ export function registerFallbackProxy(app: Application): void {
   app.use(async (req, res) => {
     try {
       const response = await fetchFromOrigin(req.path);
-      res.writeHead(response.statusCode, response.headers);
+      const headers = req.path.endsWith('.m4s')
+        ? { ...response.headers, 'Cache-Control': 'no-store' }
+        : response.headers;
+      res.writeHead(response.statusCode, headers);
       res.end(response.body);
     } catch (err) {
       logger.error('Proxy error:', errorMessage(err));
