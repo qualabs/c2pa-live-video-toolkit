@@ -35,6 +35,7 @@ services:
       - '8082:8081'
     environment:
       - STATIC_FILES_PATH=/usr/src/app/live-streaming
+      - ADS_PATH=/opt/ads
     volumes:
       - stream-data:/usr/src/app/live-streaming
     healthcheck:
@@ -53,7 +54,7 @@ services:
       - '3000:3000'
     environment:
       - STREAM_ROOT=/app/live-streaming
-      - MANIFEST_BASE_URL=http://35.227.29.189:8083/
+      - MANIFEST_BASE_URL=https://c2pa-player.qualabs.dev/
     volumes:
       - stream-data:/app/live-streaming
     depends_on:

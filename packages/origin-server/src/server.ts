@@ -11,6 +11,8 @@ const PORT = parseInt(process.env.PORT ?? String(DEFAULT_PORT), 10);
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const staticFilesRoot =
   process.env.STATIC_FILES_PATH ?? path.join(currentDir, '..', 'live-streaming');
+const adsPath =
+  process.env.ADS_PATH ?? path.join(staticFilesRoot, 'processed', 'ads');
 
 app.use(cors());
 
@@ -24,7 +26,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(staticFilesRoot, 'processed', 'output')));
-app.use('/ads', express.static(path.join(staticFilesRoot, 'processed', 'ads')));
+app.use('/ads', express.static(adsPath));
 
 // Dynamically build a CMAF HLS EVENT playlist from signed .m4s segments produced
 // by the signer. Allows hls.js to consume the same segments as the DASH stream.
