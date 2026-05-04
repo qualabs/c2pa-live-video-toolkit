@@ -1,4 +1,4 @@
-# @qualabs/c2pa-live-hls-plugin
+# @qualabs/c2pa-live-hlsjs-plugin
 
 hls.js adapter for real-time C2PA segment validation in live DASH/HLS streams.
 Part of the [C2PA Live Video Toolkit](https://github.com/qualabs/c2pa-live-video-toolkit).
@@ -6,14 +6,14 @@ Part of the [C2PA Live Video Toolkit](https://github.com/qualabs/c2pa-live-video
 ## Install
 
 ```bash
-npm install @qualabs/c2pa-live-hls-plugin hls.js
+npm install @qualabs/c2pa-live-hlsjs-plugin hls.js
 ```
 
 ## Usage
 
 ```ts
 import Hls from 'hls.js';
-import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-hls-plugin';
+import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-hlsjs-plugin';
 
 const hls = new Hls();
 

@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@qualabs/c2pa-live-dashjs-plugin": "*",
-    "@qualabs/c2pa-live-hls-plugin": "*",
+    "@qualabs/c2pa-live-hlsjs-plugin": "*",
     "@qualabs/c2pa-live-videojs-ui": "*",
     "dashjs": "^5.1.1",
     "hls.js": "^1.5.0",

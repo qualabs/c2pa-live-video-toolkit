@@ -1,5 +1,5 @@
 {
-  "name": "@qualabs/c2pa-live-hls-plugin",
+  "name": "@qualabs/c2pa-live-hlsjs-plugin",
   "version": "1.0.0",
   "type": "module",
   "description": "Framework-agnostic hls.js plugin for real-time C2PA segment validation",
@@ -12,9 +12,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/qualabs/c2pa-live-video-toolkit.git",
-    "directory": "packages/hls-plugin"
+    "directory": "packages/hlsjs-plugin"
   },
-  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/hls-plugin",
+  "homepage": "https://github.com/qualabs/c2pa-live-video-toolkit/tree/main/packages/hlsjs-plugin",
   "bugs": {
     "url": "https://github.com/qualabs/c2pa-live-video-toolkit/issues"
   },
