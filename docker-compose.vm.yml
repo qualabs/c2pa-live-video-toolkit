@@ -1,0 +1,96 @@
+name: mateo
+
+services:
+  signer:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/signer:latest
+    platform: linux/amd64
+    ports:
+      - '8080:8080'
+    env_file:
+      - .env
+    environment:
+      - STORAGE_PROVIDER=LOCAL
+      - INPUT_BUCKET=/host_stream
+      - OUTPUT_BUCKET=/host_stream
+      - MPD_KEY=output/stream.mpd
+      - USE_VSI_METHOD=true
+      - PUB_CERT=/app/certs/ps256.pub
+      - PRIV_KEY=/app/certs/ps256.pem
+      - SESSION_KEY_PATH=/app/certs/session.pem
+      - CLEANUP_MAX_AGE_MINUTES=35
+      - CLEANUP_INTERVAL_MS=60000
+      - DEBUG=true
+    volumes:
+      - stream-data:/host_stream
+      - ./certs:/app/certs:ro
+    depends_on:
+      - streamer
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  origin-server:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/origin-server:latest
+    ports:
+      - '8082:8081'
+    environment:
+      - STATIC_FILES_PATH=/usr/src/app/live-streaming
+    volumes:
+      - stream-data:/usr/src/app/live-streaming
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8081/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  manifest-server:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/manifest-server:latest
+    ports:
+      - '3000:3000'
+    environment:
+      - STREAM_ROOT=/app/live-streaming
+      - MANIFEST_BASE_URL=http://35.227.29.189:8083/
+    volumes:
+      - stream-data:/app/live-streaming
+    depends_on:
+      - origin-server
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  streamer:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/streamer:latest
+    volumes:
+      - stream-data:/host_stream
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  attack-proxy:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/attack-proxy:latest
+    ports:
+      - '8083:8083'
+    environment:
+      - PORT=8083
+      - STATIC_SERVER_URL=http://origin-server:8081
+      - PRESENTATION_DELAY=PT12S
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      origin-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - appnet
+
+volumes:
+  stream-data:
+
+networks:
+  appnet:
+    driver: bridge
+    name: c2pa-toolkit-net

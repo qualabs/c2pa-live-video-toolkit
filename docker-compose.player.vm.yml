@@ -1,0 +1,15 @@
+name: mateo
+
+services:
+  player:
+    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/player:latest
+    ports:
+      - '3008:3008'
+    restart: unless-stopped
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    external: true
+    name: c2pa-toolkit-net
