@@ -39,18 +39,24 @@ export function parseSegmentFilename(filename: string): SegmentInfo | null {
   return null;
 }
 
-export function cacheContent(segNum: number, segmentBytes: Buffer): void {
+export function cacheKey(streamId: string, segNum: number): string {
+  return `${streamId}:${segNum}`;
+}
+
+export function cacheContent(segNum: number, streamId: string, segmentBytes: Buffer): void {
+  const key = cacheKey(streamId, segNum);
   const content = extractMoofMdat(segmentBytes);
   if (!content) return;
 
-  state.contentCache.set(segNum, {
+  state.contentCache.set(key, {
     moof: Buffer.from(content.moof),
     mdat: Buffer.from(content.mdat),
     full: Buffer.from(segmentBytes),
   });
 
   if (state.contentCache.size > CONTENT_CACHE_SIZE) {
-    state.contentCache.delete(state.contentCache.keys().next().value as number);
+    const evicted = state.contentCache.keys().next().value as string;
+    state.contentCache.delete(evicted);
   }
 }
 
@@ -63,16 +69,16 @@ export async function fetchSegment(segNum: number, info: SegmentInfo): Promise<B
   return response.body;
 }
 
-const PREFETCH_MAX_ATTEMPTS = 12;
+const PREFETCH_MAX_ATTEMPTS = 20;
 const PREFETCH_RETRY_DELAY_MS = 500;
 
 export async function prefetchInBackground(segNum: number, info: SegmentInfo): Promise<void> {
+  const key = cacheKey(info.streamId, segNum);
   for (let attempt = 0; attempt < PREFETCH_MAX_ATTEMPTS; attempt++) {
-    if (state.contentCache.has(segNum)) return;
+    if (state.contentCache.has(key)) return;
     try {
       const bytes = await fetchSegment(segNum, info);
-      cacheContent(segNum, bytes);
-      logger.info(`[PREFETCH] Cached segment ${segNum}`);
+      cacheContent(segNum, info.streamId, bytes);
       return;
     } catch {
       if (attempt < PREFETCH_MAX_ATTEMPTS - 1) {
@@ -80,7 +86,6 @@ export async function prefetchInBackground(segNum: number, info: SegmentInfo): P
       }
     }
   }
-  logger.warn(`[PREFETCH] Segment ${segNum} unavailable after ${PREFETCH_MAX_ATTEMPTS} attempts`);
 }
 
 export async function proxySegment(
@@ -88,6 +93,7 @@ export async function proxySegment(
   res: ServerResponse,
   targetPath: string,
   segmentNumber: number | null,
+  streamId: string | null = null,
 ): Promise<void> {
   try {
     const response = await fetchFromOrigin(targetPath);
@@ -98,8 +104,8 @@ export async function proxySegment(
       return;
     }
 
-    if (segmentNumber !== null) {
-      cacheContent(segmentNumber, response.body);
+    if (segmentNumber !== null && streamId !== null) {
+      cacheContent(segmentNumber, streamId, response.body);
     }
 
     res.writeHead(response.statusCode, {

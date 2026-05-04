@@ -85,6 +85,9 @@ export const VALIDATION_STATUS_VALUES = {
 export type SegmentRecord = {
   status: string;
   manifest?: unknown;
+  segmentNumber?: number;
+  mediaType?: string;
+  sequenceReason?: string;
 };
 
 /**

@@ -1,6 +1,6 @@
 import type { SessionState, SegmentInfo, AttackResult } from '../types.js';
 import { state } from '../state.js';
-import { fetchSegment, proxySegment, buildSegmentPath } from '../proxy/segment-proxy.js';
+import { fetchSegment, proxySegment, buildSegmentPath, cacheKey } from '../proxy/segment-proxy.js';
 import { extractMoofMdat, replaceMoofMdat } from '../mp4/mdat-utils.js';
 import {
   setMfhdSequenceNumber,
@@ -13,33 +13,55 @@ import type { IncomingMessage, ServerResponse } from 'http';
 export function applyReplayAttack(
   session: SessionState,
   n: number,
+  streamId: string,
   noAttack: AttackResult,
 ): AttackResult | null {
   const { attackConfig, guards, contentCache } = session;
 
   if (!guards.replay) {
-    const replayFrom = n - 1;
+    const targetStream = session.lowestObservedStreamId;
+    if (targetStream !== null && streamId !== targetStream) {
+      return noAttack;
+    }
+
+    // replayFrom = n (the arming slot itself): the arm passes n through and caches it for all
+    // streams. By the time n+1 arrives, every stream has n cached — avoiding the race where
+    // stream3 hadn't requested n-1 yet and the cache would miss.
+    const replayFrom = n;
     const attackAt = n + 1;
-    if (n >= 2 && contentCache.has(replayFrom)) {
+    if (n >= 2) {
       attackConfig.replaySegment = replayFrom;
+      attackConfig.replayStreamId = streamId;
       attackConfig._attackSegment = attackAt;
       guards.replay = true;
-      logger.info(`REPLAY: Armed - seg ${n} normal, seg ${attackAt} will replay seg ${replayFrom}`);
+      logger.info(`[REPLAY] ARMED — stream=${streamId}, seg ${n} passes through; seg ${attackAt} will replay seg ${replayFrom}`);
     }
     return noAttack;
   }
 
-  if (attackConfig.replaySegment === null || attackConfig._attackSegment === null) return null;
+  if (
+    attackConfig.replaySegment === null ||
+    attackConfig.replayStreamId === null ||
+    attackConfig._attackSegment === null
+  ) {
+    return null;
+  }
 
-  if (n === attackConfig._attackSegment && contentCache.has(attackConfig.replaySegment)) {
-    attackConfig.enabled = false;
-    logger.info(`REPLAY: serve seg ${attackConfig.replaySegment} content as slot ${n}`);
-    return {
-      ...noAttack,
-      replayAttack: true,
-      replayFrom: attackConfig.replaySegment,
-      slotNumber: n,
-    };
+  if (n === attackConfig._attackSegment) {
+    const key = cacheKey(streamId, attackConfig.replaySegment);
+    if (contentCache.has(key)) {
+      if (streamId === attackConfig.replayStreamId) {
+        // Primary stream fired — disable so future primary-stream requests pass through normally.
+        attackConfig.enabled = false;
+      }
+      return {
+        ...noAttack,
+        replayAttack: true,
+        replayFrom: attackConfig.replaySegment,
+        slotNumber: n,
+        replayIsPrimary: streamId === attackConfig.replayStreamId,
+      };
+    }
   }
 
   return null;
@@ -52,13 +74,14 @@ export async function proxyReplayAttack(
   attack: AttackResult,
 ): Promise<void> {
   if (attack.replayFrom == null || attack.slotNumber == null) {
-    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number, info.streamId);
   }
 
-  const cached = state.contentCache.get(attack.replayFrom);
+  const key = cacheKey(info.streamId, attack.replayFrom);
+  const cached = state.contentCache.get(key);
   if (!cached?.full) {
-    logger.error(`[REPLAY] No cached full segment for ${attack.replayFrom}`);
-    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+    logger.error(`[REPLAY] No cached full segment for ${key}`);
+    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number, info.streamId);
   }
 
   const slotTfdtBytes = await fetchSegment(attack.slotNumber, info);
@@ -66,8 +89,8 @@ export async function proxyReplayAttack(
   const tfdt = slotContent ? getBaseMediaDecodeTimeFromMoof(slotContent.moof) : null;
 
   if (tfdt == null) {
-    logger.warn('[REPLAY] Could not get tfdt from slot segment, passing through');
-    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number);
+    logger.warn('[REPLAY] Could not extract TFDT from slot segment — passing through');
+    return proxySegment(req, res, buildSegmentPath(info, info.number), info.number, info.streamId);
   }
 
   let moof = Buffer.from(setMfhdSequenceNumber(cached.moof, attack.slotNumber));

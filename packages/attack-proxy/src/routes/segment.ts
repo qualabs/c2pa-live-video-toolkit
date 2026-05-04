@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import path from 'path';
 import { state } from '../state.js';
-import { parseSegmentFilename, proxySegment, buildSegmentPath, prefetchInBackground } from '../proxy/segment-proxy.js';
+import {
+  parseSegmentFilename,
+  proxySegment,
+  buildSegmentPath,
+  prefetchInBackground,
+} from '../proxy/segment-proxy.js';
 import { applyAttack } from '../attacks/index.js';
 import { proxyGapEmptySegment } from '../attacks/gap.js';
 import { proxyReplayAttack } from '../attacks/replay.js';
 import { proxyReorderAttack } from '../attacks/out-of-order.js';
 import { proxyWithContentSwap } from '../attacks/mdat-swap.js';
+
 const router = Router();
 
 function observeSegment(seg: number, streamId: string): void {
@@ -45,9 +51,9 @@ router.get('*.m4s', async (req, res) => {
   if (attack.gapEmptySegment) return proxyGapEmptySegment(res, info, attack);
   if (attack.replayAttack) return proxyReplayAttack(req, res, info, attack);
   if (attack.reorderAttack) return proxyReorderAttack(req, res, info, attack);
-  if (attack.swapMdat) return proxyWithContentSwap(req, res, targetPath, info.number);
+  if (attack.swapMdat) return proxyWithContentSwap(req, res, targetPath, info.number, info.streamId);
 
-  return proxySegment(req, res, targetPath, info.number);
+  return proxySegment(req, res, targetPath, info.number, info.streamId);
 });
 
 export default router;

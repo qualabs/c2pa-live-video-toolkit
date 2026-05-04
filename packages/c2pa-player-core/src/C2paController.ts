@@ -48,6 +48,10 @@ export class C2paController {
     this.deps.sequenceTracker.clearAll();
   }
 
+  resetSequenceForType(mediaType: string): void {
+    this.deps.sequenceTracker.clearByPrefix(`${mediaType}-`);
+  }
+
   detach(): void {
     this.reset();
     this.deps.eventBus.removeAllListeners();

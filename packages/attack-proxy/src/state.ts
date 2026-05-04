@@ -7,6 +7,7 @@ function createEmptyAttackConfig(): AttackConfig {
     reorderSeg1: null,
     reorderSeg2: null,
     replaySegment: null,
+    replayStreamId: null,
     _attackSegment: null,
   };
 }

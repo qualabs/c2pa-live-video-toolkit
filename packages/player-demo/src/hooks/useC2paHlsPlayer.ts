@@ -3,19 +3,11 @@ import Hls from 'hls.js';
 import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-hls-plugin';
 import type {
   C2paController,
-  SegmentRecord,
   InitProcessedEvent,
 } from '@qualabs/c2pa-live-hls-plugin';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
+import type { TaggedSegmentRecord, C2paPlayerState } from './useC2paPlayer.js';
 import { DEFAULT_HLS_STREAM_URL } from '../constants.js';
-
-// Mirror the shape of C2paPlayerState from useC2paPlayer so both hooks are
-// interchangeable in DemoLayout (compatible via structural typing — no private
-// members in SegmentRecord or InitProcessedEvent).
-export type C2paPlayerState = {
-  segments: SegmentRecord[];
-  initData: InitProcessedEvent | null;
-};
 
 export type UseC2paHlsPlayerResult = {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -72,7 +64,8 @@ export function useC2paHlsPlayer(videoSrc?: string): UseC2paHlsPlayerResult {
     setC2paController(controller);
 
     controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
-      setState((prev) => ({ ...prev, segments: [...prev.segments, record] }));
+      const tagged: TaggedSegmentRecord = { ...record, _periodIndex: 0 };
+      setState((prev) => ({ ...prev, segments: [...prev.segments, tagged] }));
     });
 
     controller.on(C2paEvent.INIT_PROCESSED, (event) => {

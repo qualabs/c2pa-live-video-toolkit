@@ -74,14 +74,16 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   selectedSegment,
   onSegmentSelect,
 }) => {
-  const sortedSegments = React.useMemo(
-    () =>
-      [...segments].sort((a, b) => {
-        if (b.segmentNumber !== a.segmentNumber) return b.segmentNumber - a.segmentNumber;
-        return b.timestamp - a.timestamp;
-      }),
-    [segments],
-  );
+  const sortedSegments = React.useMemo(() => {
+    type Tagged = SegmentRecord & { _periodIndex?: number };
+    return [...segments].sort((a: Tagged, b: Tagged) => {
+      const aPeriod = a._periodIndex ?? 0;
+      const bPeriod = b._periodIndex ?? 0;
+      if (bPeriod !== aPeriod) return bPeriod - aPeriod;
+      if (b.segmentNumber !== a.segmentNumber) return b.segmentNumber - a.segmentNumber;
+      return b.timestamp - a.timestamp;
+    });
+  }, [segments]);
 
   const validCount = segments.filter((s) => s.status === SegmentStatus.VALID).length;
   const failedCount = segments.filter((s) => statusCategory(s.status) === 'failed').length;

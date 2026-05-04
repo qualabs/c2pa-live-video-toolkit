@@ -22,6 +22,7 @@ export default defineConfig({
       '/stream.m3u8': { target: PROXY_TARGET, changeOrigin: true },
       '/init-stream': { target: PROXY_TARGET, changeOrigin: true },
       '/chunk-stream': { target: PROXY_TARGET, changeOrigin: true },
+      '/ads/': { target: PROXY_TARGET, changeOrigin: true },
     },
   },
 });

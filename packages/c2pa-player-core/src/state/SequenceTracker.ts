@@ -14,4 +14,10 @@ export class SequenceTracker {
   clearAll(): void {
     this.streamStates.clear();
   }
+
+  clearByPrefix(prefix: string): void {
+    for (const key of this.streamStates.keys()) {
+      if (key.startsWith(prefix)) this.streamStates.delete(key);
+    }
+  }
 }

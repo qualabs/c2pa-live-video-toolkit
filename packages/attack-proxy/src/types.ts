@@ -4,6 +4,7 @@ export interface AttackConfig {
   reorderSeg1: number | null;
   reorderSeg2: number | null;
   replaySegment: number | null;
+  replayStreamId: string | null;
   _attackSegment: number | null;
 }
 
@@ -32,7 +33,7 @@ export interface SessionState {
   pendingMoofTamper: boolean;
   mdatAttackAt: number | null;
   observedSegments: number[];
-  contentCache: Map<number, CachedSegment>;
+  contentCache: Map<string, CachedSegment>;
 }
 
 export interface SegmentInfo {
@@ -49,6 +50,7 @@ export interface AttackResult {
   replayAttack?: boolean;
   replayFrom?: number;
   slotNumber?: number;
+  replayIsPrimary?: boolean;
   reorderAttack?: boolean;
   serveContentOf?: number;
   asSlot?: number;

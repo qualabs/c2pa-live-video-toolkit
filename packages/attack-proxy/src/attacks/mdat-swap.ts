@@ -37,6 +37,7 @@ export async function proxyWithContentSwap(
   res: ServerResponse,
   targetPath: string,
   currentSegNum: number,
+  streamId: string,
 ): Promise<void> {
   try {
     const response = await fetchFromOrigin(targetPath);
@@ -52,13 +53,13 @@ export async function proxyWithContentSwap(
       swapFileBytes = fs.readFileSync(MDAT_SWAP_SOURCE_PATH);
     } catch (err) {
       logger.error('[MDAT-SWAP] Failed to read source file:', errorMessage(err));
-      return proxySegment(req, res, targetPath, currentSegNum);
+      return proxySegment(req, res, targetPath, currentSegNum, streamId);
     }
 
     const attackedBytes = buildSwappedSegment(response.body, swapFileBytes, currentSegNum);
 
     if (!attackedBytes) {
-      return proxySegment(req, res, targetPath, currentSegNum);
+      return proxySegment(req, res, targetPath, currentSegNum, streamId);
     }
 
     const headers = { ...response.headers, 'Content-Length': attackedBytes.length.toString() };

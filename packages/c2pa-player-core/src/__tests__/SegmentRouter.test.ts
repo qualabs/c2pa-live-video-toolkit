@@ -332,6 +332,173 @@ describe('SegmentRouter', () => {
       expect(listener.mock.calls[0][0]).toMatchObject({ status: 'valid', keyId: 'kid-1' });
     });
 
+    it('retroactively upgrades isFirst (WARNING) and its audio companion (INVALID) to REORDERED when isSecond resolves', async () => {
+      // Forward-reorder attack: slot N+1 gets seg N+2's content (isFirst, emsg seq=N+2),
+      // slot N+2 gets seg N+1's content (isSecond, emsg seq=N+1).
+      // CML sees N+2 after N → gap_detected → WARNING for isFirst video.
+      // isFirst audio: hash broken by MFHD patch → INVALID, seqReason=valid.
+      // isSecond video: seq=N+1 < N+2 → out_of_order → REORDERED.
+      // Expected: isFirst video and audio both retroactively upgraded to REORDERED.
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = { validate: vi.fn() };
+      const N = 5;
+      // isFirst video: gap_detected (seq N+2 = 7, expected N+1 = 6)
+      vsiValidator.validate
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 2,
+          isValid: true,
+          sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+        })
+        // isFirst audio: hash broken, seqReason 'valid'
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 2,
+          isValid: false,
+          sequenceReason: 'valid' as unknown as null,
+        })
+        // isSecond video: out_of_order (seq N+1 = 6 < N+2 = 7)
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 1,
+          isValid: true,
+          sequenceReason: SequenceAnomalyReason.OUT_OF_ORDER,
+        })
+        // isSecond audio: hash broken, no seqReason
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 1,
+          isValid: false,
+          sequenceReason: null,
+        });
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+
+      await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 1 }));
+      await router.route(makeInput({ mediaType: 'audio', streamId: '1', segmentIndex: N + 1 }));
+      await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 2 }));
+      await router.route(makeInput({ mediaType: 'audio', streamId: '1', segmentIndex: N + 2 }));
+
+      // Events emitted (in order):
+      //   1. isFirst video → WARNING (gap_detected)
+      //   2. isFirst audio → INVALID (hash broken)
+      //   3. isFirst video retroactive → REORDERED
+      //   4. isFirst audio retroactive → REORDERED
+      //   5. isSecond video → REORDERED
+      //   6. isSecond audio → REORDERED (reclassified via prevRecord=REORDERED)
+      expect(validated).toHaveBeenCalledTimes(6);
+
+      const calls = validated.mock.calls.map((c) => c[0] as { segmentNumber: number; status: string; mediaType: string });
+      // isFirst video: initial WARNING then retroactive REORDERED
+      const isFirstVideoInitial = calls.find((c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'warning');
+      const isFirstVideoRetro = calls.filter((c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'reordered');
+      expect(isFirstVideoInitial).toBeDefined();
+      expect(isFirstVideoRetro).toHaveLength(1);
+
+      // isFirst audio: initial INVALID then retroactive REORDERED
+      const isFirstAudioInitial = calls.find((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'invalid');
+      const isFirstAudioRetro = calls.filter((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'reordered');
+      expect(isFirstAudioInitial).toBeDefined();
+      expect(isFirstAudioRetro).toHaveLength(1);
+
+      // isSecond video and audio: REORDERED
+      expect(calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered')).toBeDefined();
+      expect(calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered')).toBeDefined();
+    });
+
+    it('upgrades isFirst audio when audio isSecond overwrites lastVsiRecord before video isSecond cascades (ordering C)', async () => {
+      // Real-world ordering: audio is smaller so it completes faster.
+      // 1. Audio isFirst  (seq N+2) → INVALID  (hash broken by MFHD patch)
+      // 2. Audio isSecond (seq N+1) → INVALID  (CML returns seqReason=valid, not out_of_order,
+      //                                          because hash also fails — overwrites lastVsiRecord)
+      // 3. Video isFirst  (seq N+2) → WARNING  (gap_detected due to CML tracker reset)
+      // 4. Video isSecond (seq N+1) → REORDERED (out_of_order)
+      //    → retroactive upgrade: video isFirst WARNING → REORDERED ✓
+      //    → cascade at seq N+2: lastVsiRecord[audio] is now seq N+1, but prevLastVsiRecord[audio]
+      //      still has seq N+2 INVALID → audio isFirst is found and upgraded ✓
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = { validate: vi.fn() };
+      const N = 5;
+      vsiValidator.validate
+        // 1. audio isFirst: hash broken, no seq anomaly from CML
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 2,
+          isValid: false,
+          sequenceReason: 'valid' as unknown as null,
+        })
+        // 2. audio isSecond: also hash broken, CML returns seqReason=valid (not out_of_order)
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 1,
+          isValid: false,
+          sequenceReason: null,
+        })
+        // 3. video isFirst: gap_detected (tracker reset)
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 2,
+          isValid: false,
+          sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+        })
+        // 4. video isSecond: out_of_order → REORDERED
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          sequenceNumber: N + 1,
+          isValid: true,
+          sequenceReason: SequenceAnomalyReason.OUT_OF_ORDER,
+        });
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: { process: vi.fn() } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+
+      await router.route(makeInput({ mediaType: 'audio', streamId: '1', segmentIndex: N + 1 })); // isFirst audio
+      await router.route(makeInput({ mediaType: 'audio', streamId: '1', segmentIndex: N + 2 })); // isSecond audio
+      await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 1 })); // isFirst video
+      await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 2 })); // isSecond video
+
+      const calls = validated.mock.calls.map((c) => c[0] as { segmentNumber: number; status: string; mediaType: string });
+
+      // Both isFirst entries must end up REORDERED
+      const isFirstAudioFinal = [...calls].reverse().find((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio');
+      const isFirstVideoFinal = [...calls].reverse().find((c) => c.segmentNumber === N + 2 && c.mediaType === 'video');
+      expect(isFirstAudioFinal?.status).toBe('reordered');
+      expect(isFirstVideoFinal?.status).toBe('reordered');
+
+      // Both isSecond entries must be REORDERED
+      const isSecondAudio = calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered');
+      const isSecondVideo = calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered');
+      expect(isSecondAudio).toBeDefined();
+      expect(isSecondVideo).toBeDefined();
+    });
+
     it('emits a warning-status record when the validator reports gap_detected', async () => {
       const sessionKeyStore = new SessionKeyStore();
       sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);

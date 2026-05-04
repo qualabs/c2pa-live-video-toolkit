@@ -35,14 +35,13 @@ const SEQUENCE_REASON_TO_STATUS: Partial<Record<SequenceAnomalyReasonValue, Segm
   [SequenceAnomalyReason.DUPLICATE]: SegmentStatus.REPLAYED,
   [SequenceAnomalyReason.OUT_OF_ORDER]: SegmentStatus.REORDERED,
   [SequenceAnomalyReason.GAP_DETECTED]: SegmentStatus.WARNING,
-  [SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM]: SegmentStatus.INVALID,
+  [SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM]: SegmentStatus.REPLAYED,
 };
 
 type VsiSegmentParams = {
   segmentBytes: Uint8Array;
   streamKey: string;
   mediaType: MediaType;
-  segmentIndex: number;
 };
 
 type ManifestBoxSegmentParams = {
@@ -99,12 +98,23 @@ function resolveSegmentStatus(
 export class SegmentRouter {
   private readonly deps: SegmentRouterDeps;
   private readonly previousWasUnverified = new Map<string, boolean>();
+  // Keyed by streamKey (not mediaType) because the replay attack targets a single representation;
+  // other representations are VALID and must not clobber the flag for the replayed one.
+  private readonly previousWasReplayed = new Map<string, boolean>();
   // Accumulates all manifestIds ever seen per media type within the current content period.
   // A quality switch brings a different manifestId (each representation is signed separately),
   // but when GapController switches back to a quality we've already played, that manifestId is
   // in the set and we know it's a same-period switch — so we preserve gap-detection state.
   // The set is cleared only when an unsigned init arrives (genuine period transition, e.g. ad).
   private readonly knownManifestIds = new Map<string, Set<string>>();
+  // Tracks the last VSI record emitted per streamKey to allow retroactive WARNING of the arming
+  // slot when a replay is detected (the arming slot resolves before the replayed segment due to
+  // microtask ordering, so it gets emitted as VALID and needs to be updated after the fact).
+  private readonly lastVsiRecord = new Map<string, SegmentRecord>();
+  // Holds the second-to-last record per streamKey. Required for the reorder retroactive cascade:
+  // audio isSecond can process before video isSecond, overwriting lastVsiRecord[audioKey] from
+  // isFirstSeq to isSecondSeq. Without prevLastVsiRecord the cascade would miss audio isFirst.
+  private readonly prevLastVsiRecord = new Map<string, SegmentRecord>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -152,6 +162,8 @@ export class SegmentRouter {
 
       if (!isKnownSession) {
         this.previousWasUnverified.delete(input.mediaType);
+        // previousWasReplayed is keyed by streamKey, so a new quality level starts fresh
+        // automatically — nothing to delete here.
       }
       if (newManifestId !== undefined) {
         known.add(newManifestId);
@@ -165,6 +177,15 @@ export class SegmentRouter {
       // emitted as UNVERIFIED rather than being silently dropped.
       // Also reset knownManifestIds so the next content period starts fresh.
       this.previousWasUnverified.delete(input.mediaType);
+      for (const key of this.previousWasReplayed.keys()) {
+        if (key.startsWith(`${input.mediaType}-`)) this.previousWasReplayed.delete(key);
+      }
+      for (const key of [...this.lastVsiRecord.keys()]) {
+        if (key.startsWith(`${input.mediaType}-`)) {
+          this.prevLastVsiRecord.delete(key);
+          this.lastVsiRecord.delete(key);
+        }
+      }
       this.knownManifestIds.delete(input.mediaType);
       this.deps.manifest.value = null;
       this.deps.sessionKeyStore.clear();
@@ -180,7 +201,7 @@ export class SegmentRouter {
     }
 
     queueMicrotask(() => {
-      void this.handleVsiSegment({ segmentBytes: bytes, streamKey, mediaType, segmentIndex });
+      void this.handleVsiSegment({ segmentBytes: bytes, streamKey, mediaType });
     });
   }
 
@@ -197,11 +218,11 @@ export class SegmentRouter {
 
     if (!vsiResult) {
       this.previousWasUnverified.set(mediaType, true);
-      // Sequence number is unknown until the next valid segment arrives; emit then with inferred seq.
       return;
     }
 
     const hadGapBefore = this.previousWasUnverified.get(mediaType) ?? false;
+    const hadReplayBefore = this.previousWasReplayed.get(streamKey) ?? false;
     this.previousWasUnverified.set(mediaType, false);
 
     if (hadGapBefore) {
@@ -211,11 +232,151 @@ export class SegmentRouter {
     }
 
     let status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+
+    // CML returns the string 'valid' (not null) when there is no sequence anomaly. Treat it the
+    // same as null so the reclassification checks below can use hasNoAnomalyReason consistently.
+    const hasNoAnomalyReason =
+      !vsiResult.sequenceReason || vsiResult.sequenceReason === ('valid' as SequenceAnomalyReasonValue);
+
+    const prevRecord = this.lastVsiRecord.get(streamKey);
+
+    // Both halves of a forward-reorder swap should surface as REORDERED:
+    //   - Complement direction (video): CML didn't advance its counter after OUT_OF_ORDER, so
+    //     slot N+2 (serving seq N+1) looks VALID to CML. Seq equals prevRecord (both N+1), so <=.
+    //   - Complement direction (video, alt): SEQUENCE_NUMBER_BELOW_MINIMUM after REORDERED → REORDERED
+    //   - Complement direction (audio): INVALID without seqReason after REORDERED → REORDERED
+    //     (MFHD patch breaks the hash for audio, masking the sequence anomaly)
+    //   - First-swap audio: INVALID without seqReason, companion video already REORDERED
+    //     at the same seq → infer REORDERED for this track too.
+    if (prevRecord?.status === SegmentStatus.REORDERED) {
+      if (
+        (status === SegmentStatus.REPLAYED &&
+          vsiResult.sequenceReason === SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM) ||
+        (status === SegmentStatus.INVALID && hasNoAnomalyReason) ||
+        (status === SegmentStatus.VALID && vsiResult.sequenceNumber <= prevRecord.segmentNumber)
+      ) {
+        status = SegmentStatus.REORDERED;
+      }
+    }
+    if (status === SegmentStatus.INVALID && hasNoAnomalyReason) {
+      for (const [key, rec] of this.lastVsiRecord.entries()) {
+        if (
+          !key.startsWith(`${mediaType}-`) &&
+          rec.segmentNumber === vsiResult.sequenceNumber &&
+          rec.status === SegmentStatus.REORDERED
+        ) {
+          status = SegmentStatus.REORDERED;
+          break;
+        }
+      }
+    }
+
     if (hadGapBefore && status === SegmentStatus.VALID) {
       status = SegmentStatus.WARNING;
     }
+    if (hadReplayBefore && status === SegmentStatus.VALID) {
+      status = SegmentStatus.WARNING;
+    }
+
+    // When a replay is detected, the arming slot (seq N+1) was already emitted as VALID before
+    // the replayed segment resolved — microtask ordering means the arming slot runs first.
+    // Retroactively re-emit it as WARNING so the table shows a clean REPLAYED → WARNING chain.
+    if (status === SegmentStatus.REPLAYED) {
+      const armingSlot = this.lastVsiRecord.get(streamKey);
+      if (
+        armingSlot?.segmentNumber === vsiResult.sequenceNumber + 1 &&
+        armingSlot.status === SegmentStatus.VALID
+      ) {
+        this.emitSegmentValidated({ ...armingSlot, status: SegmentStatus.WARNING, timestamp: Date.now() });
+      }
+
+      // Audio CML doesn't detect DUPLICATE when MFHD+TFDT are patched (hash fails, seqReason=null).
+      // Infer REPLAYED for companion tracks that already emitted at the same sequence number.
+      for (const [key, rec] of this.lastVsiRecord.entries()) {
+        if (
+          !key.startsWith(`${mediaType}-`) &&
+          rec.segmentNumber === vsiResult.sequenceNumber &&
+          rec.status !== SegmentStatus.REPLAYED
+        ) {
+          this.emitSegmentValidated({
+            ...rec,
+            status: SegmentStatus.REPLAYED,
+            sequenceReason: SequenceAnomalyReason.DUPLICATE,
+            timestamp: Date.now(),
+          });
+          this.previousWasReplayed.set(key, true);
+        }
+      }
+    }
+
+    if (status === SegmentStatus.REORDERED) {
+      // isFirst of the same track can arrive as WARNING (gap_detected) or INVALID (broken hash)
+      // instead of REORDERED (out_of_order) when CML's SequenceTracker resets or when MFHD
+      // patching breaks the BMFF hash. Detect the forward-reorder pattern: prevRecord is
+      // WARNING/INVALID at exactly currentSeq + 1. Upgrade it retroactively and cascade to
+      // companion tracks at that seq number.
+      //
+      // Audio and video isSecond process independently. Audio is smaller so audio isSecond often
+      // completes before video isSecond. After audio isSecond runs, lastVsiRecord[audioKey] moves
+      // from isFirstSeq to isSecondSeq. prevLastVsiRecord retains the previous entry so video
+      // isSecond's cascade can still find and upgrade audio isFirst.
+      if (
+        (prevRecord?.status === SegmentStatus.WARNING || prevRecord?.status === SegmentStatus.INVALID) &&
+        prevRecord.segmentNumber === vsiResult.sequenceNumber + 1
+      ) {
+        const upgradedIsFirst = { ...prevRecord, status: SegmentStatus.REORDERED, timestamp: Date.now() };
+        this.emitSegmentValidated(upgradedIsFirst);
+        this.setVsiRecord(streamKey, upgradedIsFirst);
+        this.previousWasReplayed.set(streamKey, true);
+
+        const isFirstSeq = prevRecord.segmentNumber;
+        const upgradedKeys = new Set<string>();
+        const tryUpgradeCompanion = (key: string, rec: SegmentRecord) => {
+          if (upgradedKeys.has(key)) return;
+          if (
+            !key.startsWith(`${mediaType}-`) &&
+            rec.segmentNumber === isFirstSeq &&
+            (rec.status === SegmentStatus.INVALID || rec.status === SegmentStatus.WARNING)
+          ) {
+            const upgraded = { ...rec, status: SegmentStatus.REORDERED, timestamp: Date.now() };
+            this.emitSegmentValidated(upgraded);
+            // Update the map that owns the record at isFirstSeq without disturbing the other.
+            if (this.lastVsiRecord.get(key)?.segmentNumber === isFirstSeq) {
+              this.setVsiRecord(key, upgraded);
+            } else {
+              this.prevLastVsiRecord.set(key, upgraded);
+            }
+            this.previousWasReplayed.set(key, true);
+            upgradedKeys.add(key);
+          }
+        };
+        for (const [key, rec] of [...this.lastVsiRecord.entries()]) tryUpgradeCompanion(key, rec);
+        for (const [key, rec] of [...this.prevLastVsiRecord.entries()]) tryUpgradeCompanion(key, rec);
+      }
+
+      // Audio resolves before video (smaller payload → faster XHR). When video becomes REORDERED
+      // retroactively upgrade companion tracks that already emitted INVALID/WARNING at the same seq.
+      for (const [key, rec] of this.lastVsiRecord.entries()) {
+        if (
+          !key.startsWith(`${mediaType}-`) &&
+          rec.segmentNumber === vsiResult.sequenceNumber &&
+          (rec.status === SegmentStatus.INVALID || rec.status === SegmentStatus.WARNING)
+        ) {
+          const upgraded = { ...rec, status: SegmentStatus.REORDERED, timestamp: Date.now() };
+          this.emitSegmentValidated(upgraded);
+          this.setVsiRecord(key, upgraded);
+          this.previousWasReplayed.set(key, true);
+        }
+      }
+    }
+
+    this.previousWasReplayed.set(
+      streamKey,
+      status === SegmentStatus.REPLAYED || status === SegmentStatus.REORDERED,
+    );
 
     const record = buildVsiSegmentRecord(vsiResult, mediaType, status, this.deps.manifest.value);
+    this.setVsiRecord(streamKey, record);
     this.emitSegmentValidated(record);
   }
 
@@ -279,6 +440,12 @@ export class SegmentRouter {
       manifest: result.manifest,
       previousManifestId: result.previousManifestId,
     });
+  }
+
+  private setVsiRecord(key: string, record: SegmentRecord): void {
+    const prev = this.lastVsiRecord.get(key);
+    if (prev !== undefined) this.prevLastVsiRecord.set(key, prev);
+    this.lastVsiRecord.set(key, record);
   }
 
   private emitSegmentValidated(record: SegmentRecord): void {

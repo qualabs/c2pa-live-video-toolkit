@@ -10,7 +10,7 @@ import type {
   VideoJsPlayer,
   QualitySelectorInstance,
 } from '@qualabs/c2pa-live-videojs-ui';
-import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-dashjs-plugin';
+import { attachC2pa, C2paEvent, SegmentStatus } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paController, DashjsPlayer } from '@qualabs/c2pa-live-dashjs-plugin';
 import type { C2paPlayerState } from './useC2paPlayer.js';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
@@ -55,6 +55,9 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   // Capture the initial videoSrc so the mount effect is truly mount-only
   const initialVideoSrcRef = useRef(videoSrc);
 
+  const periodIndexRef = useRef(0);
+  const isInAdPeriodRef = useRef(false);
+
   const currentQualityLabelRef = useRef<string>('—');
   const currentAudioQualityLabelRef = useRef<string>('—');
   const qualitiesInitializedRef = useRef(false);
@@ -89,20 +92,39 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
       setC2paController(controller);
 
       controller.on(C2paEvent.SEGMENT_VALIDATED, (record) => {
+        if (isInAdPeriodRef.current && record.status !== SegmentStatus.UNVERIFIED) {
+          periodIndexRef.current += 1;
+          isInAdPeriodRef.current = false;
+        }
+        const periodIndex = periodIndexRef.current;
         const quality =
           record.mediaType === 'video'
             ? currentQualityLabelRef.current
             : currentAudioQualityLabelRef.current;
         setState((prev) => {
-          const alreadyExists = prev.segments.some(
+          const existingIndex = prev.segments.findIndex(
             (s) => s.mediaType === record.mediaType && s.segmentNumber === record.segmentNumber,
           );
-          if (alreadyExists) return prev;
-          return { ...prev, segments: [...prev.segments, { ...record, quality }] };
+          if (existingIndex !== -1) {
+            if (prev.segments[existingIndex].status === record.status) return prev;
+            const updated = [...prev.segments];
+            updated[existingIndex] = {
+              ...record,
+              quality,
+              _periodIndex: prev.segments[existingIndex]._periodIndex,
+            };
+            return { ...prev, segments: updated };
+          }
+          return {
+            ...prev,
+            segments: [...prev.segments, { ...record, quality, _periodIndex: periodIndex }],
+          };
         });
       });
 
       controller.on(C2paEvent.INIT_PROCESSED, (event) => {
+        periodIndexRef.current += 1;
+        isInAdPeriodRef.current = event.noC2paData ?? false;
         setState((prev) => ({ ...prev, initData: event }));
       });
 
@@ -170,7 +192,10 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
           if (newRepresentation?.bandwidth)
             currentAudioQualityLabelRef.current = `${Math.round(newRepresentation.bandwidth / 1000)} kbps`;
         }
-        controller.resetSequence();
+        // Reset only the sequence state for the track that just switched, not for all tracks.
+        // Clearing all state on an audio switch would wipe video sequence state and prevent
+        // SEQUENCE_NUMBER_BELOW_MINIMUM / duplicate detection on replayed video segments.
+        if (mediaType) controller.resetSequenceForType(mediaType);
       });
 
       dashPlayer.initialize(videoEl, streamUrl, true);
@@ -208,6 +233,8 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
   function changeStream(url: string): void {
     if (!dashPlayerRef.current) return;
     c2paControllerRef.current?.reset();
+    periodIndexRef.current = 0;
+    isInAdPeriodRef.current = false;
     qualitiesInitializedRef.current = false;
     currentQualityLabelRef.current = '—';
     currentAudioQualityLabelRef.current = '—';

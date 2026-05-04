@@ -14,13 +14,32 @@ export function applyAttack(session: SessionState, segment: SegmentInfo): Attack
     if (result) return result;
   }
 
-  if (!attackConfig.enabled || attackConfig.type === 'none') return noAttack;
+  if (!attackConfig.enabled || attackConfig.type === 'none') {
+    // After the primary stream fires (enabled=false), secondary streams (audio) may arrive at the
+    // same attack slot slightly later. Let them fire too.
+    if (
+      attackConfig.type === 'replay' &&
+      attackConfig._attackSegment !== null &&
+      n === attackConfig._attackSegment &&
+      segment.streamId !== attackConfig.replayStreamId
+    ) {
+      return applyReplayAttack(session, n, segment.streamId, noAttack) ?? noAttack;
+    }
+    if (
+      attackConfig.type === 'out-of-order' &&
+      attackConfig.reorderSeg1 !== null &&
+      (n === attackConfig.reorderSeg1 || n === attackConfig.reorderSeg2)
+    ) {
+      return applyOutOfOrderAttack(session, n, noAttack) ?? noAttack;
+    }
+    return noAttack;
+  }
 
   if (attackConfig.type === 'out-of-order') {
     return applyOutOfOrderAttack(session, n, noAttack) ?? noAttack;
   }
   if (attackConfig.type === 'replay') {
-    return applyReplayAttack(session, n, noAttack) ?? noAttack;
+    return applyReplayAttack(session, n, segment.streamId, noAttack) ?? noAttack;
   }
   if (attackConfig.type === 'mdat-swap' && session.pendingMoofTamper) {
     return applyMdatSwapAttack(session, n, segment.streamId) ?? noAttack;

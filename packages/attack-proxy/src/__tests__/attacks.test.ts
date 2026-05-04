@@ -14,6 +14,7 @@ function createSession(overrides: Partial<SessionState> = {}): SessionState {
       reorderSeg1: null,
       reorderSeg2: null,
       replaySegment: null,
+      replayStreamId: null,
       _attackSegment: null,
     },
     guards: { replay: false, gap: false, mdatSwap: false, reorder: false },
@@ -126,20 +127,21 @@ describe('applyGapAttack', () => {
 });
 
 describe('applyOutOfOrderAttack', () => {
-  it('arms the reorder on first call', () => {
+  it('arms on first call and schedules prefetch of N+2', () => {
     const session = createSession({
       attackConfig: { ...createSession().attackConfig, type: 'out-of-order', enabled: true },
     });
 
     const result = applyOutOfOrderAttack(session, 5, NO_ATTACK);
 
-    expect(result).toEqual({ ...NO_ATTACK, prefetchSegment: 7 });
+    expect(result).not.toBeNull();
+    expect(result!.prefetchSegment).toBe(7);
     expect(session.guards.reorder).toBe(true);
     expect(session.attackConfig.reorderSeg1).toBe(6);
     expect(session.attackConfig.reorderSeg2).toBe(7);
   });
 
-  it('returns reorder result for seg1', () => {
+  it('returns reorder result for reorderSeg1 (slot N+1 → serve N+2 content)', () => {
     const session = createSession({
       attackConfig: {
         ...createSession().attackConfig,
@@ -153,12 +155,33 @@ describe('applyOutOfOrderAttack', () => {
 
     const result = applyOutOfOrderAttack(session, 6, NO_ATTACK);
 
+    expect(result).not.toBeNull();
     expect(result!.reorderAttack).toBe(true);
     expect(result!.serveContentOf).toBe(7);
     expect(result!.asSlot).toBe(6);
   });
 
-  it('disables attack after serving seg2', () => {
+  it('returns reorder result for reorderSeg2 (slot N+2 → serve N+1 content)', () => {
+    const session = createSession({
+      attackConfig: {
+        ...createSession().attackConfig,
+        type: 'out-of-order',
+        enabled: true,
+        reorderSeg1: 6,
+        reorderSeg2: 7,
+      },
+      guards: { ...createSession().guards, reorder: true },
+    });
+
+    const result = applyOutOfOrderAttack(session, 7, NO_ATTACK);
+
+    expect(result).not.toBeNull();
+    expect(result!.reorderAttack).toBe(true);
+    expect(result!.serveContentOf).toBe(6);
+    expect(result!.asSlot).toBe(7);
+  });
+
+  it('disables attack after serving reorderSeg2', () => {
     const session = createSession({
       attackConfig: {
         ...createSession().attackConfig,
@@ -179,24 +202,25 @@ describe('applyOutOfOrderAttack', () => {
 describe('applyReplayAttack', () => {
   it('arms the replay when content cache has the previous segment', () => {
     const contentCache = new Map();
-    contentCache.set(4, { moof: Buffer.alloc(0), mdat: Buffer.alloc(0), full: Buffer.alloc(0) });
+    contentCache.set('0:4', { moof: Buffer.alloc(0), mdat: Buffer.alloc(0), full: Buffer.alloc(0) });
 
     const session = createSession({
       attackConfig: { ...createSession().attackConfig, type: 'replay', enabled: true },
       contentCache,
     });
 
-    const result = applyReplayAttack(session, 5, NO_ATTACK);
+    const result = applyReplayAttack(session, 5, '0', NO_ATTACK);
 
     expect(result).toEqual(NO_ATTACK);
     expect(session.guards.replay).toBe(true);
     expect(session.attackConfig.replaySegment).toBe(4);
+    expect(session.attackConfig.replayStreamId).toBe('0');
     expect(session.attackConfig._attackSegment).toBe(6);
   });
 
   it('returns replay result on the attack segment', () => {
     const contentCache = new Map();
-    contentCache.set(4, { moof: Buffer.alloc(0), mdat: Buffer.alloc(0), full: Buffer.alloc(0) });
+    contentCache.set('0:4', { moof: Buffer.alloc(0), mdat: Buffer.alloc(0), full: Buffer.alloc(0) });
 
     const session = createSession({
       attackConfig: {
@@ -204,13 +228,14 @@ describe('applyReplayAttack', () => {
         type: 'replay',
         enabled: true,
         replaySegment: 4,
+        replayStreamId: '0',
         _attackSegment: 6,
       },
       guards: { ...createSession().guards, replay: true },
       contentCache,
     });
 
-    const result = applyReplayAttack(session, 6, NO_ATTACK);
+    const result = applyReplayAttack(session, 6, '0', NO_ATTACK);
 
     expect(result!.replayAttack).toBe(true);
     expect(result!.replayFrom).toBe(4);
