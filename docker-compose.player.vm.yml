@@ -1,8 +1,8 @@
-name: mateo
+name: c2pa-live-toolkit
 
 services:
   player:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/player:latest
+    image: ${IMAGE_REGISTRY}/player:latest
     ports:
       - '3008:3008'
     restart: unless-stopped

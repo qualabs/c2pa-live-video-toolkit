@@ -1,8 +1,8 @@
-name: mateo
+name: c2pa-live-toolkit
 
 services:
   signer:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/signer:latest
+    image: ${IMAGE_REGISTRY}/signer:latest
     platform: linux/amd64
     ports:
       - '8080:8080'
@@ -30,7 +30,7 @@ services:
       - appnet
 
   origin-server:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/origin-server:latest
+    image: ${IMAGE_REGISTRY}/origin-server:latest
     ports:
       - '8082:8081'
     environment:
@@ -49,12 +49,12 @@ services:
       - appnet
 
   manifest-server:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/manifest-server:latest
+    image: ${IMAGE_REGISTRY}/manifest-server:latest
     ports:
       - '3000:3000'
     environment:
       - STREAM_ROOT=/app/live-streaming
-      - MANIFEST_BASE_URL=https://c2pa-player.qualabs.dev/
+      - MANIFEST_BASE_URL=${MANIFEST_BASE_URL:-http://localhost:8083/}
     volumes:
       - stream-data:/app/live-streaming
     depends_on:
@@ -64,7 +64,7 @@ services:
       - appnet
 
   streamer:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/streamer:latest
+    image: ${IMAGE_REGISTRY}/streamer:latest
     volumes:
       - stream-data:/host_stream
     restart: unless-stopped
@@ -72,7 +72,7 @@ services:
       - appnet
 
   attack-proxy:
-    image: us-east1-docker.pkg.dev/certain-tendril-478519-m3/c2pa-live-toolkit/attack-proxy:latest
+    image: ${IMAGE_REGISTRY}/attack-proxy:latest
     ports:
       - '8083:8083'
     environment:
