@@ -1,0 +1,15 @@
+name: c2pa-live-toolkit
+
+services:
+  player:
+    image: ${IMAGE_REGISTRY}/player:latest
+    ports:
+      - '3008:3008'
+    restart: unless-stopped
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    external: true
+    name: c2pa-toolkit-net

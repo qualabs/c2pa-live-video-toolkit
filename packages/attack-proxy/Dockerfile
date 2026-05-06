@@ -25,6 +25,7 @@ RUN apk add --no-cache docker-cli
 COPY --from=build /app/packages/attack-proxy/dist ./dist
 COPY --from=build /app/packages/attack-proxy/package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
+COPY packages/attack-proxy/sample-assets /app/sample-assets
 
 EXPOSE 8083
 

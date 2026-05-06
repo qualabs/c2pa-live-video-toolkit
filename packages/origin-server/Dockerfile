@@ -23,6 +23,7 @@ WORKDIR /usr/src/app
 COPY --from=build /app/packages/origin-server/dist ./dist
 COPY --from=build /app/packages/origin-server/package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
+COPY packages/attack-proxy/ad-insertion/ads /opt/ads
 
 EXPOSE 8081
 

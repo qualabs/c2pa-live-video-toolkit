@@ -14,7 +14,7 @@ trap cleanup INT TERM
 
 while true; do
 
-  find "$OUTPUT_DIR" -type f \( -name "*.m4s" -o -name "*.mpd" \) -mmin +$((MAX_AGE_SECONDS / 60)) -exec rm -v {} \;
+  find "$OUTPUT_DIR" -type f \( -name "chunk-stream*.m4s" -o -name "*.mpd" \) -mmin +$((MAX_AGE_SECONDS / 60)) -exec rm -v {} \;
 
   sleep 10
 done
