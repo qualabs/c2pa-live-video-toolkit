@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.base.json ./
+COPY turbo.json ./
 
 COPY packages/player-demo/package*.json ./packages/player-demo/
 COPY packages/c2pa-player-core/package*.json ./packages/c2pa-player-core/
@@ -23,7 +24,7 @@ COPY packages/videojs-ui ./packages/videojs-ui
 COPY packages/videojs-c2pa-ui ./packages/videojs-c2pa-ui
 COPY packages/player-demo ./packages/player-demo
 
-RUN npm run build --workspace=@qualabs/c2pa-live-player-demo
+RUN npx turbo build --filter=@qualabs/c2pa-live-player-demo
 
 
 FROM nginx:alpine AS production
