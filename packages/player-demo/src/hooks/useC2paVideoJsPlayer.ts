@@ -11,9 +11,23 @@ import type {
   QualitySelectorInstance,
 } from '@qualabs/c2pa-live-videojs-ui';
 import { attachC2pa, C2paEvent, SegmentStatus } from '@qualabs/c2pa-live-dashjs-plugin';
-import type { C2paController, DashjsPlayer } from '@qualabs/c2pa-live-dashjs-plugin';
-import type { C2paPlayerState } from './useC2paPlayer.js';
+import type {
+  C2paController,
+  DashjsPlayer,
+  SegmentRecord,
+  InitProcessedEvent,
+} from '@qualabs/c2pa-live-dashjs-plugin';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
+
+// Augmented record that carries the period it was emitted in.
+// Incremented each time an init segment is processed, so segments from
+// content vs ad periods sort independently.
+export type TaggedSegmentRecord = SegmentRecord & { _periodIndex: number };
+
+export type C2paPlayerState = {
+  segments: TaggedSegmentRecord[];
+  initData: InitProcessedEvent | null;
+};
 
 const VIDEO_JS_OPTIONS = {
   autoplay: true,
@@ -148,19 +162,34 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
             dashPlayer.updateSettings({
               streaming: { abr: { autoSwitchBitrate: { video: false } } },
             });
-            dashPlayer.setRepresentationForTypeByIndex('video', index);
+            // forceReplace=true flushes the existing video buffer and restarts
+            // from the new representation immediately. Without it dash.js waits
+            // for the next segment boundary, which can stall on live streams.
+            (
+              dashPlayer as unknown as {
+                setRepresentationForTypeByIndex: (
+                  type: string,
+                  index: number,
+                  forceReplace?: boolean,
+                ) => void;
+              }
+            ).setRepresentationForTypeByIndex('video', index, true);
           }
         },
       );
       qualitySelectorRef.current = qualitySelector;
 
-      dashPlayer.on('manifestLoaded', () => {
+      const tryPopulateAudioLabel = (): void => {
+        if (currentAudioQualityLabelRef.current !== '—') return;
         const audioList = dashPlayer.getRepresentationsByType('audio') ?? [];
-        if (audioList.length > 0 && currentAudioQualityLabelRef.current === '—') {
-          const highestAudio = audioList[audioList.length - 1];
-          const kbps = Math.round(highestAudio.bandwidth / 1000);
-          currentAudioQualityLabelRef.current = kbps > 0 ? `${kbps} kbps` : `audio 1`;
-        }
+        if (audioList.length === 0) return;
+        const highestAudio = audioList[audioList.length - 1];
+        const kbps = Math.round(highestAudio.bandwidth / 1000);
+        currentAudioQualityLabelRef.current = kbps > 0 ? `${kbps} kbps` : `audio 1`;
+      };
+
+      const tryPopulateQualities = (): void => {
+        tryPopulateAudioLabel();
 
         if (qualitiesInitializedRef.current) return;
         const repList = dashPlayer.getRepresentationsByType('video') ?? [];
@@ -174,11 +203,16 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
             streaming: { abr: { autoSwitchBitrate: { video: false } } },
           });
           dashPlayer.setRepresentationForTypeByIndex('video', highestIndex);
-          qualitySelector.updateQualities(
-            repList.map((info, i) => ({ index: i, height: info.height })),
-          );
+          const qs = repList.map((info, i) => ({ index: i, height: info.height }));
+          qualitySelector.updateQualities(qs);
         }
-      });
+      };
+
+      dashPlayer.on('manifestLoaded', () => tryPopulateQualities());
+      // dash.js v5: representations are not available at manifestLoaded — they
+      // come through after streamInitialized / playbackMetaDataLoaded.
+      dashPlayer.on('streamInitialized', () => tryPopulateQualities());
+      dashPlayer.on('playbackMetaDataLoaded', () => tryPopulateQualities());
 
       dashPlayer.on('qualityChangeRendered', (e: unknown) => {
         const { newRepresentation } = e as {

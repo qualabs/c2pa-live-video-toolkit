@@ -2,6 +2,7 @@ import type { EventBus } from '../events/EventBus.js';
 import type { InitSegmentProcessor } from './InitSegmentProcessor.js';
 import type { VsiValidator, VsiValidationResult } from './VsiValidator.js';
 import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
+import type { RichManifestExtractor } from './RichManifestExtractor.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import {
   ValidationErrorCode,
@@ -17,7 +18,7 @@ import type {
   SegmentStatusValue,
   SequenceAnomalyReasonValue,
   MutableRef,
-  C2paManifest,
+  AugmentedC2paManifest,
 } from '../types.js';
 import { buildStreamKey } from '../utils/streamKey.js';
 
@@ -26,8 +27,9 @@ type SegmentRouterDeps = {
   initProcessor: InitSegmentProcessor;
   vsiValidator: VsiValidator;
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
+  richManifestExtractor: RichManifestExtractor;
   sessionKeyStore: SessionKeyStore;
-  manifest: MutableRef<C2paManifest | null>;
+  manifest: MutableRef<AugmentedC2paManifest | null>;
   supportedMediaTypes: readonly MediaType[];
 };
 
@@ -69,7 +71,7 @@ function buildVsiSegmentRecord(
   vsiResult: VsiValidationResult,
   mediaType: MediaType,
   status: SegmentStatusValue,
-  manifest: C2paManifest | null,
+  manifest: AugmentedC2paManifest | null,
 ): SegmentRecord {
   return {
     segmentNumber: vsiResult.sequenceNumber,
@@ -115,6 +117,11 @@ export class SegmentRouter {
   // audio isSecond can process before video isSecond, overwriting lastVsiRecord[audioKey] from
   // isFirstSeq to isSecondSeq. Without prevLastVsiRecord the cascade would miss audio isFirst.
   private readonly prevLastVsiRecord = new Map<string, SegmentRecord>();
+  // Per-content-period flag: whether we've already pulled the rich manifest (with cawg.*
+  // and other extended assertions) from a media segment's manifest box. Some streams embed
+  // a richer manifest box alongside VSI emsg — the init segment's manifest is minimal but
+  // each media segment carries the full set. Reset on genuine period transitions.
+  private hasExtractedRichManifest = false;
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -162,15 +169,18 @@ export class SegmentRouter {
 
       if (!isKnownSession) {
         this.previousWasUnverified.delete(input.mediaType);
+        this.hasExtractedRichManifest = false;
         // previousWasReplayed is keyed by streamKey, so a new quality level starts fresh
         // automatically — nothing to delete here.
+        // Only reset manifest.value on genuine new sessions. Preserves the rich
+        // (cawg-enriched) manifest across quality switches back to a known rep,
+        // where hasExtractedRichManifest stays true so no re-extraction happens.
+        this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
       }
       if (newManifestId !== undefined) {
         known.add(newManifestId);
         this.knownManifestIds.set(input.mediaType, known);
       }
-
-      this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
     } else {
       // Unsigned / unrecognised init (e.g. ad period) — clear cross-period state so that
       // the incoming media segments are routed through ManifestBox with a clean slate and
@@ -187,8 +197,20 @@ export class SegmentRouter {
         }
       }
       this.knownManifestIds.delete(input.mediaType);
+      this.hasExtractedRichManifest = false;
       this.deps.manifest.value = null;
       this.deps.sessionKeyStore.clear();
+    }
+  }
+
+  private async tryExtractRichManifest(bytes: Uint8Array): Promise<void> {
+    const previousCertInfo = this.deps.manifest.value?.certInfo ?? null;
+    const enriched = await this.deps.richManifestExtractor.extract(bytes, previousCertInfo);
+    if (enriched) {
+      this.deps.manifest.value = enriched;
+    } else {
+      // Allow retry on the next segment if extraction failed (e.g. transient WASM error).
+      this.hasExtractedRichManifest = false;
     }
   }
 
@@ -219,6 +241,15 @@ export class SegmentRouter {
     if (!vsiResult) {
       this.previousWasUnverified.set(mediaType, true);
       return;
+    }
+
+    // Pull richer manifest from this segment's manifest box (cawg.identity / cawg.metadata
+    // live there in hybrid VSI+ManifestBox streams). Fire-and-forget — runs once per
+    // content period and updates the shared manifest ref when it completes. We do not
+    // await it so the validation event ordering and emit cadence stay synchronous.
+    if (!this.hasExtractedRichManifest && vsiResult.isValid) {
+      this.hasExtractedRichManifest = true;
+      void this.tryExtractRichManifest(segmentBytes);
     }
 
     const hadGapBefore = this.previousWasUnverified.get(mediaType) ?? false;

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Reference React/Vite demo app showcasing dashjs-plugin and videojs-ui in two modes: dashjs-native and videojs-enhanced",
+  "description": "Reference React/Vite demo app — Unified Streaming + WDR live stream with end-to-end C2PA verification.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,14 +14,10 @@
   },
   "dependencies": {
     "@qualabs/c2pa-live-dashjs-plugin": "*",
-    "@qualabs/c2pa-live-hlsjs-plugin": "*",
     "@qualabs/c2pa-live-videojs-ui": "*",
     "dashjs": "^5.1.1",
-    "hls.js": "^1.5.0",
-    "framer-motion": "^11.2.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.25.1",
     "styled-components": "^6.1.11",
     "video.js": "^8.21.0"
   },

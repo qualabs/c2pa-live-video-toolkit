@@ -2,14 +2,14 @@ import type { EventBus } from './events/EventBus.js';
 import type { SessionKeyStore } from './state/SessionKeyStore.js';
 import type { SequenceTracker } from './state/SequenceTracker.js';
 import type { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
-import type { C2paEventMap, C2paEventType, MutableRef, C2paManifest } from './types.js';
+import type { C2paEventMap, C2paEventType, MutableRef, AugmentedC2paManifest } from './types.js';
 
 type C2paControllerDeps = {
   eventBus: EventBus;
   sessionKeyStore: SessionKeyStore;
   sequenceTracker: SequenceTracker;
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
-  manifest: MutableRef<C2paManifest | null>;
+  manifest: MutableRef<AugmentedC2paManifest | null>;
   detachFn: () => void;
 };
 

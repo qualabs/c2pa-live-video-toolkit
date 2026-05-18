@@ -87,27 +87,51 @@
   max-height: none;
   background-color: var(--background);
   padding: 1.25rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  grid-auto-flow: row dense;
+  column-gap: 1.5rem;
+  row-gap: 0;
+  align-items: start;
+  align-content: start;
+  box-sizing: border-box;
 }
+
+/* Column assignment */
+.vjs-menu li.c2pa-col-left {
+  grid-column: 1;
+}
+.vjs-menu li.c2pa-col-right {
+  grid-column: 2;
+  width: fit-content;
+}
+.vjs-menu li.c2pa-col-full {
+  grid-column: 1 / -1;
+  grid-row: 101;
+}
+.vjs-menu li.vjs-menu-item.c2pa-col-first {
+  border-top: none;
+}
+.vjs-menu li.c2pa-validation-status {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  border-top: none;
+}
+
 .vjs-menu li.vjs-menu-title {
-  display: flex;
-  justify-content: left;
-  text-transform: none;
-  border-bottom: 0.063rem solid #ffffff;
-  padding-bottom: 0.313rem;
-  margin: 0;
-  width: 13.438rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
-  font-size: 1.125rem;
+  display: none;
 }
 .vjs-menu li.vjs-menu-item {
   display: flex;
+  flex-direction: column;
   justify-content: left;
   text-transform: none;
-  border-top: 0.063rem solid #ffffff;
-  padding-top: 0.625rem;
-  padding-bottom: 0.625rem;
-  width: 13.438rem;
+  border-top: 0.1rem solid rgba(255, 255, 255, 0.15);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  width: 100%;
   cursor: default;
   white-space: pre-wrap;
   text-align: left;
@@ -115,8 +139,32 @@
   font-weight: 400;
   font-size: 0.75rem;
 }
-.vjs-menu li.vjs-menu-item:last-child {
-  border-top: none;
+.vjs-menu li.vjs-menu-item:hover,
+.js-focus-visible .vjs-menu li.vjs-menu-item:hover {
+  background: none;
+}
+
+/* Dual-header item: spans both columns and shows two labels side by side */
+.vjs-menu li.c2pa-dual-header {
+  grid-column: 1 / -1;
+}
+.vjs-menu li.vjs-menu-item.c2pa-subheader {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-style: italic;
+  padding-bottom: 0.25rem;
+  border-bottom: 0.063rem solid rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.125rem;
+  width: 100%;
+}
+.vjs-menu li.vjs-menu-item.c2pa-subheader .subheader-left {
+  flex: 3;
+}
+.vjs-menu li.vjs-menu-item.c2pa-subheader .subheader-right {
+  flex: 2;
 }
 .vjs-menu li.vjs-menu-item:hover,
 .js-focus-visible .vjs-menu li.vjs-menu-item:hover {

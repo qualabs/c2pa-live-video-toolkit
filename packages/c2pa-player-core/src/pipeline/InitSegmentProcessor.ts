@@ -1,7 +1,8 @@
 import { validateC2paInitSegment } from '@svta/cml-c2pa';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import { asValidationErrorCodes } from '../types.js';
-import type { InitProcessedEvent, Logger } from '../types.js';
+import type { AugmentedC2paManifest, InitProcessedEvent, Logger } from '../types.js';
+import { parseX509Names } from '../utils/x509.js';
 
 type InitSegmentProcessorDeps = {
   sessionKeyStore: SessionKeyStore;
@@ -29,11 +30,16 @@ export class InitSegmentProcessor {
         `[InitSegmentProcessor] Processed successfully — ${result.sessionKeys.length} session keys extracted`,
       );
 
+      const certificate = (result as { certificate?: Uint8Array }).certificate;
+      const augmentedManifest: AugmentedC2paManifest | null = result.manifest
+        ? { ...result.manifest, certInfo: certificate ? parseX509Names(certificate) : null }
+        : null;
+
       return {
         success: true,
         sessionKeysCount: result.sessionKeys.length,
         manifestId: result.manifestId ?? undefined,
-        manifest: result.manifest ?? null,
+        manifest: augmentedManifest,
         errorCodes: asValidationErrorCodes(result.errorCodes),
       };
     } catch (error) {

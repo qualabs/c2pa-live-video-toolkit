@@ -4,7 +4,7 @@ import { ChainOfTrust } from '../components/ChainOfTrust.js';
 import { DataInspector } from '../components/DataInspector.js';
 import { StreamControls } from '../components/StreamControls.js';
 import { ManifestModal } from '../components/ManifestModal.js';
-import type { C2paPlayerState } from '../hooks/useC2paPlayer.js';
+import type { C2paPlayerState } from '../hooks/useC2paVideoJsPlayer.js';
 import type { SegmentRecord } from '@qualabs/c2pa-live-dashjs-plugin';
 import { DEFAULT_STREAM_URL } from '../constants.js';
 
@@ -12,21 +12,14 @@ interface DemoLayoutProps {
   /** The video player element (a <video> or <div> mount point) for the left column */
   playerSlot: React.ReactNode;
   state: C2paPlayerState;
-  streamUrl: string;
   onStreamChange: (url: string) => void;
   /** Initial value for the URL input field. Defaults to DEFAULT_STREAM_URL. */
   initialUrl?: string;
 }
 
-/**
- * Shared layout for both demo modes (dashjs-native and videojs-enhanced).
- * Owns the URL input bar, two-column grid, panel slots, and manifest modal state.
- * Only the player element in the left column differs between modes.
- */
 export const DemoLayout: React.FC<DemoLayoutProps> = ({
   playerSlot,
   state,
-  streamUrl,
   onStreamChange,
   initialUrl = DEFAULT_STREAM_URL,
 }) => {
@@ -46,12 +39,6 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
     } catch {
       /* History API unavailable, URL update skipped */
     }
-  }
-
-  function handleStreamChange(url: string): void {
-    setInputUrl(url);
-    onStreamChange(url);
-    setSelectedSegment(null);
   }
 
   return (
@@ -84,9 +71,7 @@ export const DemoLayout: React.FC<DemoLayoutProps> = ({
           <StreamControls
             segments={state.segments}
             initData={state.initData}
-            currentStreamUrl={streamUrl}
             onValidateManifest={() => setShowManifestModal(true)}
-            onStreamChange={handleStreamChange}
           />
           <DataInspector segment={selectedSegment} />
         </RightColumn>

@@ -1,4 +1,10 @@
-import type { ActiveManifest, ManifestAssertion, PlaybackStatus, SignatureInfo } from './types.js';
+import type {
+  ActiveManifest,
+  CertInfo,
+  ManifestAssertion,
+  PlaybackStatus,
+  SignatureInfo,
+} from './types.js';
 
 /**
  * Extracts the active C2PA manifest from a playback status, normalizing the shape.
@@ -49,6 +55,8 @@ function normalizeActiveManifest(raw: Record<string, unknown>): ActiveManifest {
     signatureInfo: (raw.signatureInfo ?? raw.signature_info) as SignatureInfo | undefined,
     claimGenerator: (raw.claimGenerator ?? raw.claim_generator) as string | undefined,
     assertions: raw.assertions as ManifestAssertion[] | undefined,
+    certInfo: (raw.certInfo ?? raw.cert_info) as CertInfo | null | undefined,
+    cawgCertInfo: (raw.cawgCertInfo ?? raw.cawg_cert_info) as CertInfo | null | undefined,
   };
 }
 

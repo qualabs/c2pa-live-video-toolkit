@@ -34,6 +34,26 @@ export type MediaSegmentInput = {
  */
 export type { C2paManifest };
 
+/**
+ * Signing certificate fields extracted from the X.509 leaf cert. cml-c2pa exposes
+ * the raw cert bytes but not parsed Subject/Issuer CNs — we parse them ourselves
+ * so the UI can show the actual signing entity (not just the issuing CA).
+ */
+export type CertInfo = {
+  readonly subjectCN: string | null;
+  readonly issuerCN: string | null;
+};
+
+/**
+ * Manifest with parsed cert info attached. `certInfo` carries the C2PA signing cert
+ * (the "Generator" side); `cawgCertInfo` carries the cert from the cawg.identity
+ * assertion (the "Customer" / identity side), when present.
+ */
+export type AugmentedC2paManifest = C2paManifest & {
+  readonly certInfo?: CertInfo | null;
+  readonly cawgCertInfo?: CertInfo | null;
+};
+
 // ── Validation error codes ──────────────────────────────────────────
 export const ValidationErrorCode = {
   // Live video error codes (§19.7)
@@ -83,7 +103,7 @@ export type SegmentRecord = {
   sequenceReason?: SequenceAnomalyReasonValue;
   errorCodes?: readonly ValidationErrorCode[];
   timestamp: number;
-  manifest?: C2paManifest | null;
+  manifest?: AugmentedC2paManifest | null;
   previousManifestId?: string | null;
   quality?: string;
 };
@@ -94,7 +114,7 @@ export type InitProcessedEvent = {
   noC2paData?: boolean;
   sessionKeysCount: number;
   manifestId: string | undefined;
-  manifest: C2paManifest | null;
+  manifest: AugmentedC2paManifest | null;
   errorCodes?: readonly ValidationErrorCode[];
   error?: string;
 };

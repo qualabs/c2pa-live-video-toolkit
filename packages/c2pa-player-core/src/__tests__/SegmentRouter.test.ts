@@ -80,6 +80,7 @@ function buildDeps(sessionKeyStore = new SessionKeyStore()): BuiltDeps {
     sessionKeyStore,
     manifest: { value: null },
     supportedMediaTypes: ['video', 'audio'],
+    richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
   });
 
   return { router, eventBus, sessionKeyStore, initProcessor, vsiValidator, manifestBoxValidator };
@@ -125,6 +126,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validated = vi.fn();
@@ -172,6 +174,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validated = vi.fn();
@@ -221,6 +224,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validated = vi.fn();
@@ -281,6 +285,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore: new SessionKeyStore(),
         manifest: { value: null },
         supportedMediaTypes: ['video'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const errorListener = vi.fn();
@@ -383,6 +388,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validated = vi.fn();
@@ -474,6 +480,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validated = vi.fn();
@@ -522,6 +529,7 @@ describe('SegmentRouter', () => {
         sessionKeyStore,
         manifest: { value: null },
         supportedMediaTypes: ['video', 'audio'],
+        richManifestExtractor: { extract: vi.fn().mockResolvedValue(null) } as never,
       });
 
       const validatedListener = vi.fn();

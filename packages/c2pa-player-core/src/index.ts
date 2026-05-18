@@ -12,6 +12,8 @@ export type { C2paPipeline, CreateC2paPipelineOptions } from './createC2paPipeli
 
 export type {
   C2paManifest,
+  AugmentedC2paManifest,
+  CertInfo,
   C2paOptions,
   MediaSegmentInput,
   SegmentRecord,

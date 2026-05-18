@@ -1,45 +1,35 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { DemoModeSwitcher } from './components/DemoModeSwitcher.js';
-import { QUALABS_LOGO_URL, C2PA_LOGO_URL, GOOGLE_LOGO_BASE64 } from './constants.js';
+import { QUALABS_LOGO_URL, C2PA_LOGO_URL } from './constants.js';
+import unifiedStreamingLogo from './assets/unified-streaming-logo.png';
+import wdrLogo from './assets/wdr-logo.png';
 
-const DashjsNativeDemo = lazy(() => import('./views/DashjsNativeDemo.js'));
 const VideoJsEnhancedDemo = lazy(() => import('./views/VideoJsEnhancedDemo.js'));
-const HlsNativeDemo = lazy(() => import('./views/HlsNativeDemo.js'));
 
 const DEMO_TITLE = 'C2PA live streaming end-2-end reference workflow';
 
 const App: React.FC = () => (
-  <BrowserRouter>
-    <Layout>
-      <PageHeader>
-        <LogoContainer>
-          <Logo src={QUALABS_LOGO_URL} alt="Qualabs Logo" style={{ height: '40px' }} />
-          <Logo src={GOOGLE_LOGO_BASE64} alt="Google Logo" style={{ height: '32px' }} />
-          <Logo
-            src={C2PA_LOGO_URL}
-            alt="C2PA Logo"
-            style={{ height: '36px', filter: 'brightness(0) invert(1)' }}
-          />
-        </LogoContainer>
-        <HeaderTitle>{DEMO_TITLE}</HeaderTitle>
-      </PageHeader>
+  <Layout>
+    <PageHeader>
+      <LogoContainer>
+        <Logo src={QUALABS_LOGO_URL} alt="Qualabs Logo" style={{ height: '28px' }} />
+        <Logo src={unifiedStreamingLogo} alt="Unified Streaming Logo" style={{ height: '64px' }} />
+        <Logo src={wdrLogo} alt="WDR Logo" style={{ height: '28px' }} />
+        <Logo
+          src={C2PA_LOGO_URL}
+          alt="C2PA Logo"
+          style={{ height: '36px', filter: 'brightness(0) invert(1)' }}
+        />
+      </LogoContainer>
+      <HeaderTitle>{DEMO_TITLE}</HeaderTitle>
+    </PageHeader>
 
-      <DemoModeSwitcher />
-
-      <Content>
-        <Suspense fallback={<Loading>Loading…</Loading>}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/videojs-enhanced" replace />} />
-            <Route path="/dashjs-native" element={<DashjsNativeDemo />} />
-            <Route path="/videojs-enhanced" element={<VideoJsEnhancedDemo />} />
-            <Route path="/hls-native" element={<HlsNativeDemo />} />
-          </Routes>
-        </Suspense>
-      </Content>
-    </Layout>
-  </BrowserRouter>
+    <Content>
+      <Suspense fallback={<Loading>Loading…</Loading>}>
+        <VideoJsEnhancedDemo />
+      </Suspense>
+    </Content>
+  </Layout>
 );
 
 export default App;

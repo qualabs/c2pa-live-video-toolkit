@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { ERROR_CODE_MESSAGES } from '@qualabs/c2pa-live-dashjs-plugin';
-import type { InitProcessedEvent } from '@qualabs/c2pa-live-dashjs-plugin';
+import type { C2paManifest, InitProcessedEvent } from '@qualabs/c2pa-live-dashjs-plugin';
 import { convertBuffersToHex } from '../utils/bufferUtils.js';
 
 interface ManifestModalProps {
@@ -9,6 +9,16 @@ interface ManifestModalProps {
   manifest: unknown;
   initData: InitProcessedEvent | null;
   onClose: () => void;
+}
+
+function getSigningOrg(manifest: unknown): string | null {
+  if (!manifest || typeof manifest !== 'object') return null;
+  const m = manifest as Partial<C2paManifest>;
+  const issuer = m.signatureInfo?.issuer?.trim();
+  if (issuer) return issuer;
+  const claimGenerator = m.claimGenerator?.trim();
+  if (claimGenerator) return claimGenerator;
+  return null;
 }
 
 const SESSION_KEYS_LABEL = '"label": "c2pa.session-keys"';
@@ -74,6 +84,7 @@ export const ManifestModal: React.FC<ManifestModalProps> = ({
   const manifest = initData?.manifest ?? manifestProp;
   const isValid = initData?.success && (initData.errorCodes?.length ?? 0) === 0;
   const errorCodes = (initData?.errorCodes ?? []) as string[];
+  const signingOrg = getSigningOrg(manifest);
 
   return (
     <ModalOverlay onClick={onClose}>
@@ -82,6 +93,13 @@ export const ManifestModal: React.FC<ManifestModalProps> = ({
           <ModalTitle>C2PA Manifest — Init Segment</ModalTitle>
           <CloseButton onClick={onClose}>✕</CloseButton>
         </ModalHeader>
+
+        {signingOrg && (
+          <SignedByRow>
+            <SignedByLabel>Signed by</SignedByLabel>
+            <SignedByValue>{signingOrg}</SignedByValue>
+          </SignedByRow>
+        )}
 
         {initData && (
           <>
@@ -183,6 +201,26 @@ const CloseButton = styled.button`
   &:hover {
     color: #e5e5e5;
   }
+`;
+const SignedByRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(74, 222, 128, 0.06);
+  border-bottom: 1px solid rgba(74, 222, 128, 0.15);
+`;
+const SignedByLabel = styled.span`
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4ade80;
+`;
+const SignedByValue = styled.span`
+  font-size: 0.95rem;
+  color: #e5e5e5;
+  word-break: break-word;
 `;
 const ValidationStatus = styled.div<{ $isValid: boolean }>`
   display: flex;

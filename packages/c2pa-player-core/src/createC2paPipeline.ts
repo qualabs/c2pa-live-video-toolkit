@@ -4,6 +4,7 @@ import { SequenceTracker } from './state/SequenceTracker.js';
 import { InitSegmentProcessor } from './pipeline/InitSegmentProcessor.js';
 import { VsiValidator } from './pipeline/VsiValidator.js';
 import { ManifestBoxValidator } from './pipeline/ManifestBoxValidator.js';
+import { RichManifestExtractor } from './pipeline/RichManifestExtractor.js';
 import { SegmentRouter } from './pipeline/SegmentRouter.js';
 import { C2paController } from './C2paController.js';
 import { DEFAULT_MEDIA_TYPES } from './types.js';
@@ -13,7 +14,7 @@ import type {
   MediaType,
   MediaSegmentInput,
   MutableRef,
-  C2paManifest,
+  AugmentedC2paManifest,
 } from './types.js';
 
 const SILENT_LOGGER: Logger = {
@@ -77,7 +78,7 @@ export function createC2paPipeline(options: CreateC2paPipelineOptions = {}): C2p
   const supportedMediaTypes: MediaType[] = options.mediaTypes ?? DEFAULT_MEDIA_TYPES;
   const logger = buildLogger(options.logger);
 
-  const manifest: MutableRef<C2paManifest | null> = { value: null };
+  const manifest: MutableRef<AugmentedC2paManifest | null> = { value: null };
 
   const eventBus = new EventBus();
   const sessionKeyStore = new SessionKeyStore();
@@ -89,12 +90,14 @@ export function createC2paPipeline(options: CreateC2paPipelineOptions = {}): C2p
   for (const mediaType of supportedMediaTypes) {
     manifestBoxValidators[mediaType] = new ManifestBoxValidator();
   }
+  const richManifestExtractor = new RichManifestExtractor(logger);
 
   const segmentRouter = new SegmentRouter({
     eventBus,
     initProcessor,
     vsiValidator,
     manifestBoxValidators,
+    richManifestExtractor,
     sessionKeyStore,
     manifest,
     supportedMediaTypes,

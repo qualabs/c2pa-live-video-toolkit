@@ -9,6 +9,8 @@ export interface VjsComponent {
 export interface VjsMenuItemOptions {
   label: string;
   id: string;
+  side?: 'left' | 'right' | 'footer';
+  header?: boolean;
 }
 
 export type VjsMenuItemConstructor = new (
@@ -55,10 +57,17 @@ export type ManifestAssertion = {
   data: Record<string, unknown>;
 };
 
+export type CertInfo = {
+  subjectCN: string | null;
+  issuerCN: string | null;
+};
+
 export type ActiveManifest = {
   signatureInfo?: SignatureInfo;
   claimGenerator?: string;
   assertions?: ManifestAssertion[];
+  certInfo?: CertInfo | null;
+  cawgCertInfo?: CertInfo | null;
 };
 
 export type PlaybackStatusDetail = {

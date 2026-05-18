@@ -10,12 +10,8 @@ import { VALIDATION_STATUS_VALUES } from '../types.js';
 import { extractMenuValue, renderMenuItemHtml, MenuItemKey } from './MenuValueExtractor.js';
 import { filterRecentCompromisedRegions } from '../CompromisedRegionsFilter.js';
 
-/**
- * video.js MenuButton internals not exposed in public typings.
- * Extends VjsComponent so TypeScript allows direct downcasts without `unknown`.
- */
 interface MenuButtonInternals extends VjsComponent {
-  options_: { menuItems: Array<{ label: string; id: string }>; [key: string]: unknown };
+  options_: { menuItems: Array<MenuItemDef>; [key: string]: unknown };
   player_: unknown;
   buttonPressed_: boolean;
   pressButton(): void;
@@ -23,29 +19,55 @@ interface MenuButtonInternals extends VjsComponent {
   items?: VjsComponent[];
 }
 
-/**
- * video.js MenuItem internals not exposed in public typings.
- */
 interface MenuItemInternals extends VjsComponent {
   options_: { label: string; id: string; [key: string]: unknown };
   handleClick: () => void;
 }
 
+type ColumnSide = 'header' | 'left' | 'right' | 'full' | 'absolute';
+
+type MenuItemDef = {
+  key: MenuItemKey;
+  label: string;
+  side: ColumnSide;
+};
+
 const MENU_BUTTON_COMPONENT_NAME = 'C2PAMenuButton';
 const CONTROL_TEXT = 'Content Credentials';
 
-const MENU_ITEM_LABELS: Record<MenuItemKey, string> = {
-  SIG_ISSUER: 'Issued by',
-  DATE: 'Issued on',
-  CLAIM_GENERATOR: 'App or device used',
-  NAME: 'Name',
-  VALIDATION_STATUS: 'Current Validation Status',
-  ALERT: 'Alert',
-};
+// Item order matters: with `grid-auto-flow: row dense` the dual header takes row 1
+// (spanning both columns); left items then fill column 1 starting row 2; the dense
+// flag backfills empty column-2 cells with the right items in DOM order.
+// First items of each column get `c2pa-col-first` so the border-top is suppressed.
+const MENU_ITEMS: MenuItemDef[] = [
+  { key: MenuItemKey.DUAL_HEADER, label: 'Headers', side: 'header' },
+  { key: MenuItemKey.SIG_ISSUER, label: 'Issued by', side: 'left' },
+  { key: MenuItemKey.SUBJECT_NAME, label: 'Subject name', side: 'left' },
+  { key: MenuItemKey.CLAIM_GENERATOR, label: 'Claim generator', side: 'left' },
+  { key: MenuItemKey.CAWG_ISSUED_BY, label: 'Issued by', side: 'right' },
+  { key: MenuItemKey.CAWG_SUBJECT_NAME, label: 'Subject name', side: 'right' },
+  { key: MenuItemKey.ORGANIZATION, label: 'Organization', side: 'right' },
+  { key: MenuItemKey.STATION_ID, label: 'Station ID', side: 'right' },
+  { key: MenuItemKey.PROGRAM, label: 'Program', side: 'right' },
+  { key: MenuItemKey.VALIDATION_STATUS, label: 'Current Validation Status', side: 'absolute' },
+  { key: MenuItemKey.ALERT, label: 'Alert', side: 'full' },
+];
 
-const MENU_ITEM_KEYS = Object.keys(MENU_ITEM_LABELS) as MenuItemKey[];
+// Keys whose menu item is the first of its column — used to drop the border-top.
+const FIRST_OF_COLUMN: ReadonlySet<MenuItemKey> = new Set([
+  MenuItemKey.SIG_ISSUER,
+  MenuItemKey.CAWG_ISSUED_BY,
+]);
 
 let menuComponentRegistered = false;
+
+const SIDE_CLASS: Record<ColumnSide, string> = {
+  header: 'c2pa-dual-header',
+  left: 'c2pa-col-left',
+  right: 'c2pa-col-right',
+  full: 'c2pa-col-full',
+  absolute: 'c2pa-validation-status',
+};
 
 function ensureMenuComponentRegistered(): void {
   if (menuComponentRegistered) return;
@@ -54,7 +76,6 @@ function ensureMenuComponentRegistered(): void {
   const MenuItem = videojs.getComponent('MenuItem');
 
   class C2PAMenuButton extends MenuButton {
-    // video.js internal properties — exist at runtime but aren't in public typings
     declare options_: MenuButtonInternals['options_'];
     declare player_: MenuButtonInternals['player_'];
     declare buttonPressed_: boolean;
@@ -65,8 +86,19 @@ function ensureMenuComponentRegistered(): void {
     createItems(): VjsComponent[] {
       const TypedMenuItem = MenuItem as VjsMenuItemConstructor;
       return this.options_.menuItems.map((item) => {
-        const menuItem = new TypedMenuItem(this.player_, { label: item.label, id: item.id });
+        const menuItem = new TypedMenuItem(this.player_, { label: item.label, id: item.key });
         (menuItem as MenuItemInternals).handleClick = () => {};
+        const el = menuItem.el() as HTMLElement | null;
+        if (el) {
+          el.classList.add(SIDE_CLASS[item.side]);
+          el.classList.add(`c2pa-key-${item.key}`);
+          if (item.key === MenuItemKey.DUAL_HEADER) {
+            el.classList.add('c2pa-col-first', 'c2pa-subheader');
+          }
+          if (FIRST_OF_COLUMN.has(item.key)) {
+            el.classList.add('c2pa-col-first');
+          }
+        }
         return menuItem;
       });
     }
@@ -108,14 +140,12 @@ export function initializeMenu(videoPlayer: VideoJsPlayer): VjsComponent {
     videoPlayer.controlBar.removeChild(existingButton);
   }
 
-  const menuItems = MENU_ITEM_KEYS.map((key) => ({ label: MENU_ITEM_LABELS[key], id: key }));
-
   videoPlayer.controlBar.addChild(
     MENU_BUTTON_COMPONENT_NAME,
     {
       controlText: CONTROL_TEXT,
       title: CONTROL_TEXT,
-      menuItems,
+      menuItems: MENU_ITEMS,
       className: 'c2pa-menu-button',
     },
     0,
@@ -126,13 +156,15 @@ export function initializeMenu(videoPlayer: VideoJsPlayer): VjsComponent {
 
 /**
  * Resizes the menu content to match the player dimensions.
- * This is a workaround — video.js does not expose a resize event for menu content.
  */
 export function adjustMenuSize(
   c2paMenu: VjsComponent,
   videoPlayer: VideoJsPlayer,
   heightOffset: number,
 ): void {
+  const menuEl = c2paMenu
+    .el()
+    ?.querySelector('.vjs-menu-button-popup .vjs-menu') as HTMLElement | null;
   const menuContent = c2paMenu
     .el()
     ?.querySelector('.vjs-menu-button-popup .vjs-menu .vjs-menu-content') as HTMLElement | null;
@@ -140,8 +172,16 @@ export function adjustMenuSize(
   if (!menuContent) return;
 
   const playerEl = videoPlayer.el() as HTMLElement;
+  const playerHeight = playerEl.offsetHeight - heightOffset;
+  if (menuEl) {
+    menuEl.style.height = `${playerHeight}px`;
+    menuEl.style.bottom = '0';
+  }
   menuContent.style.width = `${playerEl.offsetWidth}px`;
-  menuContent.style.height = `${playerEl.offsetHeight - heightOffset}px`;
+  menuContent.style.height = `${playerHeight}px`;
+  menuContent.style.maxHeight = `${playerHeight}px`;
+  menuContent.style.overflowY = 'auto';
+  menuContent.style.overflowX = 'hidden';
 }
 
 /**
@@ -169,10 +209,10 @@ export function updateMenuItems(
     const value = extractMenuValue(key, status, compromisedRegions);
 
     if (value !== null) {
-      (item.el() as HTMLElement).style.display = 'block';
+      (item.el() as HTMLElement).style.display = '';
       item.el().innerHTML = renderMenuItemHtml(key, label, value);
 
-      if (key === 'VALIDATION_STATUS' && value === VALIDATION_STATUS_VALUES.FAILED) {
+      if (key === MenuItemKey.VALIDATION_STATUS && value === VALIDATION_STATUS_VALUES.FAILED) {
         item.el().classList.add('validation-padding');
       }
     } else {

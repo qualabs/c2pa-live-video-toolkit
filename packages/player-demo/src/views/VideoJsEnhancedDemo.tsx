@@ -5,7 +5,7 @@ import { DemoLayout } from './DemoLayout.js';
 import { DEFAULT_STREAM_URL } from '../constants.js';
 
 /**
- * videojs-enhanced mode: dash.js + video.js + C2paPlayerUI overlays.
+ * Single-mode demo: video.js + dash.js + C2paPlayerUI overlays.
  * Demonstrates the full C2PA UI experience (colored progress bar, credentials
  * menu, friction modal) via @qualabs/c2pa-live-videojs-ui.
  *
@@ -20,7 +20,6 @@ const VideoJsEnhancedDemo: React.FC = () => {
     <DemoLayout
       playerSlot={<VideoWrapper ref={containerRef} />}
       state={state}
-      streamUrl={streamUrl}
       onStreamChange={(url) => {
         setStreamUrl(url);
         changeStream(url);

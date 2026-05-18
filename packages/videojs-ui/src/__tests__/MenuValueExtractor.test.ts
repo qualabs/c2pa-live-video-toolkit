@@ -28,21 +28,9 @@ describe('extractMenuValue', () => {
     expect(extractMenuValue('SIG_ISSUER', status, [])).toBe('Test CA');
   });
 
-  it('returns formatted date for DATE', () => {
-    const status = makeStatusWithManifest(MANIFEST_WITH_ISSUER);
-    const result = extractMenuValue('DATE', status, []);
-    expect(result).toContain('2025');
-    expect(result).toContain('Jan');
-  });
-
   it('returns claim generator for CLAIM_GENERATOR', () => {
     const status = makeStatusWithManifest(MANIFEST_WITH_ISSUER);
     expect(extractMenuValue('CLAIM_GENERATOR', status, [])).toBe('test-tool/1.0');
-  });
-
-  it('returns author name for NAME', () => {
-    const status = makeStatusWithManifest(MANIFEST_WITH_ISSUER);
-    expect(extractMenuValue('NAME', status, [])).toBe('John Doe');
   });
 
   it('returns "Passed" for VALIDATION_STATUS when verified is true', () => {
