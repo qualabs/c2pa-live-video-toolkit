@@ -71,7 +71,7 @@ The full pipeline starts automatically:
 3. `origin-server` serves the signed output
 4. `attack-proxy` proxies everything on port 8083
 
-Point a DASH player at: `http://localhost:8083/stream_with_ad.mpd`
+Point a DASH player at: `http://localhost:8083/stream.mpd`
 
 ## Packages
 
