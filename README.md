@@ -43,7 +43,7 @@ On the player side, [`@qualabs/c2pa-live-dashjs-plugin`](packages/dashjs-plugin)
 | `manifest-server` | `attack-proxy` | 3000 | Serves dynamic DASH manifests with ad insertion |
 | `attack-proxy` | `attack-proxy` | 8083 | Proxies segments, optionally applying C2PA attacks |
 
-DASH players point to `http://localhost:8083/stream_with_ad.mpd`.
+DASH players point to `http://localhost:8083/stream.mpd`.
 
 ## Prerequisites
 
