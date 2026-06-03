@@ -193,16 +193,8 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
 
         if (qualitiesInitializedRef.current) return;
         const repList = dashPlayer.getRepresentationsByType('video') ?? [];
-        const highestIndex = repList.length - 1;
-        if (highestIndex >= 0) {
-          currentQualityLabelRef.current = `${repList[highestIndex].height}p`;
-        }
         if (repList.length > 1) {
           qualitiesInitializedRef.current = true;
-          dashPlayer.updateSettings({
-            streaming: { abr: { autoSwitchBitrate: { video: false } } },
-          });
-          dashPlayer.setRepresentationForTypeByIndex('video', highestIndex);
           const qs = repList.map((info, i) => ({ index: i, height: info.height }));
           qualitySelector.updateQualities(qs);
         }

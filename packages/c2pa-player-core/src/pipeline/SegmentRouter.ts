@@ -128,6 +128,23 @@ export class SegmentRouter {
   }
 
   /**
+   * Clear all per-session state. Called when the controller is reset
+   * (e.g. on `attachSource` to a new stream or the same URL restarted).
+   * Without this, `knownManifestIds` keeps the previous session's IDs and
+   * the next init segment is treated as a known-quality switch — leaving
+   * `hasExtractedRichManifest` true and `manifest.value` null, so CAWG and
+   * certInfo-derived menu items never repopulate.
+   */
+  reset(): void {
+    this.previousWasUnverified.clear();
+    this.previousWasReplayed.clear();
+    this.knownManifestIds.clear();
+    this.lastVsiRecord.clear();
+    this.prevLastVsiRecord.clear();
+    this.hasExtractedRichManifest = false;
+  }
+
+  /**
    * Route a player-agnostic segment input through the validation pipeline.
    * Unsupported mediaTypes are silently ignored.
    *

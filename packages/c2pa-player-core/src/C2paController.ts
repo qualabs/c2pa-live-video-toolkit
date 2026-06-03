@@ -10,6 +10,7 @@ type C2paControllerDeps = {
   sequenceTracker: SequenceTracker;
   manifestBoxValidators: Partial<Record<string, ManifestBoxValidator>>;
   manifest: MutableRef<AugmentedC2paManifest | null>;
+  routerReset: () => void;
   detachFn: () => void;
 };
 
@@ -42,6 +43,7 @@ export class C2paController {
       validator?.reset();
     }
     this.deps.manifest.value = null;
+    this.deps.routerReset();
   }
 
   resetSequence(): void {
