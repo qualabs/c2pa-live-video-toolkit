@@ -71,7 +71,9 @@ function adaptHlsFragment(
     kind,
     mediaType,
     bytes: new Uint8Array(source),
-    segmentIndex,
+    // Prefer the fragment's own playlist sequence number: it is per-track and
+    // matches the playlist position, unlike the global interception counter.
+    segmentIndex: typeof sn === 'number' ? sn : segmentIndex,
     streamId: level,
   };
 }
