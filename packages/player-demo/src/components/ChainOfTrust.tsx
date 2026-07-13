@@ -41,6 +41,13 @@ const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.NO_C2PA]: 'No C2PA',
 };
 
+function validationBadgeLabel(kind: ValidationBadgeKindValue, isMerkle: boolean): string {
+  // In VOD Merkle mode a WARNING is a location discontinuity (replayed or
+  // out-of-order segment), not a gap in the sequence-number chain.
+  if (isMerkle && kind === ValidationBadgeKind.WARNING) return 'DISCONTINUITY';
+  return VALIDATION_BADGE_LABEL[kind];
+}
+
 const InitBadgeStatus = {
   VALID: ValidationBadgeKind.VALID,
   FAILED: ValidationBadgeKind.FAILED,
@@ -74,6 +81,8 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   selectedSegment,
   onSegmentSelect,
 }) => {
+  const isMerkle = (initData?.merkleMaps?.length ?? 0) > 0;
+
   const sortedSegments = React.useMemo(() => {
     type Tagged = SegmentRecord & { _periodIndex?: number };
     return [...segments].sort((a: Tagged, b: Tagged) => {
@@ -90,7 +99,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   const warningCount = segments.filter((s) => statusCategory(s.status) === 'warning').length;
 
   const initStatus = resolveInitBadgeStatus(initData);
-  const isManifestBox = !initData?.sessionKeysCount;
+  const isManifestBox = !isMerkle && !initData?.sessionKeysCount;
 
   return (
     <Container>
@@ -111,10 +120,10 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             <tr>
               <Th>SEG #</Th>
               <Th>TYPE</Th>
-              <Th>SEQ</Th>
+              <Th>{isMerkle ? 'LOCATION' : 'SEQ'}</Th>
               <Th>QUALITY</Th>
-              <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>
-              <Th>HASH</Th>
+              {!isMerkle && <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>}
+              <Th>{isMerkle ? 'LEAF HASH' : 'HASH'}</Th>
               <Th>VALIDATION</Th>
               <Th>STATUS</Th>
             </tr>
@@ -126,17 +135,27 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Td>init</Td>
               <Td>—</Td>
               <Td>—</Td>
-              <Td
-                title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
-              >
-                {isManifestBox ? '—' : 'Init Seg...'}
-              </Td>
+              {!isMerkle && (
+                <Td
+                  title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
+                >
+                  {isManifestBox ? '—' : 'Init Seg...'}
+                </Td>
+              )}
               <Td
                 title={
-                  initData?.sessionKeysCount ? 'Contains session keys' : 'Contains C2PA manifest'
+                  isMerkle
+                    ? 'Contains the Merkle tree row and initHash'
+                    : initData?.sessionKeysCount
+                      ? 'Contains session keys'
+                      : 'Contains C2PA manifest'
                 }
               >
-                {initData?.sessionKeysCount ? 'Session Keys' : 'Manifest'}
+                {isMerkle
+                  ? 'Merkle Maps'
+                  : initData?.sessionKeysCount
+                    ? 'Session Keys'
+                    : 'Manifest'}
               </Td>
               <Td>
                 <ValidBadge $status={initStatus}>{VALIDATION_BADGE_LABEL[initStatus]}</ValidBadge>
@@ -176,9 +195,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                 >
                   <Td>{segment.segmentNumber}</Td>
                   <Td>{segment.mediaType}</Td>
-                  <Td>{segment.segmentNumber}</Td>
+                  <Td>{isMerkle ? (segment.location ?? '—') : segment.segmentNumber}</Td>
                   <Td>{segment.quality ?? '—'}</Td>
-                  {isManifestBox ? (
+                  {isMerkle ? null : isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
                       {hasNoC2paData || segment.previousManifestId == null ? (
                         '—'
@@ -198,7 +217,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   </Td>
                   <Td>
                     <ValidBadge $status={validationKind}>
-                      {VALIDATION_BADGE_LABEL[validationKind]}
+                      {validationBadgeLabel(validationKind, isMerkle)}
                     </ValidBadge>
                   </Td>
                   <Td>

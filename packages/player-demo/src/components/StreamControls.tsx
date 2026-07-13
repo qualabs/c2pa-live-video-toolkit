@@ -23,6 +23,14 @@ const MANIFEST_FETCH_WAIT_MS = 2000;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+type ValidationMethod = 'vsi' | 'manifestbox' | 'merkle';
+
+const METHOD_LABELS: Record<ValidationMethod, string> = {
+  vsi: '🔑 Session Keys (VSI)',
+  manifestbox: '📦 ManifestBox',
+  merkle: '🌳 VOD Merkle',
+};
+
 interface StreamControlsProps {
   segments: SegmentRecord[];
   initData: InitProcessedEvent | null;
@@ -42,8 +50,10 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
   const [isAdBreakActive, setIsAdBreakActive] = useState(false);
   const [isAdBreakLoading, setIsAdBreakLoading] = useState(false);
 
-  const validationMethod: 'vsi' | 'manifestbox' | null = React.useMemo(() => {
+  const validationMethod: ValidationMethod | null = React.useMemo(() => {
     if (segments.length === 0 || initData == null) return null;
+    // Same priority order as the pipeline's SegmentRouter
+    if ((initData.merkleMaps?.length ?? 0) > 0) return 'merkle';
     return initData.sessionKeysCount > 0 ? 'vsi' : 'manifestbox';
   }, [segments, initData]);
 
@@ -127,9 +137,7 @@ export const StreamControls: React.FC<StreamControlsProps> = ({
       <TitleRow>
         <Title>Stream Controls</Title>
         {validationMethod && (
-          <MethodBadge $method={validationMethod}>
-            {validationMethod === 'vsi' ? '🔑 Session Keys (VSI)' : '📦 ManifestBox'}
-          </MethodBadge>
+          <MethodBadge $method={validationMethod}>{METHOD_LABELS[validationMethod]}</MethodBadge>
         )}
       </TitleRow>
 
@@ -192,14 +200,23 @@ const Title = styled.h2`
   color: #e5e5e5;
   margin: 0;
 `;
-const MethodBadge = styled.span<{ $method: 'vsi' | 'manifestbox' }>`
+const METHOD_COLORS: Record<
+  ValidationMethod,
+  { background: string; color: string; border: string }
+> = {
+  vsi: { background: '#1a3a2a', color: '#4ade80', border: '#2d6a4a' },
+  manifestbox: { background: '#2a2a3a', color: '#818cf8', border: '#4a4a7a' },
+  merkle: { background: '#3a2a1a', color: '#fbbf24', border: '#7a5a2d' },
+};
+
+const MethodBadge = styled.span<{ $method: ValidationMethod }>`
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: ${(p) => (p.$method === 'vsi' ? '#1a3a2a' : '#2a2a3a')};
-  color: ${(p) => (p.$method === 'vsi' ? '#4ade80' : '#818cf8')};
-  border: 1px solid ${(p) => (p.$method === 'vsi' ? '#2d6a4a' : '#4a4a7a')};
+  background: ${(p) => METHOD_COLORS[p.$method].background};
+  color: ${(p) => METHOD_COLORS[p.$method].color};
+  border: 1px solid ${(p) => METHOD_COLORS[p.$method].border};
 `;
 const ControlsWrapper = styled.div`
   display: flex;
