@@ -2,6 +2,7 @@ import type { EventBus } from '../events/EventBus.js';
 import type { InitSegmentProcessor } from './InitSegmentProcessor.js';
 import type { VsiValidator, VsiValidationResult } from './VsiValidator.js';
 import type { ManifestBoxValidator } from './ManifestBoxValidator.js';
+import { MerkleValidator } from './MerkleValidator.js';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
 import {
   ValidationErrorCode,
@@ -48,6 +49,13 @@ type ManifestBoxSegmentParams = {
   segmentBytes: Uint8Array;
   mediaType: MediaType;
   segmentIndex: number;
+};
+
+type MerkleSegmentParams = {
+  segmentBytes: Uint8Array;
+  mediaType: MediaType;
+  segmentIndex: number;
+  validator: MerkleValidator;
 };
 
 function buildUnverifiedRecord(
@@ -115,6 +123,9 @@ export class SegmentRouter {
   // audio isSecond can process before video isSecond, overwriting lastVsiRecord[audioKey] from
   // isFirstSeq to isSecondSeq. Without prevLastVsiRecord the cascade would miss audio isFirst.
   private readonly prevLastVsiRecord = new Map<string, SegmentRecord>();
+  // One VOD Merkle validator per media type, created when that type's init segment
+  // carries merkle maps. Highest-priority routing branch.
+  private readonly merkleValidators = new Map<MediaType, MerkleValidator>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -151,6 +162,13 @@ export class SegmentRouter {
     this.deps.manifestBoxValidators[input.mediaType]?.reset();
 
     if (result.success) {
+      const merkleMaps = result.merkleMaps ?? [];
+      if (merkleMaps.length > 0) {
+        this.merkleValidators.set(input.mediaType, new MerkleValidator(merkleMaps));
+      } else {
+        this.merkleValidators.delete(input.mediaType);
+      }
+
       const newManifestId = result.manifestId;
       const known = this.knownManifestIds.get(input.mediaType) ?? new Set<string>();
       // A manifestId we've already seen means we've played this quality level before within
@@ -170,7 +188,8 @@ export class SegmentRouter {
         this.knownManifestIds.set(input.mediaType, known);
       }
 
-      this.deps.manifest.value = result.sessionKeysCount > 0 ? (result.manifest ?? null) : null;
+      this.deps.manifest.value =
+        result.sessionKeysCount > 0 || merkleMaps.length > 0 ? (result.manifest ?? null) : null;
     } else {
       // Unsigned / unrecognised init (e.g. ad period) — clear cross-period state so that
       // the incoming media segments are routed through ManifestBox with a clean slate and
@@ -187,6 +206,7 @@ export class SegmentRouter {
         }
       }
       this.knownManifestIds.delete(input.mediaType);
+      this.merkleValidators.delete(input.mediaType);
       this.deps.manifest.value = null;
       this.deps.sessionKeyStore.clear();
     }
@@ -195,6 +215,18 @@ export class SegmentRouter {
   private async handleMediaSegment(input: MediaSegmentInput): Promise<void> {
     const { bytes, mediaType, segmentIndex, streamId } = input;
     const streamKey = buildStreamKey(mediaType, streamId);
+
+    const merkleValidator = this.merkleValidators.get(mediaType);
+    if (merkleValidator) {
+      await this.handleMerkleSegment({
+        segmentBytes: bytes,
+        mediaType,
+        segmentIndex,
+        validator: merkleValidator,
+      });
+      return;
+    }
+
     if (!this.deps.sessionKeyStore.hasKeys()) {
       await this.handleManifestBoxSegment({ segmentBytes: bytes, mediaType, segmentIndex });
       return;
@@ -236,7 +268,8 @@ export class SegmentRouter {
     // CML returns the string 'valid' (not null) when there is no sequence anomaly. Treat it the
     // same as null so the reclassification checks below can use hasNoAnomalyReason consistently.
     const hasNoAnomalyReason =
-      !vsiResult.sequenceReason || vsiResult.sequenceReason === ('valid' as SequenceAnomalyReasonValue);
+      !vsiResult.sequenceReason ||
+      vsiResult.sequenceReason === ('valid' as SequenceAnomalyReasonValue);
 
     const prevRecord = this.lastVsiRecord.get(streamKey);
 
@@ -287,7 +320,11 @@ export class SegmentRouter {
         armingSlot?.segmentNumber === vsiResult.sequenceNumber + 1 &&
         armingSlot.status === SegmentStatus.VALID
       ) {
-        this.emitSegmentValidated({ ...armingSlot, status: SegmentStatus.WARNING, timestamp: Date.now() });
+        this.emitSegmentValidated({
+          ...armingSlot,
+          status: SegmentStatus.WARNING,
+          timestamp: Date.now(),
+        });
       }
 
       // Audio CML doesn't detect DUPLICATE when MFHD+TFDT are patched (hash fails, seqReason=null).
@@ -321,10 +358,15 @@ export class SegmentRouter {
       // from isFirstSeq to isSecondSeq. prevLastVsiRecord retains the previous entry so video
       // isSecond's cascade can still find and upgrade audio isFirst.
       if (
-        (prevRecord?.status === SegmentStatus.WARNING || prevRecord?.status === SegmentStatus.INVALID) &&
+        (prevRecord?.status === SegmentStatus.WARNING ||
+          prevRecord?.status === SegmentStatus.INVALID) &&
         prevRecord.segmentNumber === vsiResult.sequenceNumber + 1
       ) {
-        const upgradedIsFirst = { ...prevRecord, status: SegmentStatus.REORDERED, timestamp: Date.now() };
+        const upgradedIsFirst = {
+          ...prevRecord,
+          status: SegmentStatus.REORDERED,
+          timestamp: Date.now(),
+        };
         this.emitSegmentValidated(upgradedIsFirst);
         this.setVsiRecord(streamKey, upgradedIsFirst);
         this.previousWasReplayed.set(streamKey, true);
@@ -351,7 +393,8 @@ export class SegmentRouter {
           }
         };
         for (const [key, rec] of [...this.lastVsiRecord.entries()]) tryUpgradeCompanion(key, rec);
-        for (const [key, rec] of [...this.prevLastVsiRecord.entries()]) tryUpgradeCompanion(key, rec);
+        for (const [key, rec] of [...this.prevLastVsiRecord.entries()])
+          tryUpgradeCompanion(key, rec);
       }
 
       // Audio resolves before video (smaller payload → faster XHR). When video becomes REORDERED
@@ -439,6 +482,45 @@ export class SegmentRouter {
       errorCodes: asValidationErrorCodes(result.errorCodes),
       manifest: result.manifest,
       previousManifestId: result.previousManifestId,
+    });
+  }
+
+  private async handleMerkleSegment(params: MerkleSegmentParams): Promise<void> {
+    const { segmentBytes, mediaType, segmentIndex, validator } = params;
+
+    let result;
+    try {
+      result = await validator.validate(segmentBytes);
+    } catch (error) {
+      this.deps.eventBus.emit('error', { source: 'MerkleValidator', error });
+      return;
+    }
+    if (!result) return;
+
+    const errorCodes = result.errorCodes ?? [];
+    // A pure continuity break (location gap) is a WARNING, not content tampering —
+    // consistent with how the PSM path downgrades continuity-only failures.
+    const isContinuityOnlyFailure =
+      !result.isValid &&
+      errorCodes.length > 0 &&
+      errorCodes.every((c) => c === ValidationErrorCode.ASSERTION_INVALID);
+
+    const status: SegmentStatusValue = result.isValid
+      ? SegmentStatus.VALID
+      : isContinuityOnlyFailure
+        ? SegmentStatus.WARNING
+        : SegmentStatus.INVALID;
+
+    this.emitSegmentValidated({
+      segmentNumber: segmentIndex,
+      mediaType,
+      keyId: null,
+      hash: result.bmffHashHex,
+      location: result.location,
+      status,
+      timestamp: Date.now(),
+      errorCodes: asValidationErrorCodes(errorCodes),
+      manifest: this.deps.manifest.value,
     });
   }
 

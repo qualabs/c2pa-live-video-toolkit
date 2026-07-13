@@ -26,7 +26,7 @@ export class InitSegmentProcessor {
       }
 
       this.logger.log(
-        `[InitSegmentProcessor] Processed successfully — ${result.sessionKeys.length} session keys extracted`,
+        `[InitSegmentProcessor] Processed successfully — ${result.sessionKeys.length} session keys, ${result.merkleMaps?.length ?? 0} merkle maps extracted`,
       );
 
       return {
@@ -34,6 +34,7 @@ export class InitSegmentProcessor {
         sessionKeysCount: result.sessionKeys.length,
         manifestId: result.manifestId ?? undefined,
         manifest: result.manifest ?? null,
+        merkleMaps: result.merkleMaps ?? [],
         errorCodes: asValidationErrorCodes(result.errorCodes),
       };
     } catch (error) {
@@ -48,6 +49,7 @@ export class InitSegmentProcessor {
         sessionKeysCount: 0,
         manifestId: undefined,
         manifest: null,
+        merkleMaps: [],
         error: message,
       };
     }
