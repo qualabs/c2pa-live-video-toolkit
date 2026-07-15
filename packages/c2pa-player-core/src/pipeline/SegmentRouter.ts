@@ -459,7 +459,11 @@ export class SegmentRouter {
     const isContinuityOnlyFailure =
       !result.isValid &&
       Array.isArray(result.errorCodes) &&
-      result.errorCodes.every((c) => c === ValidationErrorCode.CONTINUITY_INVALID);
+      result.errorCodes.every(
+        (c) =>
+          c === ValidationErrorCode.CONTINUITY_INVALID ||
+          c === ValidationErrorCode.CONTINUITY_UNSUPPORTED,
+      );
 
     // When the previous segment was a gap (unverified), a chain break on the
     // current segment is a continuity gap, not content tampering.
