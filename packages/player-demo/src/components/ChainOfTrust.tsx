@@ -25,6 +25,7 @@ const ValidationBadgeKind = {
   VALID: 'valid',
   FAILED: 'failed',
   WARNING: 'warning',
+  UNSUPPORTED_CONTINUITY: 'unsupported_continuity',
   EMPTY: 'empty',
   PENDING: 'pending',
   NO_C2PA: 'no_c2pa',
@@ -36,6 +37,7 @@ const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: 'VALID',
   [ValidationBadgeKind.FAILED]: 'NOT VALID',
   [ValidationBadgeKind.WARNING]: 'MISSING SEGMENT',
+  [ValidationBadgeKind.UNSUPPORTED_CONTINUITY]: 'CONTINUITY N/A',
   [ValidationBadgeKind.EMPTY]: '—',
   [ValidationBadgeKind.PENDING]: 'PENDING',
   [ValidationBadgeKind.NO_C2PA]: 'No C2PA',
@@ -62,10 +64,25 @@ function lacksC2paData(segment: SegmentRecord): boolean {
 
 function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
   if (segment.status === SegmentStatus.UNVERIFIED) return ValidationBadgeKind.EMPTY;
-  if (segment.status === SegmentStatus.WARNING) return ValidationBadgeKind.WARNING;
+  if (segment.status === SegmentStatus.WARNING) {
+    // A custom continuity method the validator cannot verify is not a missing
+    // segment: the manifest validated — only the chain is unverifiable.
+    return segment.errorCodes?.includes(ValidationErrorCode.CONTINUITY_UNSUPPORTED)
+      ? ValidationBadgeKind.UNSUPPORTED_CONTINUITY
+      : ValidationBadgeKind.WARNING;
+  }
   return segment.status === SegmentStatus.VALID
     ? ValidationBadgeKind.VALID
     : ValidationBadgeKind.FAILED;
+}
+
+function segmentValidationTooltip(
+  kind: ValidationBadgeKindValue,
+  segment: SegmentRecord,
+): string | undefined {
+  if (kind !== ValidationBadgeKind.UNSUPPORTED_CONTINUITY) return undefined;
+  const hashNote = segment.hash != null ? 'content hash verified' : 'content hash not verified';
+  return `Unsupported continuity method — chain not verifiable (${hashNote})`;
 }
 
 function resolveInitBadgeStatus(initData: InitProcessedEvent | null): InitBadgeStatusValue {
@@ -214,7 +231,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td title={segment.hash ?? undefined}>
                     {hasNoC2paData || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
-                  <Td>
+                  <Td title={segmentValidationTooltip(validationKind, segment)}>
                     <ValidBadge $status={validationKind}>
                       {validationBadgeLabel(validationKind, isMerkle)}
                     </ValidBadge>
@@ -397,6 +414,7 @@ const VALIDATION_BADGE_BACKGROUND: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: '#22c55e',
   [ValidationBadgeKind.FAILED]: '#ef4444',
   [ValidationBadgeKind.WARNING]: '#eab308',
+  [ValidationBadgeKind.UNSUPPORTED_CONTINUITY]: '#eab308',
   [ValidationBadgeKind.PENDING]: 'rgba(251, 191, 36, 0.2)',
   [ValidationBadgeKind.EMPTY]: 'transparent',
   [ValidationBadgeKind.NO_C2PA]: '#555',
