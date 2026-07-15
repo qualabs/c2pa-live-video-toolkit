@@ -165,16 +165,19 @@ export type MerkleVodStream = {
  * Builds a complete synthetic VOD Merkle stream: `segmentCount` media
  * segments, a Merkle tree over their leaf hashes with the root row stored in
  * the init manifest, and per-segment proof paths. Multi-track streams get one
- * merkle-map + one auxiliary box per `localId`.
+ * merkle-map + one auxiliary box per `localId`. `contentSeed` varies the media
+ * payload so two streams model different renditions of the same content
+ * (distinct trees, same track ids and count).
  */
 export async function buildMerkleVodStream(
   segmentCount: number,
   localIds: readonly number[] = [1],
+  contentSeed = 0,
 ): Promise<MerkleVodStream> {
   const uniqueId = 1;
   const contentBoxes = Array.from({ length: segmentCount }, (_, i) => [
     buildBox('moof'),
-    buildBox('mdat', new Uint8Array([i, i + 1, i + 2])),
+    buildBox('mdat', new Uint8Array([contentSeed + i, contentSeed + i + 1, contentSeed + i + 2])),
   ]);
   const contents = contentBoxes.map((boxes) => concatBytes(...boxes));
   // Leaf hash = full segment minus /uuid exclusions, each box prefixed with its file offset

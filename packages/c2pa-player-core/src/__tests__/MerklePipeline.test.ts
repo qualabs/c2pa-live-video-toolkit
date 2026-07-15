@@ -114,6 +114,48 @@ describe('VOD Merkle pipeline (end-to-end)', () => {
     expect(harness.records[1].errorCodes).toContain(ValidationErrorCode.ASSERTION_INVALID);
   });
 
+  it('flags a location gap across a quality switch (re-delivered init, same tracks)', async () => {
+    const renditionA = await buildMerkleVodStream(3);
+    const renditionB = await buildMerkleVodStream(3, [1], 100);
+    const harness = buildHarness();
+
+    await routeInit(harness, renditionA.initSegment);
+    await routeMedia(harness, renditionA.segments[0], 0);
+    await routeInit(harness, renditionB.initSegment); // ABR switch mid-stream
+    await routeMedia(harness, renditionB.segments[2], 1); // location 2 after 0 → gap
+
+    expect(harness.records[0].status).toBe(SegmentStatus.VALID);
+    expect(harness.records[1].status).toBe(SegmentStatus.WARNING);
+    expect(harness.records[1].errorCodes).toContain(ValidationErrorCode.ASSERTION_INVALID);
+  });
+
+  it('stays VALID across a quality switch when locations remain sequential', async () => {
+    const renditionA = await buildMerkleVodStream(3);
+    const renditionB = await buildMerkleVodStream(3, [1], 100);
+    const harness = buildHarness();
+
+    await routeInit(harness, renditionA.initSegment);
+    await routeMedia(harness, renditionA.segments[0], 0);
+    await routeInit(harness, renditionB.initSegment);
+    await routeMedia(harness, renditionB.segments[1], 1); // location 1 after 0 → sequential
+
+    expect(harness.records).toHaveLength(2);
+    harness.records.forEach((record) => expect(record.status).toBe(SegmentStatus.VALID));
+  });
+
+  it('resets continuity when the new init carries structurally different merkle maps', async () => {
+    const periodA = await buildMerkleVodStream(3);
+    const periodB = await buildMerkleVodStream(4, [1], 100); // different count → new period
+    const harness = buildHarness();
+
+    await routeInit(harness, periodA.initSegment);
+    await routeMedia(harness, periodA.segments[0], 0);
+    await routeInit(harness, periodB.initSegment);
+    await routeMedia(harness, periodB.segments[2], 1); // first segment of the new tree → exempt
+
+    expect(harness.records[1].status).toBe(SegmentStatus.VALID);
+  });
+
   it('validates multi-track segments (one aux box per track)', async () => {
     const { initSegment, segments } = await buildMerkleVodStream(3, [1, 2]);
     const harness = buildHarness();

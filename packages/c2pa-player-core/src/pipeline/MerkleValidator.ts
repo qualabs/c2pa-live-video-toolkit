@@ -18,11 +18,34 @@ export type MerkleValidationResult = {
  * delegated to CML's `validateC2paMerkleSegment`.
  */
 export class MerkleValidator {
-  private readonly merkleMaps: readonly MerkleMap[];
+  private merkleMaps: readonly MerkleMap[];
   private state: MerkleSegmentState | undefined;
 
   constructor(merkleMaps: readonly MerkleMap[]) {
     this.merkleMaps = merkleMaps;
+  }
+
+  /**
+   * Adopts the merkle maps from a re-delivered init segment while preserving
+   * the location-continuity state, provided they describe the same tracks
+   * (same uniqueId/localId/count — e.g. a quality switch within the same
+   * content period). Returns false when the maps differ structurally; the
+   * caller must create a fresh validator instead.
+   */
+  adoptMerkleMaps(merkleMaps: readonly MerkleMap[]): boolean {
+    const sameTracks =
+      merkleMaps.length === this.merkleMaps.length &&
+      merkleMaps.every((next) =>
+        this.merkleMaps.some(
+          (prev) =>
+            prev.uniqueId === next.uniqueId &&
+            prev.localId === next.localId &&
+            prev.count === next.count,
+        ),
+      );
+    if (!sameTracks) return false;
+    this.merkleMaps = merkleMaps;
+    return true;
   }
 
   async validate(segmentBytes: Uint8Array): Promise<MerkleValidationResult | null> {

@@ -164,7 +164,15 @@ export class SegmentRouter {
     if (result.success) {
       const merkleMaps = result.merkleMaps ?? [];
       if (merkleMaps.length > 0) {
-        this.merkleValidators.set(input.mediaType, new MerkleValidator(merkleMaps));
+        // A quality switch re-delivers an init whose merkle maps describe the
+        // same tracks (each rendition has its own tree but shares track ids and
+        // count). Adopt the new maps in place so the location-continuity
+        // baseline survives the switch; only a structurally different init
+        // (genuine period transition) starts a fresh validator.
+        const existing = this.merkleValidators.get(input.mediaType);
+        if (!existing?.adoptMerkleMaps(merkleMaps)) {
+          this.merkleValidators.set(input.mediaType, new MerkleValidator(merkleMaps));
+        }
       } else {
         this.merkleValidators.delete(input.mediaType);
       }
