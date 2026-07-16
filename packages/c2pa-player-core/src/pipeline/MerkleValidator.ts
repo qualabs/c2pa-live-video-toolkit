@@ -8,10 +8,7 @@ export type MerkleValidationResult = {
   errorCodes?: readonly string[];
 };
 
-/**
- * Per-segment validator for VOD Merkle mode (C2PA §15.12.2.2). Holds the merkle
- * maps and the location-continuity state; crypto is delegated to CML.
- */
+/** Per-segment validator for VOD Merkle mode (C2PA §15.12.2.2). */
 export class MerkleValidator {
   private merkleMaps: readonly MerkleMap[];
   private state: MerkleSegmentState | undefined;
@@ -20,10 +17,7 @@ export class MerkleValidator {
     this.merkleMaps = merkleMaps;
   }
 
-  /**
-   * Adopts maps from a re-delivered init (e.g. quality switch) keeping the
-   * continuity state. Returns false when the tracks differ structurally.
-   */
+  /** False when the tracks differ structurally. */
   adoptMerkleMaps(merkleMaps: readonly MerkleMap[]): boolean {
     const sameTracks =
       merkleMaps.length === this.merkleMaps.length &&

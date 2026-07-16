@@ -1,5 +1,3 @@
-// Synthetic fMP4 + C2PA Merkle fixtures: real BMFF boxes, tree, CBOR aux boxes
-// and JUMBF init manifest — everything CML parses for real, no mocks.
 import { encode } from 'cbor-x';
 
 const TEXT_ENCODER = new TextEncoder();
@@ -152,9 +150,7 @@ export type MerkleVodStream = {
   segments: Uint8Array[];
 };
 
-// Builds a synthetic VOD Merkle stream: one merkle-map + aux box per localId,
-// with proof paths per segment. contentSeed varies the payload so two streams
-// model different renditions (distinct trees, same track ids and count).
+// contentSeed varies the payload: distinct trees, same track ids and count.
 export async function buildMerkleVodStream(
   segmentCount: number,
   localIds: readonly number[] = [1],

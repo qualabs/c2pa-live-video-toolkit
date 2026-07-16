@@ -163,8 +163,7 @@ export class SegmentRouter {
     if (result.success) {
       const merkleMaps = result.merkleMaps ?? [];
       if (merkleMaps.length > 0) {
-        // Adopt in place so location continuity survives a quality switch;
-        // a structurally different init (period transition) starts fresh.
+        // Adopt in place so location continuity survives a quality switch.
         const existing = this.merkleValidators.get(input.mediaType);
         if (!existing?.adoptMerkleMaps(merkleMaps)) {
           this.merkleValidators.set(input.mediaType, new MerkleValidator(merkleMaps));
