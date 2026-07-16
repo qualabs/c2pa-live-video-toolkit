@@ -1,11 +1,5 @@
-/**
- * Synthetic fMP4 + C2PA Merkle fixtures for VOD Merkle integration tests.
- *
- * Builds real BMFF boxes, a real balanced binary Merkle tree (SHA-256), real
- * CBOR auxiliary boxes, and a real JUMBF init-segment manifest carrying a
- * `c2pa.hash.bmff.v3` assertion with a `merkle` field — everything CML's
- * validators parse for real, no mocks.
- */
+// Synthetic fMP4 + C2PA Merkle fixtures: real BMFF boxes, tree, CBOR aux boxes
+// and JUMBF init manifest — everything CML parses for real, no mocks.
 import { encode } from 'cbor-x';
 
 const TEXT_ENCODER = new TextEncoder();
@@ -52,8 +46,7 @@ async function sha256(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes as Uint8Array<ArrayBuffer>));
 }
 
-// Merkle-only assertions hash each non-excluded top-level box prefixed with
-// its 8-byte big-endian file offset (§18.6.2 / c2pa-rs BMFF v2+ semantics).
+// Each non-excluded top-level box is prefixed with its 8-byte file offset (§18.6.2).
 async function offsetPrefixedHash(boxes: readonly Uint8Array[]): Promise<Uint8Array> {
   const parts: Uint8Array[] = [];
   let offset = 0;
@@ -155,20 +148,13 @@ function buildInitSegment(assertionData: Record<string, unknown>): Uint8Array {
 // ── Public fixture entry point ──────────────────────────────────────
 
 export type MerkleVodStream = {
-  /** Init segment whose manifest carries the merkle maps (initHash included) */
   initSegment: Uint8Array;
-  /** Media segments carrying valid auxiliary Merkle boxes, in playback order */
   segments: Uint8Array[];
 };
 
-/**
- * Builds a complete synthetic VOD Merkle stream: `segmentCount` media
- * segments, a Merkle tree over their leaf hashes with the root row stored in
- * the init manifest, and per-segment proof paths. Multi-track streams get one
- * merkle-map + one auxiliary box per `localId`. `contentSeed` varies the media
- * payload so two streams model different renditions of the same content
- * (distinct trees, same track ids and count).
- */
+// Builds a synthetic VOD Merkle stream: one merkle-map + aux box per localId,
+// with proof paths per segment. contentSeed varies the payload so two streams
+// model different renditions (distinct trees, same track ids and count).
 export async function buildMerkleVodStream(
   segmentCount: number,
   localIds: readonly number[] = [1],
@@ -180,7 +166,6 @@ export async function buildMerkleVodStream(
     buildBox('mdat', new Uint8Array([contentSeed + i, contentSeed + i + 1, contentSeed + i + 2])),
   ]);
   const contents = contentBoxes.map((boxes) => concatBytes(...boxes));
-  // Leaf hash = full segment minus /uuid exclusions, each box prefixed with its file offset
   const leafHashes = await Promise.all(contentBoxes.map((boxes) => offsetPrefixedHash(boxes)));
   const levels = await buildTreeLevels(leafHashes);
   const depth = levels.length - 1;

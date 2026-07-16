@@ -123,8 +123,7 @@ export class SegmentRouter {
   // audio isSecond can process before video isSecond, overwriting lastVsiRecord[audioKey] from
   // isFirstSeq to isSecondSeq. Without prevLastVsiRecord the cascade would miss audio isFirst.
   private readonly prevLastVsiRecord = new Map<string, SegmentRecord>();
-  // One VOD Merkle validator per media type, created when that type's init segment
-  // carries merkle maps. Highest-priority routing branch.
+  // One VOD Merkle validator per media type; highest-priority routing branch.
   private readonly merkleValidators = new Map<MediaType, MerkleValidator>();
 
   constructor(deps: SegmentRouterDeps) {
@@ -164,11 +163,8 @@ export class SegmentRouter {
     if (result.success) {
       const merkleMaps = result.merkleMaps ?? [];
       if (merkleMaps.length > 0) {
-        // A quality switch re-delivers an init whose merkle maps describe the
-        // same tracks (each rendition has its own tree but shares track ids and
-        // count). Adopt the new maps in place so the location-continuity
-        // baseline survives the switch; only a structurally different init
-        // (genuine period transition) starts a fresh validator.
+        // Adopt in place so location continuity survives a quality switch;
+        // a structurally different init (period transition) starts fresh.
         const existing = this.merkleValidators.get(input.mediaType);
         if (!existing?.adoptMerkleMaps(merkleMaps)) {
           this.merkleValidators.set(input.mediaType, new MerkleValidator(merkleMaps));
@@ -506,8 +502,7 @@ export class SegmentRouter {
     if (!result) return;
 
     const errorCodes = result.errorCodes ?? [];
-    // A pure continuity break (location gap) is a WARNING, not content tampering —
-    // consistent with how the PSM path downgrades continuity-only failures.
+    // A pure continuity break (location gap) is a WARNING, not content tampering.
     const isContinuityOnlyFailure =
       !result.isValid &&
       errorCodes.length > 0 &&

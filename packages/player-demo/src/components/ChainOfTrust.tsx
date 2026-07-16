@@ -42,8 +42,7 @@ const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
 };
 
 function validationBadgeLabel(kind: ValidationBadgeKindValue, isMerkle: boolean): string {
-  // In VOD Merkle mode a WARNING is a location discontinuity (replayed or
-  // out-of-order segment), not a gap in the sequence-number chain.
+  // In VOD Merkle mode a WARNING is a location discontinuity, not a sequence gap.
   if (isMerkle && kind === ValidationBadgeKind.WARNING) return 'DISCONTINUITY';
   return VALIDATION_BADGE_LABEL[kind];
 }

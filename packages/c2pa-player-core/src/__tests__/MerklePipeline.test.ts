@@ -1,7 +1,4 @@
-/**
- * End-to-end VOD Merkle tests: synthetic-but-real fMP4 segments with embedded
- * auxiliary Merkle boxes, routed through the full pipeline (real CML, no mocks).
- */
+// End-to-end VOD Merkle tests through the full pipeline (real CML, no mocks).
 import { describe, it, expect } from 'vitest';
 import { createC2paPipeline } from '../createC2paPipeline.js';
 import type { C2paPipeline } from '../createC2paPipeline.js';
@@ -170,8 +167,6 @@ describe('VOD Merkle pipeline (end-to-end)', () => {
 
   it('rejects an init segment whose initHash does not match', async () => {
     const { segments } = await buildMerkleVodStream(3);
-    // Build a second stream whose init is built from different media content:
-    // its initHash matches its own ftyp+moov, so tamper the init's moov box.
     const { initSegment } = await buildMerkleVodStream(3);
     const tamperedInit = new Uint8Array(initSegment);
     tamperedInit[10] ^= 0xff; // inside ftyp payload → initHash no longer matches

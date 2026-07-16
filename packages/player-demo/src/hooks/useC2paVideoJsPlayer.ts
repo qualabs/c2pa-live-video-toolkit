@@ -26,7 +26,6 @@ const VIDEO_JS_OPTIONS = {
   },
 };
 
-/** HLS manifests go through hls.js; everything else through dash.js. */
 function isHlsUrl(url: string): boolean {
   return /\.m3u8(\?|#|$)/i.test(url);
 }
@@ -40,10 +39,8 @@ export type UseC2paVideoJsPlayerResult = {
 };
 
 /**
- * Initializes video.js + a streaming engine + C2PA without React controlling
- * the <video> element. The engine is selected from the stream URL: `.m3u8`
- * manifests play through hls.js, anything else through dash.js — both feed
- * the same C2PA validation pipeline and UI.
+ * Initializes video.js + a streaming engine (hls.js for `.m3u8`, dash.js
+ * otherwise) + C2PA without React controlling the <video> element.
  *
  * The <video> element is created imperatively inside the effect and appended to
  * a container div (containerRef). This prevents React's reconciler from removing
@@ -206,8 +203,7 @@ export function useC2paVideoJsPlayer(videoSrc?: string): UseC2paVideoJsPlayerRes
 
   function startHlsEngine(videoEl: HTMLVideoElement, streamUrl: string): void {
     if (!Hls.isSupported()) {
-      // Safari uses its native HLS engine — bytes don't flow through hls.js,
-      // so C2PA validation is unavailable in this mode.
+      // Safari's native HLS engine: bytes bypass hls.js, so no C2PA validation.
       videoEl.src = streamUrl;
       return;
     }

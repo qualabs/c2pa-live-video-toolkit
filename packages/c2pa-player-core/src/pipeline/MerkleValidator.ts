@@ -3,19 +3,14 @@ import type { MerkleMap, MerkleSegmentState } from '@svta/cml-c2pa';
 
 export type MerkleValidationResult = {
   isValid: boolean;
-  /** Zero-based leaf index of the segment in the Merkle tree, or null if malformed */
   location: number | null;
-  /** Hex of the computed leaf hash (first track), or null if no track was hashed */
   bmffHashHex: string | null;
   errorCodes?: readonly string[];
 };
 
 /**
- * Stateful per-segment validator for VOD Merkle mode (C2PA §15.12.2.2).
- *
- * Holds the merkle maps extracted from the init segment and the
- * location-continuity state between segments. All cryptographic work is
- * delegated to CML's `validateC2paMerkleSegment`.
+ * Per-segment validator for VOD Merkle mode (C2PA §15.12.2.2). Holds the merkle
+ * maps and the location-continuity state; crypto is delegated to CML.
  */
 export class MerkleValidator {
   private merkleMaps: readonly MerkleMap[];
@@ -26,11 +21,8 @@ export class MerkleValidator {
   }
 
   /**
-   * Adopts the merkle maps from a re-delivered init segment while preserving
-   * the location-continuity state, provided they describe the same tracks
-   * (same uniqueId/localId/count — e.g. a quality switch within the same
-   * content period). Returns false when the maps differ structurally; the
-   * caller must create a fresh validator instead.
+   * Adopts maps from a re-delivered init (e.g. quality switch) keeping the
+   * continuity state. Returns false when the tracks differ structurally.
    */
   adoptMerkleMaps(merkleMaps: readonly MerkleMap[]): boolean {
     const sameTracks =
