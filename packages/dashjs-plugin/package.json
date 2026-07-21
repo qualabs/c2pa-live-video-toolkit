@@ -54,7 +54,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@svta/cml-c2pa": "^1.0.0"
+    "@svta/cml-c2pa": "^1.1.0"
   },
   "peerDependencies": {
     "dashjs": ">=4.0.0"

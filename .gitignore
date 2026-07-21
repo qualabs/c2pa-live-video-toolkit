@@ -146,4 +146,3 @@ vite.config.ts.timestamp-*
 
 # tsup bundled config temp files
 tsup.config.bundled_*.mjs
-!vendor/*.tgz

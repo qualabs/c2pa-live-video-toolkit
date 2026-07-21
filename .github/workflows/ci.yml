@@ -20,13 +20,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # VOD Merkle needs @svta/cml-c2pa >= 1.1.0 (validateC2paMerkleSegment),
-      # not yet published to npm. Use the vendored build of
-      # qualabs/common-media-library#53 until the upstream release, then
-      # delete this step and the vendor/ tarball.
-      - name: Use vendored cml-c2pa 1.1.0 (pending upstream release)
-        run: npm install --no-save ./vendor/svta-cml-c2pa-1.1.0.tgz
-
       - name: Lint
         run: npm run lint
 
