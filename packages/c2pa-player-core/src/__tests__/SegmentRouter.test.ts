@@ -214,7 +214,9 @@ describe('SegmentRouter', () => {
       const router = new SegmentRouter({
         eventBus,
         initProcessor: {
-          process: vi.fn().mockResolvedValue({ success: true, sessionKeysCount: 1, manifestId: 'm' }),
+          process: vi
+            .fn()
+            .mockResolvedValue({ success: true, sessionKeysCount: 1, manifestId: 'm' }),
         } as unknown as InitSegmentProcessor,
         vsiValidator: vsiValidator as unknown as VsiValidator,
         manifestBoxValidators: {},
@@ -402,22 +404,40 @@ describe('SegmentRouter', () => {
       //   6. isSecond audio → REORDERED (reclassified via prevRecord=REORDERED)
       expect(validated).toHaveBeenCalledTimes(6);
 
-      const calls = validated.mock.calls.map((c) => c[0] as { segmentNumber: number; status: string; mediaType: string });
+      const calls = validated.mock.calls.map(
+        (c) => c[0] as { segmentNumber: number; status: string; mediaType: string },
+      );
       // isFirst video: initial WARNING then retroactive REORDERED
-      const isFirstVideoInitial = calls.find((c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'warning');
-      const isFirstVideoRetro = calls.filter((c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'reordered');
+      const isFirstVideoInitial = calls.find(
+        (c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'warning',
+      );
+      const isFirstVideoRetro = calls.filter(
+        (c) => c.segmentNumber === N + 2 && c.mediaType === 'video' && c.status === 'reordered',
+      );
       expect(isFirstVideoInitial).toBeDefined();
       expect(isFirstVideoRetro).toHaveLength(1);
 
       // isFirst audio: initial INVALID then retroactive REORDERED
-      const isFirstAudioInitial = calls.find((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'invalid');
-      const isFirstAudioRetro = calls.filter((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'reordered');
+      const isFirstAudioInitial = calls.find(
+        (c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'invalid',
+      );
+      const isFirstAudioRetro = calls.filter(
+        (c) => c.segmentNumber === N + 2 && c.mediaType === 'audio' && c.status === 'reordered',
+      );
       expect(isFirstAudioInitial).toBeDefined();
       expect(isFirstAudioRetro).toHaveLength(1);
 
       // isSecond video and audio: REORDERED
-      expect(calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered')).toBeDefined();
-      expect(calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered')).toBeDefined();
+      expect(
+        calls.find(
+          (c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered',
+        ),
+      ).toBeDefined();
+      expect(
+        calls.find(
+          (c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered',
+        ),
+      ).toBeDefined();
     });
 
     it('upgrades isFirst audio when audio isSecond overwrites lastVsiRecord before video isSecond cascades (ordering C)', async () => {
@@ -484,17 +504,27 @@ describe('SegmentRouter', () => {
       await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 1 })); // isFirst video
       await router.route(makeInput({ mediaType: 'video', streamId: '0', segmentIndex: N + 2 })); // isSecond video
 
-      const calls = validated.mock.calls.map((c) => c[0] as { segmentNumber: number; status: string; mediaType: string });
+      const calls = validated.mock.calls.map(
+        (c) => c[0] as { segmentNumber: number; status: string; mediaType: string },
+      );
 
       // Both isFirst entries must end up REORDERED
-      const isFirstAudioFinal = [...calls].reverse().find((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio');
-      const isFirstVideoFinal = [...calls].reverse().find((c) => c.segmentNumber === N + 2 && c.mediaType === 'video');
+      const isFirstAudioFinal = [...calls]
+        .reverse()
+        .find((c) => c.segmentNumber === N + 2 && c.mediaType === 'audio');
+      const isFirstVideoFinal = [...calls]
+        .reverse()
+        .find((c) => c.segmentNumber === N + 2 && c.mediaType === 'video');
       expect(isFirstAudioFinal?.status).toBe('reordered');
       expect(isFirstVideoFinal?.status).toBe('reordered');
 
       // Both isSecond entries must be REORDERED
-      const isSecondAudio = calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered');
-      const isSecondVideo = calls.find((c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered');
+      const isSecondAudio = calls.find(
+        (c) => c.segmentNumber === N + 1 && c.mediaType === 'audio' && c.status === 'reordered',
+      );
+      const isSecondVideo = calls.find(
+        (c) => c.segmentNumber === N + 1 && c.mediaType === 'video' && c.status === 'reordered',
+      );
       expect(isSecondAudio).toBeDefined();
       expect(isSecondVideo).toBeDefined();
     });
