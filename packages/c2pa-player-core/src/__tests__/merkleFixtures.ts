@@ -2,11 +2,6 @@ import { encode } from 'cbor-x';
 
 const TEXT_ENCODER = new TextEncoder();
 
-/** C2PA auxiliary uuid box extended type (§A.5.4) */
-const MERKLE_AUX_UUID: readonly number[] = [
-  0xd8, 0xfe, 0xc3, 0xd6, 0x1b, 0x0d, 0x11, 0xec, 0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-];
-
 // JUMBF UUID per ISO 19566-5 (matched by CML's readC2paManifest)
 const JUMBF_UUID: readonly number[] = [
   0xd8, 0xfe, 0xc3, 0xd6, 0x1b, 0x0e, 0x48, 0x3c, 0x92, 0x97, 0x58, 0x28, 0x87, 0x7e, 0xc4, 0x81,
@@ -96,20 +91,18 @@ function buildProofPath(
 
 // ── Segment / init builders ─────────────────────────────────────────
 
+// §A.5.1.2/A.5.4.1.4: version/flags + null-terminated box_purpose + CBOR (string keys).
 function buildMerkleAuxBox(
   uniqueId: number,
   localId: number,
   location: number,
   hashes: readonly (Uint8Array | null)[],
 ): Uint8Array {
-  const map = new Map<number, unknown>([
-    [1, uniqueId],
-    [2, localId],
-    [3, location],
-    [4, hashes],
-  ]);
-  const payload = encode({ box_purpose: 'merkle', data: encode(map) as Uint8Array }) as Uint8Array;
-  return buildUuidBox(MERKLE_AUX_UUID, payload);
+  const map = { uniqueId, localId, location, hashes };
+  const purpose = TEXT_ENCODER.encode('merkle');
+  const prefix = new Uint8Array(4 + purpose.length + 1); // version/flags + purpose\0
+  prefix.set(purpose, 4);
+  return buildUuidBox(JUMBF_UUID, concatBytes(prefix, encode(map) as Uint8Array));
 }
 
 function buildJumd(label: string): Uint8Array {
