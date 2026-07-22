@@ -64,9 +64,7 @@ export function initializeQualitySelector(
         opt.textContent = `${q.height}p`;
         select.appendChild(opt);
       }
-      if (qualities.length > 0) {
-        select.value = String(qualities[qualities.length - 1].index);
-      }
+      select.value = 'auto';
     },
     destroy(): void {
       wrapper.remove();

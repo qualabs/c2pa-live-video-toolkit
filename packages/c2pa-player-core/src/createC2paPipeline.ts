@@ -106,6 +106,7 @@ export function createC2paPipeline(options: CreateC2paPipelineOptions = {}): C2p
     sequenceTracker,
     manifestBoxValidators,
     manifest,
+    routerReset: () => segmentRouter.reset(),
     detachFn: options.onDetach ?? (() => {}),
   });
 
