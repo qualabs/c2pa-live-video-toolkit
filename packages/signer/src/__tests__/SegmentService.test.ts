@@ -136,9 +136,8 @@ describe('SegmentService', () => {
   describe('markSegmentAsProcessed', () => {
     it('adds the file key to the processed list', () => {
       service.markSegmentAsProcessed('v0', 'seg-1.m4s');
-      // Verify via repository (processedLists is internal)
-      const processed = repository.queue.getAllFromGlobalWaitingList();
-      // We can't easily peek processedLists, but at least verify no error
+      // processedLists is internal and not exposed via the repository, so this
+      // only verifies markSegmentAsProcessed doesn't throw.
       expect(true).toBe(true);
     });
   });

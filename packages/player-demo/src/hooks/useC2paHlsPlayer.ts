@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { attachC2pa, C2paEvent } from '@qualabs/c2pa-live-hlsjs-plugin';
-import type { C2paController, InitProcessedEvent } from '@qualabs/c2pa-live-hlsjs-plugin';
+import type { C2paController } from '@qualabs/c2pa-live-hlsjs-plugin';
 import { resolveStreamUrl, SEEK_BACK_OFFSET_SECONDS } from './playerUtils.js';
 import type { TaggedSegmentRecord, C2paPlayerState } from './useC2paPlayer.js';
 import { DEFAULT_HLS_STREAM_URL } from '../constants.js';
