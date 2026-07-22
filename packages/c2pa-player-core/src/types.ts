@@ -1,4 +1,4 @@
-import type { C2paManifest } from '@svta/cml-c2pa';
+import type { C2paManifest, MerkleMap } from '@svta/cml-c2pa';
 
 export type MediaType = 'video' | 'audio';
 
@@ -32,7 +32,7 @@ export type MediaSegmentInput = {
  * Re-export the CML manifest type so consumers don't need a direct CML dependency
  * just to reference the manifest shape.
  */
-export type { C2paManifest };
+export type { C2paManifest, MerkleMap };
 
 // ── Validation error codes ──────────────────────────────────────────
 export const ValidationErrorCode = {
@@ -42,12 +42,18 @@ export const ValidationErrorCode = {
   SEGMENT_INVALID: 'livevideo.segment.invalid',
   ASSERTION_INVALID: 'livevideo.assertion.invalid',
   CONTINUITY_INVALID: 'livevideo.continuityMethod.invalid',
+  // CML library extension (always alongside CONTINUITY_INVALID): the segment
+  // declares an implementer-defined continuity method the validator cannot verify.
+  CONTINUITY_UNSUPPORTED: 'livevideo.continuityMethod.unsupported',
   SESSION_KEY_INVALID: 'livevideo.sessionkey.invalid',
   // C2PA standard integrity codes (§15 / §18)
   HASHED_URI_MISMATCH: 'assertion.hashedURI.mismatch',
   ASSERTION_MISSING: 'assertion.missing',
   INGREDIENT_MISMATCH: 'assertion.action.ingredientMismatch',
   SIGNATURE_MISMATCH: 'claim.signature.mismatch',
+  // VOD Merkle validation codes (§15.12.2.2 / §D.3)
+  BMFF_HASH_MALFORMED: 'assertion.bmffHash.malformed',
+  BMFF_HASH_MISMATCH: 'assertion.bmffHash.mismatch',
 } as const;
 
 export type ValidationErrorCode = (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
@@ -79,6 +85,7 @@ export type SegmentRecord = {
   mediaType: MediaType;
   keyId: string | null;
   hash: string | null;
+  location?: number | null;
   status: SegmentStatusValue;
   sequenceReason?: SequenceAnomalyReasonValue;
   errorCodes?: readonly ValidationErrorCode[];
@@ -95,6 +102,8 @@ export type InitProcessedEvent = {
   sessionKeysCount: number;
   manifestId: string | undefined;
   manifest: C2paManifest | null;
+  /** Non-empty when the init manifest carries merkle maps → VOD Merkle mode. */
+  merkleMaps?: readonly MerkleMap[];
   errorCodes?: readonly ValidationErrorCode[];
   error?: string;
 };
@@ -139,6 +148,8 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
     'Live video assertion invalid (sequenceNumber or streamId mismatch)',
   [ValidationErrorCode.CONTINUITY_INVALID]:
     'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
+  [ValidationErrorCode.CONTINUITY_UNSUPPORTED]:
+    'Segment uses a custom continuity method this validator cannot verify',
   [ValidationErrorCode.SESSION_KEY_INVALID]: 'Session key is invalid or expired',
   // C2PA standard integrity codes (§15 / §18)
   [ValidationErrorCode.HASHED_URI_MISMATCH]: 'Assertion hash does not match the signed claim',
@@ -146,6 +157,11 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
     'Assertion referenced in claim is missing from manifest store',
   [ValidationErrorCode.INGREDIENT_MISMATCH]: 'Action requires ingredient reference but none found',
   [ValidationErrorCode.SIGNATURE_MISMATCH]: 'Claim signature verification failed',
+  // VOD Merkle validation codes (§15.12.2.2 / §D.3)
+  [ValidationErrorCode.BMFF_HASH_MALFORMED]:
+    'Merkle auxiliary box missing or malformed (bmff-merkle-map)',
+  [ValidationErrorCode.BMFF_HASH_MISMATCH]:
+    'Segment hash does not match the merkle map from the init manifest',
 };
 
 export const DEFAULT_MEDIA_TYPES: MediaType[] = ['video', 'audio'];

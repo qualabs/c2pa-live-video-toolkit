@@ -33,7 +33,9 @@ export class ManifestBoxValidator {
 
     // The first media segment after init is signed without --previous-segment, so
     // c2patool does not embed previousManifestId. Suppress continuity-only failures
-    // on the first segment — the chain proper starts from segment 2.
+    // on the first segment — the chain proper starts from segment 2. An unverifiable
+    // custom method is not suppressed: its CONTINUITY_UNSUPPORTED code survives the
+    // filter below, so nonContinuityErrors stays non-empty.
     let isValid = result.isValid;
     let errorCodes = result.errorCodes;
     if (!isValid && wasFirstSegment) {

@@ -53,9 +53,10 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@svta/cml-c2pa": "^1.0.0"
+    "@svta/cml-c2pa": "^1.1.0"
   },
   "devDependencies": {
+    "cbor-x": "^1.6.4",
     "tsup": "^8.5.1",
     "typescript": "^5.8.3",
     "vitest": "^3.0.0"

@@ -55,7 +55,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@svta/cml-c2pa": "^1.0.0"
+    "@svta/cml-c2pa": "^1.1.0"
   },
   "peerDependencies": {
     "hls.js": ">=1.5.0 <2.0.0"

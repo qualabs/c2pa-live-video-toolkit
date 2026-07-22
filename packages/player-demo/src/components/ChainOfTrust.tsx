@@ -25,6 +25,7 @@ const ValidationBadgeKind = {
   VALID: 'valid',
   FAILED: 'failed',
   WARNING: 'warning',
+  UNSUPPORTED_CONTINUITY: 'unsupported_continuity',
   EMPTY: 'empty',
   PENDING: 'pending',
   NO_C2PA: 'no_c2pa',
@@ -36,10 +37,17 @@ const VALIDATION_BADGE_LABEL: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: 'VALID',
   [ValidationBadgeKind.FAILED]: 'NOT VALID',
   [ValidationBadgeKind.WARNING]: 'MISSING SEGMENT',
+  [ValidationBadgeKind.UNSUPPORTED_CONTINUITY]: 'CONTINUITY N/A',
   [ValidationBadgeKind.EMPTY]: '—',
   [ValidationBadgeKind.PENDING]: 'PENDING',
   [ValidationBadgeKind.NO_C2PA]: 'No C2PA',
 };
+
+function validationBadgeLabel(kind: ValidationBadgeKindValue, isMerkle: boolean): string {
+  // In VOD Merkle mode a WARNING is a location discontinuity, not a sequence gap.
+  if (isMerkle && kind === ValidationBadgeKind.WARNING) return 'DISCONTINUITY';
+  return VALIDATION_BADGE_LABEL[kind];
+}
 
 const InitBadgeStatus = {
   VALID: ValidationBadgeKind.VALID,
@@ -56,10 +64,25 @@ function lacksC2paData(segment: SegmentRecord): boolean {
 
 function resolveValidationBadge(segment: SegmentRecord): ValidationBadgeKindValue {
   if (segment.status === SegmentStatus.UNVERIFIED) return ValidationBadgeKind.EMPTY;
-  if (segment.status === SegmentStatus.WARNING) return ValidationBadgeKind.WARNING;
+  if (segment.status === SegmentStatus.WARNING) {
+    // A custom continuity method the validator cannot verify is not a missing
+    // segment: the manifest validated — only the chain is unverifiable.
+    return segment.errorCodes?.includes(ValidationErrorCode.CONTINUITY_UNSUPPORTED)
+      ? ValidationBadgeKind.UNSUPPORTED_CONTINUITY
+      : ValidationBadgeKind.WARNING;
+  }
   return segment.status === SegmentStatus.VALID
     ? ValidationBadgeKind.VALID
     : ValidationBadgeKind.FAILED;
+}
+
+function segmentValidationTooltip(
+  kind: ValidationBadgeKindValue,
+  segment: SegmentRecord,
+): string | undefined {
+  if (kind !== ValidationBadgeKind.UNSUPPORTED_CONTINUITY) return undefined;
+  const hashNote = segment.hash != null ? 'content hash verified' : 'content hash not verified';
+  return `Unsupported continuity method — chain not verifiable (${hashNote})`;
 }
 
 function resolveInitBadgeStatus(initData: InitProcessedEvent | null): InitBadgeStatusValue {
@@ -74,6 +97,8 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   selectedSegment,
   onSegmentSelect,
 }) => {
+  const isMerkle = (initData?.merkleMaps?.length ?? 0) > 0;
+
   const sortedSegments = React.useMemo(() => {
     type Tagged = SegmentRecord & { _periodIndex?: number };
     return [...segments].sort((a: Tagged, b: Tagged) => {
@@ -90,7 +115,7 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
   const warningCount = segments.filter((s) => statusCategory(s.status) === 'warning').length;
 
   const initStatus = resolveInitBadgeStatus(initData);
-  const isManifestBox = !initData?.sessionKeysCount;
+  const isManifestBox = !isMerkle && !initData?.sessionKeysCount;
 
   return (
     <Container>
@@ -111,10 +136,10 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
             <tr>
               <Th>SEG #</Th>
               <Th>TYPE</Th>
-              <Th>SEQ</Th>
+              <Th>{isMerkle ? 'LOCATION' : 'SEQ'}</Th>
               <Th>QUALITY</Th>
-              <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>
-              <Th>HASH</Th>
+              {!isMerkle && <Th>{isManifestBox ? 'PREV MANIFEST' : 'KEY ID'}</Th>}
+              <Th>{isMerkle ? 'LEAF HASH' : 'HASH'}</Th>
               <Th>VALIDATION</Th>
               <Th>STATUS</Th>
             </tr>
@@ -126,17 +151,27 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
               <Td>init</Td>
               <Td>—</Td>
               <Td>—</Td>
-              <Td
-                title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
-              >
-                {isManifestBox ? '—' : 'Init Seg...'}
-              </Td>
+              {!isMerkle && (
+                <Td
+                  title={isManifestBox ? 'No previous manifest for init' : 'Initialization Segment'}
+                >
+                  {isManifestBox ? '—' : 'Init Seg...'}
+                </Td>
+              )}
               <Td
                 title={
-                  initData?.sessionKeysCount ? 'Contains session keys' : 'Contains C2PA manifest'
+                  isMerkle
+                    ? 'Contains the Merkle tree row and initHash'
+                    : initData?.sessionKeysCount
+                      ? 'Contains session keys'
+                      : 'Contains C2PA manifest'
                 }
               >
-                {initData?.sessionKeysCount ? 'Session Keys' : 'Manifest'}
+                {isMerkle
+                  ? 'Merkle Maps'
+                  : initData?.sessionKeysCount
+                    ? 'Session Keys'
+                    : 'Manifest'}
               </Td>
               <Td>
                 <ValidBadge $status={initStatus}>{VALIDATION_BADGE_LABEL[initStatus]}</ValidBadge>
@@ -176,9 +211,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                 >
                   <Td>{segment.segmentNumber}</Td>
                   <Td>{segment.mediaType}</Td>
-                  <Td>{segment.segmentNumber}</Td>
+                  <Td>{isMerkle ? (segment.location ?? '—') : segment.segmentNumber}</Td>
                   <Td>{segment.quality ?? '—'}</Td>
-                  {isManifestBox ? (
+                  {isMerkle ? null : isManifestBox ? (
                     <Td title={segment.previousManifestId ?? undefined}>
                       {hasNoC2paData || segment.previousManifestId == null ? (
                         '—'
@@ -196,9 +231,9 @@ export const ChainOfTrust: React.FC<ChainOfTrustProps> = ({
                   <Td title={segment.hash ?? undefined}>
                     {hasNoC2paData || !segment.hash ? '—' : truncate(segment.hash)}
                   </Td>
-                  <Td>
+                  <Td title={segmentValidationTooltip(validationKind, segment)}>
                     <ValidBadge $status={validationKind}>
-                      {VALIDATION_BADGE_LABEL[validationKind]}
+                      {validationBadgeLabel(validationKind, isMerkle)}
                     </ValidBadge>
                   </Td>
                   <Td>
@@ -379,6 +414,7 @@ const VALIDATION_BADGE_BACKGROUND: Record<ValidationBadgeKindValue, string> = {
   [ValidationBadgeKind.VALID]: '#22c55e',
   [ValidationBadgeKind.FAILED]: '#ef4444',
   [ValidationBadgeKind.WARNING]: '#eab308',
+  [ValidationBadgeKind.UNSUPPORTED_CONTINUITY]: '#eab308',
   [ValidationBadgeKind.PENDING]: 'rgba(251, 191, 36, 0.2)',
   [ValidationBadgeKind.EMPTY]: 'transparent',
   [ValidationBadgeKind.NO_C2PA]: '#555',
