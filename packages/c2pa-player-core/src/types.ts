@@ -42,6 +42,9 @@ export const ValidationErrorCode = {
   SEGMENT_INVALID: 'livevideo.segment.invalid',
   ASSERTION_INVALID: 'livevideo.assertion.invalid',
   CONTINUITY_INVALID: 'livevideo.continuityMethod.invalid',
+  // CML library extension (always alongside CONTINUITY_INVALID): the segment
+  // declares an implementer-defined continuity method the validator cannot verify.
+  CONTINUITY_UNSUPPORTED: 'livevideo.continuityMethod.unsupported',
   SESSION_KEY_INVALID: 'livevideo.sessionkey.invalid',
   // C2PA standard integrity codes (§15 / §18)
   HASHED_URI_MISMATCH: 'assertion.hashedURI.mismatch',
@@ -145,6 +148,8 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
     'Live video assertion invalid (sequenceNumber or streamId mismatch)',
   [ValidationErrorCode.CONTINUITY_INVALID]:
     'Continuity chain broken (previousManifestId mismatch or continuityMethod absent)',
+  [ValidationErrorCode.CONTINUITY_UNSUPPORTED]:
+    'Segment uses a custom continuity method this validator cannot verify',
   [ValidationErrorCode.SESSION_KEY_INVALID]: 'Session key is invalid or expired',
   // C2PA standard integrity codes (§15 / §18)
   [ValidationErrorCode.HASHED_URI_MISMATCH]: 'Assertion hash does not match the signed claim',

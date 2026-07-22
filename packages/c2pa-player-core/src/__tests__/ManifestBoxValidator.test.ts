@@ -65,6 +65,26 @@ describe('ManifestBoxValidator', () => {
     expect(result.errorCodes).toEqual([]);
   });
 
+  it('does not suppress first-segment continuity failures for an unsupported continuity method', async () => {
+    mockValidate.mockResolvedValue(
+      makeCmlResult({
+        isValid: false,
+        errorCodes: [
+          'livevideo.continuityMethod.invalid',
+          'livevideo.continuityMethod.unsupported',
+        ],
+      }) as never,
+    );
+
+    const result = await validator.validate(new Uint8Array([0x00]), 1);
+
+    expect(result.isValid).toBe(false);
+    expect(result.errorCodes).toEqual([
+      'livevideo.continuityMethod.invalid',
+      'livevideo.continuityMethod.unsupported',
+    ]);
+  });
+
   it('does not suppress continuity failures on the second segment', async () => {
     // First segment (consumes isFirstSegment flag)
     mockValidate.mockResolvedValue(makeCmlResult() as never);
