@@ -51,8 +51,13 @@ describe('extractSegmentInfo', () => {
     expect(extractSegmentInfo('other-file.m4s', PATTERN)).toBeNull();
   });
 
-  it('returns null when the segment number has wrong padding width', () => {
+  it('returns null when the segment number is narrower than the padding', () => {
     expect(extractSegmentInfo('chunk-stream0-42.m4s', PATTERN)).toBeNull();
+  });
+
+  it('extracts segment numbers wider than the padding', () => {
+    const result = extractSegmentInfo('chunk-stream4-565109.m4s', PATTERN);
+    expect(result).toEqual({ repId: '4', segmentId: '565109' });
   });
 
   it('works with unpadded $Number$ patterns', () => {
