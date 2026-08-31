@@ -24,8 +24,10 @@ function escapePatternSpecialChars(pattern: string): string {
   return pattern.replace(/\./g, '\\.').replace(/-/g, '\\-').replace(/\//g, '\\/');
 }
 
+// `%0Nd` is a *minimum* width: once the stream passes 10^N - 1 segments FFmpeg
+// emits more digits than the padding, so the capture must be open-ended.
 function buildSegmentNumberCapture(_fullMatch: string, paddingWidth: string): string {
-  return paddingWidth ? `(?<segmentId>\\d{${paddingWidth}})` : `(?<segmentId>\\d+)`;
+  return paddingWidth ? `(?<segmentId>\\d{${paddingWidth},})` : `(?<segmentId>\\d+)`;
 }
 
 export function extractSegmentInfo(
