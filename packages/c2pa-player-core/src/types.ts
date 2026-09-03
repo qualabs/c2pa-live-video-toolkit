@@ -17,8 +17,11 @@ export type MutableRef<T> = { value: T };
  * - `streamId`: identifier for the specific quality variant / representation.
  *   Used to isolate sequence tracking per stream. Examples: DASH representationId,
  *   HLS level, Shaka streamInfo.id. Optional — falls back to a default bucket.
- * - `segmentIndex`: adapter-provided incrementing index. Shown in error logs and
- *   used as the `segmentNumber` field of unverified segment records.
+ * - `segmentIndex`: the number the segment was requested under, i.e. the DASH URL number or
+ *   the HLS media sequence. Shown in error logs and used as the `segmentNumber` field of
+ *   unverified segment records. It is also compared against the sequence number the segment
+ *   was signed with, which is what separates a re-fetch from a replay, so an adapter that
+ *   substitutes a counter of its own weakens that check.
  */
 export type MediaSegmentInput = {
   kind: 'init' | 'media';

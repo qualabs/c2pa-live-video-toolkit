@@ -6,7 +6,7 @@ import type { ManifestBoxValidator } from '../pipeline/ManifestBoxValidator.js';
 import { EventBus } from '../events/EventBus.js';
 import { SessionKeyStore } from '../state/SessionKeyStore.js';
 import type { ValidatedSessionKey } from '@svta/cml-c2pa';
-import { SequenceAnomalyReason } from '../types.js';
+import { SequenceAnomalyReason, ValidationErrorCode } from '../types.js';
 import type { MediaSegmentInput, MediaType } from '../types.js';
 
 function makeInput(overrides: Partial<MediaSegmentInput> = {}): MediaSegmentInput {
@@ -566,6 +566,155 @@ describe('SegmentRouter', () => {
         status: 'warning',
         sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
       });
+    });
+  });
+
+  describe('repeated sequence numbers', () => {
+    // An ABR switch makes the player re-download a segment it already buffered, so CML sees
+    // the same sequence number twice. That is not a replay: the segment was requested as N
+    // and came back signed as N, whereas a replay answers a request for N+1 with N.
+    async function routeRepeat(overrides: { indexOfRepeat: number; contentIsSound?: boolean }) {
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      // ASSERTION_INVALID alone means the sequence tracking was the only objection; a broken
+      // signature or hash shows up as SEGMENT_INVALID alongside it.
+      const errorCodes =
+        (overrides.contentIsSound ?? true)
+          ? [ValidationErrorCode.ASSERTION_INVALID]
+          : [ValidationErrorCode.ASSERTION_INVALID, ValidationErrorCode.SEGMENT_INVALID];
+
+      const vsiValidator = {
+        validate: vi.fn().mockResolvedValue({
+          ...makeValidVsiResult(),
+          isValid: false,
+          sequenceNumber: 7,
+          sequenceReason: SequenceAnomalyReason.DUPLICATE,
+          errorCodes,
+        }),
+      };
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: {
+          process: vi
+            .fn()
+            .mockResolvedValue({ success: true, sessionKeysCount: 1, manifestId: 'session-1' }),
+        } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+      await router.route(
+        makeInput({ kind: 'media', mediaType: 'video', segmentIndex: overrides.indexOfRepeat }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return validated.mock.calls[validated.mock.calls.length - 1][0];
+    }
+
+    it('treats a re-fetch of the requested segment as valid', async () => {
+      expect(await routeRepeat({ indexOfRepeat: 7 })).toMatchObject({
+        segmentNumber: 7,
+        status: 'valid',
+      });
+    });
+
+    it('still reports a replay when the signed sequence lags the requested number', async () => {
+      expect(await routeRepeat({ indexOfRepeat: 8 })).toMatchObject({
+        segmentNumber: 7,
+        status: 'replayed',
+      });
+    });
+
+    it('does not excuse a repeat whose signature or hash failed', async () => {
+      expect(await routeRepeat({ indexOfRepeat: 7, contentIsSound: false })).not.toMatchObject({
+        status: 'valid',
+      });
+    });
+  });
+
+  describe('gaps across a quality switch', () => {
+    // Sequence state is per representation, so switching away and back leaves a hole that CML
+    // reports as GAP_DETECTED. The give-away is which representation delivered the previous
+    // segment: a different one means a switch, the same one means a segment went missing.
+    async function routeSwitchBack(opts: { previousCameFromAnotherRepresentation: boolean }) {
+      const sessionKeyStore = new SessionKeyStore();
+      sessionKeyStore.add({ kid: 'kid-1' } as unknown as ValidatedSessionKey);
+
+      const vsiValidator = { validate: vi.fn() };
+      vsiValidator.validate
+        // seg 10 on the representation the player switched to
+        .mockResolvedValueOnce({ ...makeValidVsiResult(), sequenceNumber: 10 })
+        // seg 11 back on the original representation, where CML sees 11 after 9
+        .mockResolvedValueOnce({
+          ...makeValidVsiResult(),
+          isValid: false,
+          sequenceNumber: 11,
+          sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+        });
+
+      const eventBus = new EventBus();
+      const router = new SegmentRouter({
+        eventBus,
+        initProcessor: {
+          process: vi
+            .fn()
+            .mockResolvedValue({ success: true, sessionKeysCount: 1, manifestId: 'session-1' }),
+        } as unknown as InitSegmentProcessor,
+        vsiValidator: vsiValidator as unknown as VsiValidator,
+        manifestBoxValidators: {},
+        sessionKeyStore,
+        manifest: { value: null },
+        supportedMediaTypes: ['video', 'audio'],
+      });
+
+      const validated = vi.fn();
+      eventBus.on('segmentValidated', validated);
+      await router.route(makeInput({ kind: 'init', mediaType: 'video' }));
+
+      if (opts.previousCameFromAnotherRepresentation) {
+        await router.route(
+          makeInput({ kind: 'media', mediaType: 'video', streamId: '360p', segmentIndex: 10 }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      } else {
+        // Same representation delivers first, so the gap cannot be a switch.
+        await router.route(
+          makeInput({ kind: 'media', mediaType: 'video', streamId: '180p', segmentIndex: 10 }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        vsiValidator.validate.mockResolvedValue({
+          ...makeValidVsiResult(),
+          isValid: false,
+          sequenceNumber: 11,
+          sequenceReason: SequenceAnomalyReason.GAP_DETECTED,
+        });
+      }
+
+      await router.route(
+        makeInput({ kind: 'media', mediaType: 'video', streamId: '180p', segmentIndex: 11 }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return validated;
+    }
+
+    it('accepts the gap when another representation delivered the preceding segment', async () => {
+      const validated = await routeSwitchBack({ previousCameFromAnotherRepresentation: true });
+      const last = validated.mock.calls[validated.mock.calls.length - 1][0];
+      expect(last).toMatchObject({ segmentNumber: 11, status: 'valid' });
+    });
+
+    it('still warns when the same representation was already delivering', async () => {
+      const validated = await routeSwitchBack({ previousCameFromAnotherRepresentation: false });
+      const last = validated.mock.calls[validated.mock.calls.length - 1][0];
+      expect(last).toMatchObject({ segmentNumber: 11, status: 'warning' });
     });
   });
 });

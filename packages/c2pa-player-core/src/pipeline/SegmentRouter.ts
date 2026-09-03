@@ -43,6 +43,7 @@ type VsiSegmentParams = {
   segmentBytes: Uint8Array;
   streamKey: string;
   mediaType: MediaType;
+  segmentIndex: number;
 };
 
 type ManifestBoxSegmentParams = {
@@ -92,6 +93,25 @@ function buildVsiSegmentRecord(
   };
 }
 
+// CML reports the per-stream sequence check as ASSERTION_INVALID and keeps signature, hash
+// and session-key problems under their own codes, so this holds only when the content itself
+// is sound and the sequence tracking was the sole objection.
+function onlySequenceFailed(errorCodes: readonly string[] | undefined): boolean {
+  return (
+    errorCodes !== undefined &&
+    errorCodes.length > 0 &&
+    errorCodes.every((code) => code === ValidationErrorCode.ASSERTION_INVALID)
+  );
+}
+
+// The two anomalies CML raises when a sequence number reappears on a stream.
+function isSequenceRepeat(reason: SequenceAnomalyReasonValue | null): boolean {
+  return (
+    reason === SequenceAnomalyReason.DUPLICATE ||
+    reason === SequenceAnomalyReason.SEQUENCE_NUMBER_BELOW_MINIMUM
+  );
+}
+
 function resolveSegmentStatus(
   isValid: boolean,
   sequenceReason: SequenceAnomalyReasonValue | null,
@@ -125,6 +145,10 @@ export class SegmentRouter {
   private readonly prevLastVsiRecord = new Map<string, SegmentRecord>();
   // One VOD Merkle validator per media type; highest-priority routing branch.
   private readonly merkleValidators = new Map<MediaType, MerkleValidator>();
+  // The representation that last delivered a segment for each media type. Sequence state is
+  // per representation, so switching quality and back leaves a hole CML reports as a gap;
+  // a change of representation here is what tells that apart from a segment nobody delivered.
+  private readonly lastDeliveringStream = new Map<MediaType, string>();
 
   constructor(deps: SegmentRouterDeps) {
     this.deps = deps;
@@ -138,6 +162,7 @@ export class SegmentRouter {
    * `manifest.value` repopulation.
    */
   reset(): void {
+    this.lastDeliveringStream.clear();
     this.previousWasUnverified.clear();
     this.previousWasReplayed.clear();
     this.knownManifestIds.clear();
@@ -251,12 +276,17 @@ export class SegmentRouter {
     }
 
     queueMicrotask(() => {
-      void this.handleVsiSegment({ segmentBytes: bytes, streamKey, mediaType });
+      void this.handleVsiSegment({
+        segmentBytes: bytes,
+        streamKey,
+        mediaType,
+        segmentIndex,
+      });
     });
   }
 
   private async handleVsiSegment(params: VsiSegmentParams): Promise<void> {
-    const { segmentBytes, streamKey, mediaType } = params;
+    const { segmentBytes, streamKey, mediaType, segmentIndex } = params;
 
     let vsiResult: VsiValidationResult | null = null;
     try {
@@ -282,6 +312,36 @@ export class SegmentRouter {
     }
 
     let status = resolveSegmentStatus(vsiResult.isValid, vsiResult.sequenceReason);
+
+    // ABR re-fetches replace buffered content by asking for a segment the player already
+    // holds, so CML sees the sequence number twice and reports DUPLICATE. That is not a
+    // replay: the segment was requested as N and came back signed as N. A replay serves
+    // segment N in the slot requested as N+1, leaving the signed number behind the index.
+    // Re-checking without the sequence state keeps a bad signature or hash failing.
+    if (
+      isSequenceRepeat(vsiResult.sequenceReason) &&
+      segmentIndex === vsiResult.sequenceNumber &&
+      onlySequenceFailed(vsiResult.errorCodes)
+    ) {
+      status = SegmentStatus.VALID;
+    }
+
+    // A quality switch leaves the representation the player left behind with a hole in its
+    // numbering, which CML reports as a gap on return. The switch is what gives it away: the
+    // segment before this one came from a different representation, so the timeline was never
+    // broken. A segment nobody delivered leaves the player on the same representation.
+    const previousDeliverer = this.lastDeliveringStream.get(mediaType);
+    if (
+      vsiResult.sequenceReason === SequenceAnomalyReason.GAP_DETECTED &&
+      previousDeliverer !== undefined &&
+      previousDeliverer !== streamKey
+    ) {
+      status = SegmentStatus.VALID;
+    }
+
+    if (status === SegmentStatus.VALID) {
+      this.lastDeliveringStream.set(mediaType, streamKey);
+    }
 
     // CML returns the string 'valid' (not null) when there is no sequence anomaly. Treat it the
     // same as null so the reclassification checks below can use hasNoAnomalyReason consistently.
