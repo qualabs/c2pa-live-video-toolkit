@@ -26,7 +26,7 @@ const HlsNativeDemo: React.FC = () => {
         </SafariBanner>
       )}
       <DemoLayout
-        playerSlot={<VideoEl ref={videoRef} playsInline muted autoPlay />}
+        playerSlot={<VideoEl ref={videoRef} playsInline muted autoPlay controls />}
         state={state}
         streamUrl={streamUrl}
         initialUrl={DEFAULT_HLS_STREAM_URL}
