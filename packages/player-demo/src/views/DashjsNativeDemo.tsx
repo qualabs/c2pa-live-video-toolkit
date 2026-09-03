@@ -14,7 +14,7 @@ const DashjsNativeDemo: React.FC = () => {
 
   return (
     <DemoLayout
-      playerSlot={<VideoEl ref={videoRef} playsInline muted />}
+      playerSlot={<VideoEl ref={videoRef} playsInline muted controls />}
       state={state}
       streamUrl={streamUrl}
       onStreamChange={(url) => {
