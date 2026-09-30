@@ -42,6 +42,19 @@ describe('VOD Merkle pipeline (end-to-end)', () => {
     expect(harness.initEvents[0].errorCodes).toEqual([]);
   });
 
+  it('does not adopt merkle maps from an init without a claim signature', async () => {
+    const { initSegment, segments } = await buildMerkleVodStream(3, [1], 0, { signed: false });
+    const harness = buildHarness();
+
+    await routeInit(harness, initSegment);
+    for (let i = 0; i < segments.length; i++) await routeMedia(harness, segments[i], i);
+
+    expect(harness.initEvents[0].success).toBe(false);
+    expect(harness.initEvents[0].merkleMaps).toEqual([]);
+    expect(harness.initEvents[0].errorCodes).toContain(ValidationErrorCode.SIGNATURE_MISSING);
+    harness.records.forEach((record) => expect(record.status).not.toBe(SegmentStatus.VALID));
+  });
+
   it('validates sequential segments as VALID (happy path)', async () => {
     const { initSegment, segments } = await buildMerkleVodStream(3);
     const harness = buildHarness();

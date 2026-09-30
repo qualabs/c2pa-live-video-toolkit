@@ -53,7 +53,9 @@ export const ValidationErrorCode = {
   HASHED_URI_MISMATCH: 'assertion.hashedURI.mismatch',
   ASSERTION_MISSING: 'assertion.missing',
   INGREDIENT_MISMATCH: 'assertion.action.ingredientMismatch',
-  SIGNATURE_MISMATCH: 'claim.signature.mismatch',
+  SIGNATURE_MISMATCH: 'claimSignature.mismatch',
+  SIGNATURE_MISSING: 'claimSignature.missing',
+  CLAIM_MISSING: 'claim.missing',
   // VOD Merkle validation codes (§15.12.2.2 / §D.3)
   BMFF_HASH_MALFORMED: 'assertion.bmffHash.malformed',
   BMFF_HASH_MISMATCH: 'assertion.bmffHash.mismatch',
@@ -160,6 +162,8 @@ export const ERROR_CODE_MESSAGES: Record<ValidationErrorCode, string> = {
     'Assertion referenced in claim is missing from manifest store',
   [ValidationErrorCode.INGREDIENT_MISMATCH]: 'Action requires ingredient reference but none found',
   [ValidationErrorCode.SIGNATURE_MISMATCH]: 'Claim signature verification failed',
+  [ValidationErrorCode.SIGNATURE_MISSING]: 'Manifest has no claim signature',
+  [ValidationErrorCode.CLAIM_MISSING]: 'Manifest has no claim',
   // VOD Merkle validation codes (§15.12.2.2 / §D.3)
   [ValidationErrorCode.BMFF_HASH_MALFORMED]:
     'Merkle auxiliary box missing or malformed (bmff-merkle-map)',
