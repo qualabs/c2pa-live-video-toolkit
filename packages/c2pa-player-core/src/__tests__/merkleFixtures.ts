@@ -1,6 +1,9 @@
-import { encode } from 'cbor-x';
+import { encode, Encoder } from 'cbor-x';
 
 const TEXT_ENCODER = new TextEncoder();
+
+// Plain CBOR as real signers emit it: no tag 64 on byte strings, no tag 259 on maps.
+const PLAIN_CBOR = new Encoder({ tagUint8Array: false, useRecords: false, mapsAsObjects: false });
 
 // JUMBF UUID per ISO 19566-5 (matched by CML's readC2paManifest)
 const JUMBF_UUID: readonly number[] = [
@@ -117,15 +120,110 @@ function buildJumb(label: string, ...content: readonly Uint8Array[]): Uint8Array
   return buildBox('jumb', concatBytes(buildJumd(label), ...content));
 }
 
-function buildInitSegment(assertionData: Record<string, unknown>): Uint8Array {
+// ── Claim signature (ES256, self-signed certificate in x5chain) ─────
+
+function derLength(length: number): Uint8Array {
+  if (length < 0x80) return new Uint8Array([length]);
+  if (length < 0x100) return new Uint8Array([0x81, length]);
+  return new Uint8Array([0x82, length >> 8, length & 0xff]);
+}
+
+function der(tag: number, ...content: readonly Uint8Array[]): Uint8Array {
+  const body = concatBytes(...content);
+  return concatBytes(new Uint8Array([tag]), derLength(body.length), body);
+}
+
+function derUnsignedInteger(bytes: Uint8Array): Uint8Array {
+  let start = 0;
+  while (start < bytes.length - 1 && bytes[start] === 0) start++;
+  const magnitude = bytes.subarray(start);
+  return der(0x02, magnitude[0] & 0x80 ? concatBytes(new Uint8Array([0]), magnitude) : magnitude);
+}
+
+const OID_ECDSA_WITH_SHA256 = new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02]);
+const OID_COMMON_NAME = new Uint8Array([0x55, 0x04, 0x03]);
+
+async function signEs256(key: CryptoKey, data: Uint8Array): Promise<Uint8Array> {
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    data as Uint8Array<ArrayBuffer>,
+  );
+  return new Uint8Array(signature);
+}
+
+async function buildSelfSignedCertificate(key: CryptoKey, spki: Uint8Array): Promise<Uint8Array> {
+  const name = der(
+    0x30,
+    der(0x31, der(0x30, der(0x06, OID_COMMON_NAME), der(0x0c, TEXT_ENCODER.encode('Test')))),
+  );
+  const algorithm = der(0x30, der(0x06, OID_ECDSA_WITH_SHA256));
+  const validity = der(
+    0x30,
+    der(0x17, TEXT_ENCODER.encode('250101000000Z')),
+    der(0x17, TEXT_ENCODER.encode('351231235959Z')),
+  );
+  const tbs = der(
+    0x30,
+    der(0xa0, der(0x02, new Uint8Array([2]))),
+    der(0x02, new Uint8Array([1])),
+    algorithm,
+    name,
+    validity,
+    name,
+    spki,
+  );
+  const raw = await signEs256(key, tbs);
+  const signature = der(
+    0x30,
+    derUnsignedInteger(raw.subarray(0, 32)),
+    derUnsignedInteger(raw.subarray(32)),
+  );
+  return der(0x30, tbs, algorithm, der(0x03, new Uint8Array([0]), signature));
+}
+
+async function signClaim(claimBytes: Uint8Array): Promise<Uint8Array> {
+  const { privateKey, publicKey } = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify'],
+  );
+  const spki = new Uint8Array(await crypto.subtle.exportKey('spki', publicKey));
+  const certificate = await buildSelfSignedCertificate(privateKey, spki);
+  const protectedBytes = Uint8Array.from(
+    PLAIN_CBOR.encode(
+      new Map<number, unknown>([
+        [1, -7],
+        [33, [certificate]],
+      ]),
+    ),
+  );
+  const sigStructure = Uint8Array.from(
+    PLAIN_CBOR.encode(['Signature1', protectedBytes, new Uint8Array(0), claimBytes]),
+  );
+  const signature = await signEs256(privateKey, sigStructure);
+  const coseSign1 = Uint8Array.from(
+    PLAIN_CBOR.encode([protectedBytes, new Map(), null, signature]),
+  );
+  return concatBytes(new Uint8Array([0xd2]), coseSign1);
+}
+
+async function buildInitSegment(
+  assertionData: Record<string, unknown>,
+  { signed }: { signed: boolean },
+): Promise<Uint8Array> {
   const bmffAssertion = buildJumb(
     'c2pa.hash.bmff.v3',
     buildBox('cbor', encode(assertionData) as Uint8Array),
   );
   const assertionStore = buildJumb('c2pa.assertions', bmffAssertion);
   const claimData = { instanceID: 'urn:uuid:merkle-vod-test', created_assertions: [] };
-  const claim = buildJumb('c2pa.claim', buildBox('cbor', encode(claimData) as Uint8Array));
-  const manifestJumb = buildJumb('urn:uuid:merkle-vod-test', claim, assertionStore);
+  const claimBytes = Uint8Array.from(encode(claimData) as Uint8Array);
+  const claim = buildJumb('c2pa.claim', buildBox('cbor', claimBytes));
+  const signature = signed
+    ? [buildJumb('c2pa.signature', buildBox('cbor', await signClaim(claimBytes)))]
+    : [];
+  const manifestJumb = buildJumb('urn:uuid:merkle-vod-test', claim, assertionStore, ...signature);
   const store = buildJumb('c2pa', manifestJumb);
 
   const purpose = TEXT_ENCODER.encode('manifest');
@@ -148,6 +246,7 @@ export async function buildMerkleVodStream(
   segmentCount: number,
   localIds: readonly number[] = [1],
   contentSeed = 0,
+  { signed = true }: { signed?: boolean } = {},
 ): Promise<MerkleVodStream> {
   const uniqueId = 1;
   const contentBoxes = Array.from({ length: segmentCount }, (_, i) => [
@@ -165,18 +264,21 @@ export async function buildMerkleVodStream(
     buildBox('moov'),
   ]);
 
-  const initSegment = buildInitSegment({
-    alg: 'sha256',
-    exclusions: MERKLE_EXCLUSIONS,
-    merkle: localIds.map((localId) => ({
-      uniqueId,
-      localId,
-      count: segmentCount,
+  const initSegment = await buildInitSegment(
+    {
       alg: 'sha256',
-      initHash,
-      hashes: manifestRowNodes,
-    })),
-  });
+      exclusions: MERKLE_EXCLUSIONS,
+      merkle: localIds.map((localId) => ({
+        uniqueId,
+        localId,
+        count: segmentCount,
+        alg: 'sha256',
+        initHash,
+        hashes: manifestRowNodes,
+      })),
+    },
+    { signed },
+  );
 
   const segments = contents.map((content, i) =>
     concatBytes(

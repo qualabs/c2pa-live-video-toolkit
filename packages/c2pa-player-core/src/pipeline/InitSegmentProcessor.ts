@@ -1,7 +1,13 @@
 import { validateC2paInitSegment } from '@svta/cml-c2pa';
 import type { SessionKeyStore } from '../state/SessionKeyStore.js';
-import { asValidationErrorCodes } from '../types.js';
+import { asValidationErrorCodes, ValidationErrorCode } from '../types.js';
 import type { InitProcessedEvent, Logger } from '../types.js';
+
+// A ManifestBox init carries no session keys and no merkle maps, so CML reports
+// SESSION_KEY_INVALID for it; its media segments carry their own manifests.
+function passesInitValidation(errorCodes: readonly string[]): boolean {
+  return errorCodes.every((code) => code === ValidationErrorCode.SESSION_KEY_INVALID);
+}
 
 type InitSegmentProcessorDeps = {
   sessionKeyStore: SessionKeyStore;
@@ -20,6 +26,20 @@ export class InitSegmentProcessor {
   async process(bytes: Uint8Array): Promise<InitProcessedEvent> {
     try {
       const result = await validateC2paInitSegment(bytes);
+
+      if (!passesInitValidation(result.errorCodes)) {
+        const message = `Init segment failed validation: ${result.errorCodes.join(', ')}`;
+        this.logger.warn(`[InitSegmentProcessor] ${message}`);
+        return {
+          success: false,
+          sessionKeysCount: 0,
+          manifestId: result.manifestId ?? undefined,
+          manifest: result.manifest ?? null,
+          merkleMaps: [],
+          errorCodes: asValidationErrorCodes(result.errorCodes),
+          error: message,
+        };
+      }
 
       for (const key of result.sessionKeys) {
         this.sessionKeyStore.add(key);
